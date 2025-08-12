@@ -1,0 +1,7 @@
+This is a sample configuration file for testing cockup.
+It contains some example settings and comments.
+
+# Sample configuration
+app_name = "test_app"
+version = "1.0.0"
+debug = true
