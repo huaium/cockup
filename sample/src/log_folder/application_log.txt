@@ -1,0 +1,7 @@
+2024-01-15 10:30:15 INFO Starting application
+2024-01-15 10:30:16 DEBUG Loading configuration
+2024-01-15 10:30:17 INFO Configuration loaded successfully
+2024-01-15 10:32:45 WARNING Low disk space detected
+2024-01-15 10:35:22 ERROR Failed to connect to database
+2024-01-15 10:35:23 INFO Retrying database connection
+2024-01-15 10:35:25 INFO Database connection established

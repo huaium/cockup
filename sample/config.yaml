@@ -12,7 +12,7 @@ rules:
       # Folders or files under `from`
       # Wildcards are supported
       - "log_folder"
-      - "*.log"
+      - "*log.txt"
     to: "log" # A folder under `destination`
     # `on_start` & `on_end` are not necessarily required
     on_start:
