@@ -16,8 +16,11 @@ pip install -e .
 ## Usage
 
 ```bash
-# List potential config paths for installed Homebrew casks
+# List potential config paths for all installed Homebrew casks
 cockup list
+
+# List potential config paths for specified cask
+cockup list cask-name-1 [cask-name-n...]
 
 # Backup files according to configuration
 cockup backup /path/to/config.yaml
