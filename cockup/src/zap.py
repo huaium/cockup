@@ -57,7 +57,7 @@ def _process_cask(cask) -> tuple[str, list[str]]:
         return cask, []
 
 
-def get_zap_dict() -> dict[str, list[str]]:
+def get_zap_dict(casks: list[str] = []) -> dict[str, list[str]]:
     """
     Extract zap information from all installed Homebrew casks using multiple threads.
 
@@ -68,15 +68,17 @@ def get_zap_dict() -> dict[str, list[str]]:
 
     # Get list of all installed casks
     try:
-        result = subprocess.run(
-            ["brew", "list", "--casks"],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=5,
-        )
-        stripped_result = result.stdout.strip()
-        casks = stripped_result.split("\n") if stripped_result else []
+        if not casks:
+            # If no casks provided, fetch all installed casks
+            result = subprocess.run(
+                ["brew", "list", "--casks"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=5,
+            )
+            stripped_result = result.stdout.strip()
+            casks = stripped_result.split("\n") if stripped_result else []
 
     except Exception:
         return {}

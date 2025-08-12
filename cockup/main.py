@@ -21,18 +21,21 @@ def main(ctx):
     f"""
     {HELP}
     """
+
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
         ctx.exit(0)
 
 
 @main.command("list", short_help=HELP_LIST)
-def list_command():
+@click.argument("casks", nargs=-1, type=click.STRING)
+def list_command(casks):
     f"""
     {HELP_LIST}
     """
-    rprint_point("Retrieving potential configs of installed casks from Homebrew...")
-    zap_dict = get_zap_dict()
+
+    rprint_point("Retrieving potential configs from Homebrew...")
+    zap_dict = get_zap_dict(list(casks))
     for package, items in zap_dict.items():
         rprint()  # Print a newline for better readability
         rprint_point(f"{package}:")
