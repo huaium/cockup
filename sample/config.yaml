@@ -14,13 +14,13 @@ rules:
       - "log_folder"
       - "*log.txt"
     to: "log" # A folder under `destination`
-    # `on_start` & `on_end` are not necessarily required
-    on_start:
+    # `on-start` & `on-end` are not necessarily required
+    on-start:
       - name: "Show Rule 1 welcome message" # `name` is required
         command: ["echo", "This is the first rule!"] # `command` is also required
         output: true # Output to console (default: false)
         timeout: 3 # Running timeout (default: 10)
-    on_end:
+    on-end:
       - name: "Show Rule 1 goodbye message"
         command: ["echo", "Bye Rule 1!"]
         output: true

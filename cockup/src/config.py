@@ -92,8 +92,8 @@ def _handle_rules(config: dict[str, Any]) -> list[Rule] | None:
             return
 
         # Handle rule-specific hooks
-        on_start_hooks = item.get("on_start", [])
-        on_end_hooks = item.get("on_end", [])
+        on_start_hooks = item.get("on-start", [])
+        on_end_hooks = item.get("on-end", [])
 
         rules.append(
             Rule(

@@ -265,8 +265,8 @@ class TestReadConfig:
                         "from": "~/Documents",
                         "targets": ["*.txt"],
                         "to": "docs",
-                        "on_start": [{"name": "pre", "command": ["echo", "before"]}],
-                        "on_end": [{"name": "post", "command": ["echo", "after"]}],
+                        "on-start": [{"name": "pre", "command": ["echo", "before"]}],
+                        "on-end": [{"name": "post", "command": ["echo", "after"]}],
                     }
                 ],
             }

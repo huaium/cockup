@@ -80,10 +80,10 @@ Each rule defines what to backup:
     - "pattern1"
     - "pattern2"
   to: "backup/subdirectory" # A folder under `destination`
-  on_start: # Optional rule-level hooks
+  on-start: # Optional rule-level hooks
     - name: "Before Rule"
       command: ["echo", "Processing rule"]
-  on_end:
+  on-end:
     - name: "After Rule"
       command: ["echo", "Rule complete"]
 ```
