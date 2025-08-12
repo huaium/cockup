@@ -26,7 +26,7 @@ def main(ctx):
         ctx.exit(0)
 
 
-@main.command("list")
+@main.command("list", short_help=HELP_LIST)
 def list_command():
     f"""
     {HELP_LIST}

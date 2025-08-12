@@ -52,6 +52,9 @@ def _smart_copy(src: Path, dst: Path, metadata: bool, print_progress: bool = Tru
                 updating = True
                 dst.unlink(missing_ok=True)
 
+            # To avoid folder not found
+            dst.parent.mkdir(parents=True, exist_ok=True)
+
             copy_inner(src, dst)
 
             if not updating:
@@ -110,8 +113,6 @@ def _handle_rule(rule: Rule, metadata: bool, direction: Literal["backup", "resto
 
         # Check if the path exists directly
         if source_path.exists():
-            dest_dir_path.mkdir(parents=True, exist_ok=True)
-
             dest_path = (dest_dir_path / target).absolute()
 
             smart_copy_inner(source_path, dest_path)
@@ -130,9 +131,6 @@ def _handle_rule(rule: Rule, metadata: bool, direction: Literal["backup", "resto
                 for matched_path in matched_paths:
                     # Generate destination file path and copy the file
                     dest_path = dest_dir_path / matched_path.relative_to(glob_base)
-
-                    # Create destination directory if it doesn't exist
-                    dest_path.parent.mkdir(parents=True, exist_ok=True)
 
                     smart_copy_inner(matched_path, dest_path)
             else:
