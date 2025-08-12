@@ -4,6 +4,17 @@ Yet another backup tool for various configurations.
 
 ## Installation
 
+### Homebrew
+
+```bash
+# Single-line installation
+brew install huaium/tap/cockup
+
+# Or, using brew tap
+brew tap huaium/tap
+brew install cockup
+```
+
 ### Install from source
 
 1. Clone or download this repository
@@ -142,7 +153,7 @@ just sample-restore
 
 ### Run test
 
-`just test` works as an alias for it.
+`just test` works as an alias for `pytest`.
 
 ```bash
 # Run all tests
