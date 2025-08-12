@@ -1,82 +1,82 @@
 # cockup
 
-English | [中文](README_zh-cn.md)
+[English](README.md) | 中文
 
-Yet another backup tool for various configurations.
+又一个用于备份各种配置文件的工具。
 
-## Installation
+## 安装
 
 ### Homebrew
 
 ```bash
-# Single-line installation
+# 单行命令
 brew install huaium/tap/cockup
 
-# Or, using `brew tap`
+# 或者使用 `brew tap`
 brew tap huaium/tap
 brew install cockup
 ```
 
-### Install from source
+### 从源码安装
 
-1. Clone or download this repository
-2. Navigate to the project root, and run:
+1. 克隆或下载本项目
+2. 切换到项目根目录，运行：
 
 ```bash
 pip install -e .
 ```
 
-## Usage
+## 使用
 
 ### `cockup list`
 
-You may want to use it as a reference when writing your own backup rules.
+你也许会想将它作为编写备份规则的参考。
 
 ```bash
-# List potential config paths for all installed Homebrew casks
+# 列出所有已安装的 Homebrew casks 可能存在的配置路径
 cockup list
 
-# List potential config paths for specified cask
+# 列出指定 cask 可能存在的配置路径
 cockup list cask-name-1 [cask-name-n...]
 ```
 
 ### `cockup backup & restore`
 
 ```bash
-# Backup files according to configuration
+# 依据指定的配置规则进行备份
 cockup backup /path/to/config.yaml
 
-# Restore files from backup
+# 从备份恢复
 cockup restore /path/to/config.yaml
 ```
 
-## Configuration
+## 配置
 
-Create a YAML configuration file with the following structure:
+创建一个遵循以下结构的 YAML 配置文件：
 
-### Required Fields
+### 必要字段
 
 ```yaml
-# Where backups are stored
+# 备份文件的存储位置
 destination: "/path/to/backup/directory"
 
-# List of backup rules
+# 备份规则列表
 rules:
   - from: "/source/directory"
     targets: ["*.conf", "*.json"]
     to: "subdirectory"
 ```
 
-### Optional Fields
+### 可选字段
 
 ```yaml
-# Clean mode, whether to remove existing backup folder (default: false)
+# 清洁模式，即是否先删除现有备份 (default: false)
 clean: false
 
-# Whether to preserve metadata when backing up (default: true)
+# 是否在备份时保留元数据 (default: true)
 metadata: true
 
-# Global hooks
+# 全局 Hooks
 hooks:
   pre-backup:
     - name: "Setup"
@@ -92,19 +92,19 @@ hooks:
       command: ["echo", "Restore complete"]
 ```
 
-### Rule Structure
+### 规则结构
 
-Each rule defines what to backup:
+每条规则都定义了程序所要备份的内容：
 
 ```yaml
 - from: "/source/directory"
   targets:
-    # Folders or files under `from`
-    # Wildcards are supported
+    # 在 `from` 目录下的文件夹或文件
+    # 允许使用通配符匹配
     - "pattern1"
     - "pattern2"
-  to: "backup/subdirectory" # A folder under `destination`
-  on-start: # Optional rule-level hooks
+  to: "backup/subdirectory" # 在 `destination` 下的子文件夹
+  on-start: # 规则层面的可选 Hooks
     - name: "Before Rule"
       command: ["echo", "Processing rule"]
   on-end:
@@ -112,20 +112,20 @@ Each rule defines what to backup:
       command: ["echo", "Rule complete"]
 ```
 
-### Hook Structure
+### Hook 结构
 
-Hooks support custom commands.
+Hooks 允许用户自定义运行命令。
 
-If you want to run them within a specified shell, use commands like `bash -c` after ensuring your commands are safe.
+如果你需要在一个特定的 Shell 里面运行命令，则请务必在检查安全性之后再使用诸如 `bash -c` 的命令来运行。
 
 ```yaml
-- name: "Hook Name" # Required: Hook identifier
-  command: ["cmd", "arg1"] # Required: Command args list
-  output: false # Optional: Print output (default: false)
-  timeout: 10 # Optional: Timeout in seconds (default: 10)
+- name: "Hook Name" # 必要：作为 Hook 的标识符
+  command: ["cmd", "arg1"] # 必要：命令参数列表
+  output: false # 可选：显示命令输出 (default: false)
+  timeout: 10 # 可选：允许运行秒数 (default: 10)
 ```
 
-For example, you may want to use it to dump Homebrew bundle into a file and place it under the folder defined by `destination`:
+一个典型的场景是备份 Homebrew bundle 列表，生成的文件将放置在 `destination` 指定的文件夹下：
 
 ```yaml
 - name: "Brewfile Dumping"
@@ -134,23 +134,23 @@ For example, you may want to use it to dump Homebrew bundle into a file and plac
   timeout: 10
 ```
 
-Refer to [sample](sample) to view a configuration demo.
+请访问 [sample](sample) 查看配置用例。
 
-## Development
+## 开发
 
-Basically, this project use `just` to unify the development workflow. If you are not familiar with it, please refer to `justfile` in the project root to get access to the original commands.
+本项目使用 `just` 来标准化开发工作流。如果你对此不熟悉，请查看位于项目根目录的 `justfile` 来获取原始命令。
 
-### Install test dependencies
+### 安装测试依赖
 
-Use `pytest` as the test framework.
+使用 `pytest` 作为测试框架。
 
 ```bash
 just install-test
 ```
 
-### Run directly
+### 直接运行
 
-With the command form of `just run [ARGS]`.
+通过 `just run [ARGS]`。
 
 ```bash
 # `cockup list`
@@ -160,34 +160,34 @@ just run list
 just run backup /path/to/config.yaml
 ```
 
-### Run sample
+### 运行用例
 
-A [sample](sample) with minimal configs is provided for manual testing.
+[sample](sample) 是一个最小化用例，可用于手动运行测试。
 
 ```bash
-# Test `cockup backup`
+# 测试 `cockup backup`
 just sample-backup
 
-# Or test `cockup restore`
+# 或者测试 `cockup restore`
 just sample-restore
 ```
 
-### Run test
+### 测试
 
-`just test` works as an alias for `pytest`.
+`just test` 可作为 `pytest` 的别名。
 
 ```bash
-# Run all tests
+# 运行所有测试
 just test
 
-# Run with coverage
+# 运行所有测试并生成 Coverage
 just test --cov=cockup
 
-# Run specific test
+# 运行指定测试
 just test tests/test_config.py -v
 ```
 
-## License
+## 许可证
 
 ```
 MIT License
