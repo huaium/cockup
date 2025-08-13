@@ -17,6 +17,12 @@ brew tap huaium/tap
 brew install cockup
 ```
 
+### PyPI
+
+```bash
+pip install cockup
+```
+
 ### Install from source
 
 1. Clone or download this repository

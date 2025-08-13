@@ -18,6 +18,19 @@ sample-backup:
 sample-restore:
     python cockup/main.py restore sample/config.yaml
 
+build:
+    uv build
+
+publish *ARGS:
+    #!/usr/bin/env bash
+    read -p "Are you sure to publish? [y/N] " REPLY
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Operation cancelled"
+        exit 0
+    fi
+
+    uv publish {{ ARGS }}
+
 # Create and push a specific tag
 tag version:
     #!/usr/bin/env bash
