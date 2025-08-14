@@ -10,10 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # To ensure setuptools-scm can find tags
       - uses: actions/checkout@v4
-      - name: Fetch all history for all tags and branches
-        run: git fetch --prune --unshallow
 
       # Set up Python environment
       - uses: actions/setup-python@v5
