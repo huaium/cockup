@@ -1,12 +1,12 @@
 [build-system]
-requires = ["setuptools>=80", "setuptools-scm>=8", "wheel"]
+requires = ["setuptools>=80", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "cockup"
 description = "Yet another backup tool for various configurations"
 readme = "README.md"
-dynamic = ["version"]
+version = "0.1.1"
 requires-python = ">=3.12,<3.13"
 authors = [{ name = "huaium", email = "huaium233@gmail.com" }]
 classifiers = [
@@ -22,7 +22,6 @@ dependencies = [
     "rich>=14.1,<14.2",
     "click>=8.2,<8.3",
     "pydantic>=2.11,<2.12",
-    "setuptools-scm>=8.3,<8.4",
 ]
 
 [project.scripts]
@@ -37,11 +36,6 @@ Issues = "https://github.com/huaium/cockup/issues"
 where = ["."]
 include = ["cockup*"]
 exclude = ["tests*"]
-
-[tool.setuptools_scm]
-write_to = "cockup/__init__.py"
-fallback_version = "0.0.0"
-local_scheme = "no-local-version"
 
 [project.optional-dependencies]
 test = ["pytest>=8.4,<8.5", "pytest-cov>=6.2,<6.3", "pytest-mock>=3.14,<3.15"]
