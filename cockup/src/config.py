@@ -1,127 +1,53 @@
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 import yaml
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
-from cockup.src.console import rprint_error
+from cockup.src.console import rprint, rprint_error
 
 
-@dataclass
-class Rule:
-    src: Path
+class ConfigModel(BaseModel):
+    model_config = ConfigDict(validate_by_name=True)
+
+
+class Hook(ConfigModel):
+    name: str
+    command: list[str]
+    output: bool = False
+    timeout: int = 10
+
+
+class Rule(ConfigModel):
+    src: Path = Field(validation_alias="from")
     targets: list[str]
     to: str
-    on_start: list[dict[str, Any]]
-    on_end: list[dict[str, Any]]
+    on_start: list[Hook] = Field(default=[], validation_alias="on-start")
+    on_end: list[Hook] = Field(default=[], validation_alias="on-end")
+
+    @field_validator("src")
+    @classmethod
+    def expand_src_path(cls, v):
+        return v.expanduser().absolute()
 
 
-@dataclass
-class Hooks:
-    pre_backup: list[dict[str, Any]]
-    post_backup: list[dict[str, Any]]
-    pre_restore: list[dict[str, Any]]
-    post_restore: list[dict[str, Any]]
+class GlobalHooks(ConfigModel):
+    pre_backup: list[Hook] = Field(default=[], validation_alias="pre-backup")
+    post_backup: list[Hook] = Field(default=[], validation_alias="post-backup")
+    pre_restore: list[Hook] = Field(default=[], validation_alias="pre-restore")
+    post_restore: list[Hook] = Field(default=[], validation_alias="post-restore")
 
 
-@dataclass
-class Config:
+class Config(ConfigModel):
     destination: Path
     rules: list[Rule]
-    hooks: Hooks
-    clean: bool
-    metadata: bool
+    hooks: GlobalHooks | None = None
+    clean: bool = False
+    metadata: bool = True
 
-
-def _read_yaml(file_path: str) -> dict[str, Any]:
-    try:
-        with open(file_path, "r") as file:
-            yaml_data = yaml.safe_load(file)
-            return yaml_data
-    except Exception as e:
-        rprint_error(f"Error reading YAML file: {e}")
-
-    return {}
-
-
-def _handle_destination(config: dict[str, Any]) -> Path | None:
-    if not config.get("destination"):
-        rprint_error("No destination specified in config.")
-        return
-
-    # Now `destination` must exist
-    destination = Path(config["destination"]).expanduser().absolute()
-
-    if not config.get("rules"):
-        rprint_error("No rules specified in config.")
-
-        if config.get("rule"):
-            rprint_error("Did you mistakenly use `rule` instead of `rules`?")
-
-        return
-
-    return destination
-
-
-def _handle_rules(config: dict[str, Any]) -> list[Rule] | None:
-    if not config.get("rules"):
-        rprint_error("No rules specified in config.")
-
-        if config.get("rule"):
-            rprint_error("Did you mistakenly use `rule` instead of `rules`?")
-
-        return
-
-    # Now `rules` must exist
-    rules = []
-    for index, item in enumerate(config["rules"]):
-        if not isinstance(item, dict):
-            rprint_error("Each rule must be a dictionary. Please review your config.")
-            return
-
-        if "from" not in item:
-            rprint_error(f"Rule {index + 1} is missing `from`.")
-            return
-
-        if "targets" not in item:
-            rprint_error(f"Rule {index + 1} is missing `targets`.")
-            return
-
-        if "to" not in item:
-            rprint_error(f"Rule {index + 1} is missing `to`.")
-            return
-
-        # Handle rule-specific hooks
-        on_start_hooks = item.get("on-start", [])
-        on_end_hooks = item.get("on-end", [])
-
-        rules.append(
-            Rule(
-                src=Path(item["from"]).expanduser().absolute(),
-                targets=item["targets"],
-                to=item["to"],
-                on_start=on_start_hooks,
-                on_end=on_end_hooks,
-            )
-        )
-
-    return rules
-
-
-def _handle_hooks(config: dict[str, Any]) -> Hooks:
-    hooks = config.get("hooks", {})  # Default to empty dict
-
-    pre_backup_hooks = hooks.get("pre-backup", [])  # Default to empty list
-    post_backup_hooks = hooks.get("post-backup", [])
-    pre_restore_hooks = hooks.get("pre-restore", [])
-    post_restore_hooks = hooks.get("post-restore", [])
-
-    return Hooks(
-        pre_backup=pre_backup_hooks,
-        post_backup=post_backup_hooks,
-        pre_restore=pre_restore_hooks,
-        post_restore=post_restore_hooks,
-    )
+    @field_validator("destination")
+    @classmethod
+    def expand_destination_path(cls, v):
+        return v.expanduser().absolute()
 
 
 def read_config(file_path: str) -> Config | None:
@@ -131,32 +57,19 @@ def read_config(file_path: str) -> Config | None:
     Returns:
         A Config object if the configuration is valid, None otherwise.
     """
-    config = _read_yaml(file_path)
 
-    if not config:
-        return
+    try:
+        with open(file_path, "r") as file:
+            yaml_data = yaml.safe_load(file)
+            config = Config.model_validate(yaml_data)
+            return config
+    except ValidationError as e:
+        rprint_error("Error in config file:\n")
+        for error in e.errors():
+            rprint_error(f"Location: {' -> '.join(str(loc) for loc in error['loc'])}")
+            rprint_error(f"Message: {error['msg']}")
+            rprint()
+    except Exception as e:
+        rprint_error(f"Error reading YAML file: {e}")
 
-    # Handle destination
-    destination = _handle_destination(config)
-    if not destination:
-        return
-
-    # Handle rules
-    rules = _handle_rules(config)
-    if not rules:
-        return
-
-    # Handle clean and metadata options
-    clean: bool = config.get("clean", False)  # Default to False
-    metadata: bool = config.get("metadata", True)  # Default to True
-
-    # Handle hooks
-    hooks = _handle_hooks(config)
-
-    return Config(
-        destination=destination,
-        rules=rules,
-        hooks=hooks,
-        clean=clean,
-        metadata=metadata,
-    )
+    return None

@@ -2,7 +2,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from cockup.src.config import Config, Hooks, Rule
+from cockup.src.config import Config, GlobalHooks, Hook, Rule
 from cockup.src.restore import restore
 
 
@@ -22,7 +22,7 @@ class TestRestore:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
+            hooks = GlobalHooks(
                 pre_restore=[], post_restore=[], pre_backup=[], post_backup=[]
             )
             config = Config(
@@ -58,8 +58,8 @@ class TestRestore:
                 on_start=[],
                 on_end=[],
             )
-            pre_restore_hooks = [{"name": "pre_restore", "command": ["echo", "before"]}]
-            hooks = Hooks(
+            pre_restore_hooks = [Hook(name="pre_restore", command=["echo", "before"])]
+            hooks = GlobalHooks(
                 pre_restore=pre_restore_hooks,
                 post_restore=[],
                 pre_backup=[],
@@ -97,10 +97,8 @@ class TestRestore:
                 on_start=[],
                 on_end=[],
             )
-            post_restore_hooks = [
-                {"name": "post_restore", "command": ["echo", "after"]}
-            ]
-            hooks = Hooks(
+            post_restore_hooks = [Hook(name="post_restore", command=["echo", "after"])]
+            hooks = GlobalHooks(
                 pre_restore=[],
                 post_restore=post_restore_hooks,
                 pre_backup=[],
@@ -138,9 +136,9 @@ class TestRestore:
                 on_start=[],
                 on_end=[],
             )
-            pre_restore_hooks = [{"name": "pre", "command": ["echo", "before"]}]
-            post_restore_hooks = [{"name": "post", "command": ["echo", "after"]}]
-            hooks = Hooks(
+            pre_restore_hooks = [Hook(name="pre", command=["echo", "before"])]
+            post_restore_hooks = [Hook(name="post", command=["echo", "after"])]
+            hooks = GlobalHooks(
                 pre_restore=pre_restore_hooks,
                 post_restore=post_restore_hooks,
                 pre_backup=[],
@@ -181,7 +179,7 @@ class TestRestore:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
+            hooks = GlobalHooks(
                 pre_restore=[], post_restore=[], pre_backup=[], post_backup=[]
             )
             config = Config(
@@ -213,9 +211,9 @@ class TestRestore:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
-                pre_restore=[{"name": "pre", "command": ["echo", "pre"]}],
-                post_restore=[{"name": "post", "command": ["echo", "post"]}],
+            hooks = GlobalHooks(
+                pre_restore=[Hook(name="pre", command=["echo", "pre"])],
+                post_restore=[Hook(name="post", command=["echo", "post"])],
                 pre_backup=[],
                 post_backup=[],
             )
@@ -281,7 +279,7 @@ class TestRestore:
                     on_end=[],
                 ),
             ]
-            hooks = Hooks(
+            hooks = GlobalHooks(
                 pre_restore=[], post_restore=[], pre_backup=[], post_backup=[]
             )
             config = Config(
@@ -312,7 +310,7 @@ class TestRestore:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
+            hooks = GlobalHooks(
                 pre_restore=[], post_restore=[], pre_backup=[], post_backup=[]
             )
 
@@ -359,7 +357,7 @@ class TestRestore:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
+            hooks = GlobalHooks(
                 pre_restore=[], post_restore=[], pre_backup=[], post_backup=[]
             )
             config = Config(
@@ -390,7 +388,7 @@ class TestRestore:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
+            hooks = GlobalHooks(
                 pre_restore=[], post_restore=[], pre_backup=[], post_backup=[]
             )
             config = Config(
@@ -424,7 +422,7 @@ class TestRestore:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
+            hooks = GlobalHooks(
                 pre_restore=[], post_restore=[], pre_backup=[], post_backup=[]
             )
 
@@ -457,17 +455,13 @@ class TestRestore:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
-                pre_restore=[
-                    {"name": "pre_restore", "command": ["echo", "pre_restore"]}
-                ],
+            hooks = GlobalHooks(
+                pre_restore=[Hook(name="pre_restore", command=["echo", "pre_restore"])],
                 post_restore=[
-                    {"name": "post_restore", "command": ["echo", "post_restore"]}
+                    Hook(name="post_restore", command=["echo", "post_restore"])
                 ],
-                pre_backup=[{"name": "pre_backup", "command": ["echo", "pre_backup"]}],
-                post_backup=[
-                    {"name": "post_backup", "command": ["echo", "post_backup"]}
-                ],
+                pre_backup=[Hook(name="pre_backup", command=["echo", "pre_backup"])],
+                post_backup=[Hook(name="post_backup", command=["echo", "post_backup"])],
             )
             config = Config(
                 destination=destination,
@@ -489,5 +483,5 @@ class TestRestore:
 
             # Only restore hooks should have been called
             assert len(called_hooks) == 2
-            assert called_hooks[0]["name"] == "pre_restore"
-            assert called_hooks[1]["name"] == "post_restore"
+            assert called_hooks[0].name == "pre_restore"
+            assert called_hooks[1].name == "post_restore"

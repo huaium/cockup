@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from cockup.src.backup import backup
-from cockup.src.config import Config, Hooks, Rule
+from cockup.src.config import Config, GlobalHooks, Hook, Rule
 
 
 class TestBackup:
@@ -23,7 +23,7 @@ class TestBackup:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
+            hooks = GlobalHooks(
                 pre_backup=[], post_backup=[], pre_restore=[], post_restore=[]
             )
             config = Config(
@@ -61,7 +61,7 @@ class TestBackup:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
+            hooks = GlobalHooks(
                 pre_backup=[], post_backup=[], pre_restore=[], post_restore=[]
             )
             config = Config(
@@ -101,7 +101,7 @@ class TestBackup:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
+            hooks = GlobalHooks(
                 pre_backup=[], post_backup=[], pre_restore=[], post_restore=[]
             )
             config = Config(
@@ -139,8 +139,8 @@ class TestBackup:
                 on_start=[],
                 on_end=[],
             )
-            pre_backup_hooks = [{"name": "pre_backup", "command": ["echo", "before"]}]
-            hooks = Hooks(
+            pre_backup_hooks = [Hook(name="pre_backup", command=["echo", "before"])]
+            hooks = GlobalHooks(
                 pre_backup=pre_backup_hooks,
                 post_backup=[],
                 pre_restore=[],
@@ -177,8 +177,8 @@ class TestBackup:
                 on_start=[],
                 on_end=[],
             )
-            post_backup_hooks = [{"name": "post_backup", "command": ["echo", "after"]}]
-            hooks = Hooks(
+            post_backup_hooks = [Hook(name="post_backup", command=["echo", "after"])]
+            hooks = GlobalHooks(
                 pre_backup=[],
                 post_backup=post_backup_hooks,
                 pre_restore=[],
@@ -215,9 +215,9 @@ class TestBackup:
                 on_start=[],
                 on_end=[],
             )
-            pre_backup_hooks = [{"name": "pre", "command": ["echo", "before"]}]
-            post_backup_hooks = [{"name": "post", "command": ["echo", "after"]}]
-            hooks = Hooks(
+            pre_backup_hooks = [Hook(name="pre", command=["echo", "before"])]
+            post_backup_hooks = [Hook(name="post", command=["echo", "after"])]
+            hooks = GlobalHooks(
                 pre_backup=pre_backup_hooks,
                 post_backup=post_backup_hooks,
                 pre_restore=[],
@@ -257,7 +257,7 @@ class TestBackup:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
+            hooks = GlobalHooks(
                 pre_backup=[], post_backup=[], pre_restore=[], post_restore=[]
             )
             config = Config(
@@ -288,7 +288,7 @@ class TestBackup:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
+            hooks = GlobalHooks(
                 pre_backup=[], post_backup=[], pre_restore=[], post_restore=[]
             )
             config = Config(
@@ -319,9 +319,9 @@ class TestBackup:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
-                pre_backup=[{"name": "pre", "command": ["echo", "pre"]}],
-                post_backup=[{"name": "post", "command": ["echo", "post"]}],
+            hooks = GlobalHooks(
+                pre_backup=[Hook(name="pre", command=["echo", "pre"])],
+                post_backup=[Hook(name="post", command=["echo", "post"])],
                 pre_restore=[],
                 post_restore=[],
             )
@@ -386,7 +386,7 @@ class TestBackup:
                     on_end=[],
                 ),
             ]
-            hooks = Hooks(
+            hooks = GlobalHooks(
                 pre_backup=[], post_backup=[], pre_restore=[], post_restore=[]
             )
             config = Config(
@@ -416,7 +416,7 @@ class TestBackup:
                 on_start=[],
                 on_end=[],
             )
-            hooks = Hooks(
+            hooks = GlobalHooks(
                 pre_backup=[], post_backup=[], pre_restore=[], post_restore=[]
             )
             config = Config(

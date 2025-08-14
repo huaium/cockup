@@ -3,50 +3,7 @@ from pathlib import Path
 
 import yaml
 
-from cockup.src.config import Config, Hooks, Rule, _read_yaml, read_config
-
-
-class TestReadYaml:
-    """Test the _read_yaml helper function."""
-
-    def test_read_valid_yaml(self):
-        """Test reading a valid YAML file."""
-        yaml_content = {
-            "destination": "~/backup",
-            "rules": [{"from": "~/Documents", "targets": ["*.txt"], "to": "docs"}],
-            "clean": True,
-            "metadata": False,
-            "hooks": {"pre-backup": [{"name": "test", "command": ["echo", "test"]}]},
-        }
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            yaml.dump(yaml_content, f)
-            config_file = f.name
-
-        result = _read_yaml(config_file)
-        Path(config_file).unlink()  # Clean up
-        assert result == yaml_content
-
-    def test_read_nonexistent_file(self, capsys):
-        """Test reading a non-existent YAML file."""
-        result = _read_yaml("nonexistent.yaml")
-
-        assert result == {}
-        captured = capsys.readouterr()
-        assert "Error reading YAML file" in captured.out
-
-    def test_read_invalid_yaml(self, capsys):
-        """Test reading invalid YAML content."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write("invalid: yaml: content:")
-            config_file = f.name
-
-        result = _read_yaml(config_file)
-        Path(config_file).unlink()  # Clean up
-
-        assert result == {}
-        captured = capsys.readouterr()
-        assert "Error reading YAML file" in captured.out
+from cockup.src.config import Config, GlobalHooks, Hook, Rule, read_config
 
 
 class TestReadConfig:
@@ -84,7 +41,7 @@ class TestReadConfig:
         assert isinstance(config.rules[0], Rule)
         assert config.rules[0].targets == ["file1.txt", "file2.txt"]
         assert config.rules[0].to == "docs"
-        assert len(config.hooks.pre_backup) == 1
+        assert config.hooks is not None and len(config.hooks.pre_backup) == 1
         assert config.destination.name == "backup"
 
     def test_read_minimal_config(self):
@@ -107,7 +64,7 @@ class TestReadConfig:
         assert config.metadata is True  # Default value
         assert len(config.rules) == 1
         assert isinstance(config.rules[0], Rule)
-        assert len(config.hooks.pre_backup) == 0
+        assert config.hooks is None or len(config.hooks.pre_backup) == 0
 
     def test_read_config_missing_destination(self, capsys):
         """Test handling of config without destination."""
@@ -123,7 +80,7 @@ class TestReadConfig:
 
         assert config is None
         captured = capsys.readouterr()
-        assert "No destination specified" in captured.out
+        assert "Error in config file" in captured.out
 
     def test_read_config_missing_rules(self, capsys):
         """Test handling of config without rules."""
@@ -137,7 +94,7 @@ class TestReadConfig:
 
         assert config is None
         captured = capsys.readouterr()
-        assert "No rules specified" in captured.out
+        assert "Error in config file" in captured.out
 
     def test_read_config_rule_vs_rules_hint(self, capsys):
         """Test hint when user uses 'rule' instead of 'rules'."""
@@ -154,8 +111,7 @@ class TestReadConfig:
 
         assert config is None
         captured = capsys.readouterr()
-        assert "No rules specified" in captured.out
-        assert "Did you mistakenly use `rule` instead of `rules`?" in captured.out
+        assert "Error in config file" in captured.out
 
     def test_read_config_invalid_rule_format(self, capsys):
         """Test handling of invalid rule format."""
@@ -172,7 +128,7 @@ class TestReadConfig:
 
         assert config is None
         captured = capsys.readouterr()
-        assert "Each rule must be a dictionary" in captured.out
+        assert "Error in config file" in captured.out
 
     def test_read_config_missing_rule_fields(self, capsys):
         """Test handling of rules missing required fields."""
@@ -189,7 +145,7 @@ class TestReadConfig:
 
         assert config is None
         captured = capsys.readouterr()
-        assert "missing `targets`" in captured.out
+        assert "Error in config file" in captured.out
 
     def test_read_nonexistent_config(self):
         """Test handling of non-existent config file."""
@@ -230,7 +186,7 @@ class TestReadConfig:
         assert config is not None
         assert config.clean is False
         assert config.metadata is True
-        assert len(config.hooks.pre_backup) == 0
+        assert config.hooks is None or len(config.hooks.pre_backup) == 0
 
     def test_config_explicit_values(self):
         """Test explicit configuration values override defaults."""
@@ -253,7 +209,7 @@ class TestReadConfig:
         assert config is not None
         assert config.clean is True
         assert config.metadata is False
-        assert len(config.hooks.pre_backup) == 1
+        assert config.hooks is not None and len(config.hooks.pre_backup) == 1
 
     def test_config_with_rule_hooks(self):
         """Test config with rule-specific hooks."""
@@ -296,8 +252,8 @@ class TestConfig:
                 on_end=[],
             )
             rules = [rule]
-            hooks = Hooks(
-                pre_backup=[{"name": "test", "command": ["echo", "test"]}],
+            hooks = GlobalHooks(
+                pre_backup=[Hook(name="test", command=["echo", "test"])],
                 post_backup=[],
                 pre_restore=[],
                 post_restore=[],
@@ -323,11 +279,15 @@ class TestRuleDataclass:
             src = Path(tmp_dir) / "source"
             targets = ["*.txt", "*.pdf"]
             to = "documents"
-            on_start = [{"name": "start", "command": ["echo", "starting"]}]
-            on_end = [{"name": "end", "command": ["echo", "done"]}]
+            on_start = [Hook(name="start", command=["echo", "starting"])]
+            on_end = [Hook(name="end", command=["echo", "done"])]
 
             rule = Rule(
-                src=src, targets=targets, to=to, on_start=on_start, on_end=on_end
+                src=src,
+                targets=targets,
+                to=to,
+                on_start=on_start,
+                on_end=on_end,
             )
 
             assert rule.src == src
@@ -342,12 +302,12 @@ class TestHooksDataclass:
 
     def test_hooks_initialization(self):
         """Test Hooks object initialization."""
-        pre_backup = [{"name": "pre_backup", "command": ["echo", "pre"]}]
-        post_backup = [{"name": "post_backup", "command": ["echo", "post"]}]
-        pre_restore = [{"name": "pre_restore", "command": ["echo", "pre_restore"]}]
-        post_restore = [{"name": "post_restore", "command": ["echo", "post_restore"]}]
+        pre_backup = [Hook(name="pre_backup", command=["echo", "pre"])]
+        post_backup = [Hook(name="post_backup", command=["echo", "post"])]
+        pre_restore = [Hook(name="pre_restore", command=["echo", "pre_restore"])]
+        post_restore = [Hook(name="post_restore", command=["echo", "post_restore"])]
 
-        hooks = Hooks(
+        hooks = GlobalHooks(
             pre_backup=pre_backup,
             post_backup=post_backup,
             pre_restore=pre_restore,

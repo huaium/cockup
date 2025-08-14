@@ -17,7 +17,12 @@ classifiers = [
 ]
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["PyYAML>=6.0,<6.1", "rich>=14.1,<14.2", "click>=8.2,<8.3"]
+dependencies = [
+    "PyYAML>=6.0,<6.1",
+    "rich>=14.1,<14.2",
+    "click>=8.2,<8.3",
+    "pydantic>=2.11,<2.12",
+]
 
 [project.scripts]
 cockup = "cockup.main:main"

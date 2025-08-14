@@ -18,8 +18,11 @@ sample-backup:
 sample-restore:
     python cockup/main.py restore sample/config.yaml
 
-build:
-    uv build
+sample-hook:
+    python cockup/main.py hook sample/config.yaml
+
+build *ARGS:
+    uv build {{ ARGS }}
 
 publish *ARGS:
     #!/usr/bin/env bash

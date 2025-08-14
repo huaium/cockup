@@ -3,6 +3,7 @@ import click
 from cockup.src.backup import backup
 from cockup.src.config import read_config
 from cockup.src.console import rprint, rprint_point
+from cockup.src.hooks import select_and_run_hook
 from cockup.src.restore import restore
 from cockup.src.zap import get_zap_dict
 
@@ -10,6 +11,7 @@ HELP = "Yet another backup tool for various configurations."
 HELP_LIST = "List potential configs of installed Homebrew casks."
 HELP_RESTORE = "Restore configurations from backup."
 HELP_BACKUP = "Perform backup operations using specified YAML configuration file."
+HELP_HOOK = "Run the selected hook defined in the configuration."
 
 
 @click.group(
@@ -75,6 +77,23 @@ def backup_command(config_file: str):
         return
 
     backup(cfg)
+
+
+@main.command("hook", short_help=HELP_HOOK)
+@click.argument("config_file", type=click.Path(exists=True))
+def hook_command(config_file: str):
+    f"""
+    {HELP_HOOK}
+
+    Example: cockup hook config.yaml
+    """
+
+    cfg = read_config(config_file)
+
+    if not cfg:
+        return
+
+    select_and_run_hook(cfg)
 
 
 if __name__ == "__main__":

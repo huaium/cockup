@@ -1,5 +1,7 @@
 # cockup
 
+![PyPI - Version](https://img.shields.io/pypi/v/cockup)
+
 English | [中文](README_zh-cn.md)
 
 Yet another backup tool for various configurations.
@@ -55,6 +57,10 @@ cockup backup /path/to/config.yaml
 # Restore files from backup
 cockup restore /path/to/config.yaml
 ```
+
+### `cockup hook`
+
+Run a specified hook interactively.
 
 ## Configuration
 
@@ -144,7 +150,7 @@ Refer to [sample](sample) to view a configuration demo.
 
 ## Development
 
-Basically, this project use `just` to unify the development workflow. If you are not familiar with it, please refer to `justfile` in the project root to get access to the original commands.
+Basically, this project use `just` to unify the development workflow. If you are not going to use it, please refer to `justfile` in the project root to get access to the original commands.
 
 ### Install test dependencies
 
@@ -178,7 +184,7 @@ just sample-backup
 just sample-restore
 ```
 
-### Run test
+### Test
 
 `just test` works as an alias for `pytest`.
 
@@ -192,6 +198,10 @@ just test --cov=cockup
 # Run specific test
 just test tests/test_config.py -v
 ```
+
+### Build
+
+`just build` works as an alias for `uv build`.
 
 ## License
 

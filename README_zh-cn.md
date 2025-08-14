@@ -1,5 +1,7 @@
 # cockup
 
+![PyPI - Version](https://img.shields.io/pypi/v/cockup)
+
 [English](README.md) | 中文
 
 又一个用于备份各种配置文件的工具。
@@ -55,6 +57,10 @@ cockup backup /path/to/config.yaml
 # 从备份恢复
 cockup restore /path/to/config.yaml
 ```
+
+### `cockup hook`
+
+交互式地运行所选中的 Hook。
 
 ## 配置
 
@@ -144,7 +150,7 @@ Hooks 允许用户自定义运行命令。
 
 ## 开发
 
-本项目使用 `just` 来标准化开发工作流。如果你对此不熟悉，请查看位于项目根目录的 `justfile` 来获取原始命令。
+本项目使用 `just` 来标准化开发工作流。如果你不打算使用它，请查看位于项目根目录的 `justfile` 来获取原始命令。
 
 ### 安装测试依赖
 
@@ -192,6 +198,10 @@ just test --cov=cockup
 # 运行指定测试
 just test tests/test_config.py -v
 ```
+
+### 构建
+
+`just build` 可作为 `uv build` 的别名。
 
 ## 许可证
 
