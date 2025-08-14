@@ -76,6 +76,7 @@ Create a YAML configuration file with the following structure:
 
 ```yaml
 # Where backups are stored
+# If you use relative path, it will be relative to the config file's directory
 destination: "/path/to/backup/directory"
 
 # List of backup rules

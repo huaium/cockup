@@ -349,7 +349,20 @@ class TestGetZapDict:
             mock_run.return_value = MagicMock(stdout="")
             get_zap_dict()
 
-        mock_run.assert_called_once_with(
+        # Should be called twice: once for brew --version, once for brew list --casks
+        assert mock_run.call_count == 2
+
+        # First call should be brew --version (from _is_brew_installed)
+        mock_run.assert_any_call(
+            ["brew", "--version"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=5,
+        )
+
+        # Second call should be brew list --casks
+        mock_run.assert_any_call(
             ["brew", "list", "--casks"],
             capture_output=True,
             text=True,

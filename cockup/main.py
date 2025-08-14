@@ -1,3 +1,4 @@
+import platform
 from typing import Optional
 
 import click
@@ -5,7 +6,7 @@ import click
 from cockup import __version__
 from cockup.src.backup import backup
 from cockup.src.config import read_config
-from cockup.src.console import rprint, rprint_point
+from cockup.src.console import rprint, rprint_error, rprint_point
 from cockup.src.hooks import run_hook_by_name, run_hooks_with_input
 from cockup.src.restore import restore
 from cockup.src.zap import get_zap_dict
@@ -71,8 +72,18 @@ def main(ctx):
 )
 @click.argument("casks", nargs=-1, type=click.STRING)
 def list_command(casks):
+    # Skip on Windows as Homebrew is not available
+    if platform.system() == "Windows":
+        rprint_error("This command is not supported on Windows.")
+        return
+
     rprint_point("Retrieving potential configs from Homebrew...")
     zap_dict = get_zap_dict(list(casks))
+
+    if not zap_dict:
+        rprint_point("No potential configs found.")
+        return
+
     for package, items in zap_dict.items():
         rprint()  # Print a newline for better readability
         rprint_point(f"{package}:")

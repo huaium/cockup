@@ -1,6 +1,33 @@
+import platform
 import re
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from subprocess import CalledProcessError, TimeoutExpired
+
+from cockup.src.console import rprint_error
+
+
+def _is_brew_installed() -> bool:
+    """
+    Check if Homebrew is installed and accessible.
+    """
+    try:
+        subprocess.run(
+            ["brew", "--version"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=5,
+        )
+        return True
+    except (
+        CalledProcessError,
+        TimeoutExpired,
+    ):
+        return False
+    except Exception as e:
+        rprint_error(f"Error checking Homebrew installation: {e}")
+        return False
 
 
 def _process_cask(cask) -> tuple[str, list[str]]:
@@ -53,7 +80,8 @@ def _process_cask(cask) -> tuple[str, list[str]]:
 
         return cask, zap_items
 
-    except Exception:
+    except Exception as e:
+        rprint_error(f"Error processing cask `{cask}`: {e}")
         return cask, []
 
 
@@ -65,6 +93,15 @@ def get_zap_dict(casks: list[str] = []) -> dict[str, list[str]]:
         A dictionary where keys are cask names and values are lists of
         paths that would be removed by the zap stanza.
     """
+
+    # Skip if Homebrew is not installed or on Windows
+    if platform.system() == "Windows":
+        return {}
+
+    # Check if Homebrew is installed
+    if not _is_brew_installed():
+        rprint_error("Homebrew is not installed or not accessible.")
+        return {}
 
     # Get list of all installed casks
     try:
@@ -80,7 +117,8 @@ def get_zap_dict(casks: list[str] = []) -> dict[str, list[str]]:
             stripped_result = result.stdout.strip()
             casks = stripped_result.split("\n") if stripped_result else []
 
-    except Exception:
+    except Exception as e:
+        rprint_error(f"Error fetching installed casks: {e}")
         return {}
 
     if not casks:

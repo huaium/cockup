@@ -1,5 +1,6 @@
 import glob
 import os
+import platform
 import shutil
 import stat
 from pathlib import Path
@@ -21,7 +22,12 @@ def _abbreviate_home(path: Path) -> str:
 
     try:
         rel_path = full_path.relative_to(Path.home())
+
+        if platform.system() == "Windows":
+            return f"~\\{rel_path}"
+
         return f"~/{rel_path}"
+
     except Exception:
         return str(full_path)
 

@@ -64,7 +64,7 @@ def run_hooks(hooks: list[Hook]):
             success_count += 1
 
     hook_str = "hooks" if total_commands > 1 else "hook"
-    rprint_point(f"Completed {success_count}/{total_commands} {hook_str} successfully.")
+    rprint_point(f"Completed {success_count}/{total_commands} {hook_str}.")
 
 
 def run_hooks_with_input(cfg: Config):

@@ -1,4 +1,5 @@
-destination: "sample/dst"
+# If you use relative path, it will be relative to the config file's directory
+destination: "dst"
 
 # Clean mode, whether to remove existing backup folder (default: false)
 clean: true
@@ -7,7 +8,7 @@ clean: true
 metadata: true
 
 rules:
-  - from: "sample/src"
+  - from: "src"
     targets:
       # Folders or files under `from`
       # Wildcards are supported
@@ -26,7 +27,7 @@ rules:
         output: true
         timeout: 5
 
-  - from: "sample/src"
+  - from: "src"
     targets:
       - "config_file.txt"
       - "config_link.txt"

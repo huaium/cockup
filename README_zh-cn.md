@@ -76,6 +76,7 @@ cockup hook /path/to/config.yaml --name hook_name
 
 ```yaml
 # 备份文件的存储位置
+# 如果你打算使用相对路径，则请务必注意是相对于该配置文件的路径
 destination: "/path/to/backup/directory"
 
 # 备份规则列表

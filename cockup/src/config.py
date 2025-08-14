@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import click
@@ -27,7 +28,7 @@ class Rule(ConfigModel):
 
     @field_validator("src")
     @classmethod
-    def expand_src_path(cls, v):
+    def expand_src_path(cls, v: Path):
         return v.expanduser().absolute()
 
 
@@ -47,7 +48,7 @@ class Config(ConfigModel):
 
     @field_validator("destination")
     @classmethod
-    def expand_destination_path(cls, v):
+    def expand_destination_path(cls, v: Path):
         return v.expanduser().absolute()
 
 
@@ -62,6 +63,9 @@ def read_config(file_path: str) -> Config | None:
     try:
         with open(file_path, "r") as file:
             yaml_data = yaml.safe_load(file)
+            os.chdir(
+                Path(file_path).parent
+            )  # Change working directory to config file's directory
             config = Config.model_validate(yaml_data)
 
             if has_hooks(config):

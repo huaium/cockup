@@ -44,14 +44,14 @@ class TestRunHooks:
         captured = capsys.readouterr()
         assert "Running hook (1/2): test_hook_1" in captured.out
         assert "Running hook (2/2): test_hook_2" in captured.out
-        assert "Completed 2/2 hooks successfully" in captured.out
+        assert "Completed 2/2 hooks" in captured.out
 
     def test_run_hooks_empty_list(self, capsys):
         """Test run_hooks with empty list."""
         run_hooks([])
 
         captured = capsys.readouterr()
-        assert "Completed 0/0 hook successfully" in captured.out
+        assert "Completed 0/0 hook" in captured.out
 
     def test_run_hooks_missing_name(self, capsys):
         """Test hook with empty name field (Pydantic will enforce required field)."""
@@ -65,7 +65,7 @@ class TestRunHooks:
 
         captured = capsys.readouterr()
         assert "Running hook (1/1):" in captured.out  # Empty name shows as blank
-        assert "Completed 1/1 hook successfully" in captured.out
+        assert "Completed 1/1 hook" in captured.out
 
     def test_run_hooks_missing_command(self, capsys):
         """Test hook with empty command field (Pydantic will enforce required field)."""
@@ -79,7 +79,7 @@ class TestRunHooks:
 
         captured = capsys.readouterr()
         assert "Running hook (1/1): test_hook" in captured.out
-        assert "Completed 1/1 hook successfully" in captured.out
+        assert "Completed 1/1 hook" in captured.out
 
     def test_run_hooks_timeout(self, capsys):
         """Test hook timeout handling."""
@@ -92,7 +92,7 @@ class TestRunHooks:
 
         captured = capsys.readouterr()
         assert "Command `timeout_hook` timed out after 1 seconds" in captured.out
-        assert "Completed 0/1 hook successfully" in captured.out
+        assert "Completed 0/1 hook" in captured.out
 
     def test_run_hooks_command_failure(self, capsys):
         """Test handling of command execution failure."""
@@ -105,7 +105,7 @@ class TestRunHooks:
 
         captured = capsys.readouterr()
         assert "Error executing command `failing_hook`" in captured.out
-        assert "Completed 0/1 hook successfully" in captured.out
+        assert "Completed 0/1 hook" in captured.out
 
     def test_run_hooks_generic_exception(self, capsys):
         """Test handling of generic exceptions."""
@@ -116,7 +116,7 @@ class TestRunHooks:
 
         captured = capsys.readouterr()
         assert "Error executing command `exception_hook`: Generic error" in captured.out
-        assert "Completed 0/1 hook successfully" in captured.out
+        assert "Completed 0/1 hook" in captured.out
 
     def test_run_hooks_default_values(self):
         """Test default values for optional hook parameters."""
@@ -161,7 +161,7 @@ class TestRunHooks:
             run_hooks(hooks)
 
         captured = capsys.readouterr()
-        assert "Completed 2/3 hooks successfully" in captured.out
+        assert "Completed 2/3 hooks" in captured.out
         assert "Error executing command `fail_hook`" in captured.out
 
     def test_run_hooks_output_flag_combinations(self):
@@ -224,7 +224,7 @@ class TestRunHooks:
             run_hooks(hooks)
 
         captured = capsys.readouterr()
-        assert "Completed 1/1 hook successfully" in captured.out
+        assert "Completed 1/1 hook" in captured.out
 
         # Test plural
         hooks = [
@@ -237,7 +237,7 @@ class TestRunHooks:
             run_hooks(hooks)
 
         captured = capsys.readouterr()
-        assert "Completed 2/2 hooks successfully" in captured.out
+        assert "Completed 2/2 hooks" in captured.out
 
     def test_run_hooks_complex_commands(self):
         """Test hooks with complex command arrays."""
@@ -417,7 +417,7 @@ class TestRunHook:
         # Check console output
         captured = capsys.readouterr()
         assert "Running hook (1/1): test_hook" in captured.out
-        assert "Completed 1/1 hook successfully" in captured.out
+        assert "Completed 1/1 hook" in captured.out
 
     def test_run_hook_failure(self, capsys):
         """Test single hook execution failure."""
@@ -430,7 +430,7 @@ class TestRunHook:
 
         captured = capsys.readouterr()
         assert "Error executing command `failing_hook`" in captured.out
-        assert "Completed 0/1 hook successfully" in captured.out
+        assert "Completed 0/1 hook" in captured.out
 
 
 class TestRunHookByName:
