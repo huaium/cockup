@@ -38,9 +38,6 @@ jobs:
   test:
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://test.pypi.org/p/cockup
     permissions:
       id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
 
