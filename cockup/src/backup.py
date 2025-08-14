@@ -16,11 +16,13 @@ def _handle_hooks(hooks: GlobalHooks | None, stage: Literal["pre", "post"]):
         return
 
     if stage == "pre":
-        rprint_point("Running pre-backup hooks...")
-        run_hooks(hooks.pre_backup)
+        if hooks.pre_backup:
+            rprint_point("Running pre-backup hooks...")
+            run_hooks(hooks.pre_backup)
     elif stage == "post":
-        rprint_point("Running post-backup hooks...")
-        run_hooks(hooks.post_backup)
+        if hooks.post_backup:
+            rprint_point("Running post-backup hooks...")
+            run_hooks(hooks.post_backup)
 
 
 def backup(cfg: Config):

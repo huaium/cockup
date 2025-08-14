@@ -60,7 +60,13 @@ cockup restore /path/to/config.yaml
 
 ### `cockup hook`
 
-交互式地运行所选中的 Hook。
+```bash
+# 交互式地运行所选中的 Hooks
+cockup hook /path/to/config.yaml
+
+# 或者根据 name 运行指定的 Hook
+cockup hook /path/to/config.yaml --name hook_name
+```
 
 ## 配置
 

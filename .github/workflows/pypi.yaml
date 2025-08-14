@@ -63,6 +63,7 @@ jobs:
       url: https://pypi.org/p/cockup
     permissions:
       id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
+      contents: write
 
     steps:
       - name: Gather all artifacts

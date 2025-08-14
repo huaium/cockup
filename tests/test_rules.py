@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from cockup.src.config import Rule
+from cockup.src.config import Hook, Rule
 from cockup.src.rules import _abbreviate_home, _handle_rule, _smart_copy, handle_rules
 
 
@@ -388,8 +388,8 @@ class TestHandleRules:
                 src=Path("/tmp/src"),
                 targets=["*.txt"],
                 to="backup",
-                on_start=[{"name": "pre", "command": ["echo", "before"]}],
-                on_end=[{"name": "post", "command": ["echo", "after"]}],
+                on_start=[Hook(name="pre", command=["echo", "before"])],
+                on_end=[Hook(name="post", command=["echo", "after"])],
             )
         ]
 
@@ -411,7 +411,7 @@ class TestHandleRules:
                 src=Path("/tmp/src1"),
                 targets=["*.txt"],
                 to="backup1",
-                on_start=[{"name": "pre1", "command": ["echo", "before1"]}],
+                on_start=[Hook(name="pre1", command=["echo", "before1"])],
                 on_end=[],
             ),
             Rule(
@@ -419,7 +419,7 @@ class TestHandleRules:
                 targets=["*.pdf"],
                 to="backup2",
                 on_start=[],
-                on_end=[{"name": "post2", "command": ["echo", "after2"]}],
+                on_end=[Hook(name="post2", command=["echo", "after2"])],
             ),
         ]
 

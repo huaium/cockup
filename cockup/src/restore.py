@@ -15,11 +15,13 @@ def _handle_hooks(hooks: GlobalHooks | None, stage: Literal["pre", "post"]):
         return
 
     if stage == "pre":
-        rprint_point("Running pre-restore hooks...")
-        run_hooks(hooks.pre_restore)
+        if hooks.pre_restore:
+            rprint_point("Running pre-restore hooks...")
+            run_hooks(hooks.pre_restore)
     elif stage == "post":
-        rprint_point("Running post-restore hooks...")
-        run_hooks(hooks.post_restore)
+        if hooks.post_restore:
+            rprint_point("Running post-restore hooks...")
+            run_hooks(hooks.post_restore)
 
 
 def restore(cfg: Config):

@@ -1,19 +1,49 @@
+from typing import Optional
+
 import click
 
 from cockup import __version__
 from cockup.src.backup import backup
 from cockup.src.config import read_config
 from cockup.src.console import rprint, rprint_point
-from cockup.src.hooks import select_and_run_hooks
+from cockup.src.hooks import run_hook_by_name, run_hooks_with_input
 from cockup.src.restore import restore
 from cockup.src.zap import get_zap_dict
 
-HELP = "Yet another backup tool for various configurations."
-HELP_LIST = "List potential configs of installed Homebrew casks."
-HELP_RESTORE = "Restore configurations from backup."
-HELP_BACKUP = "Perform backup operations using specified YAML configuration file."
-HELP_HOOK = "Run the selected hooks defined in the configuration."
-HELP_HOOKS = "Alias for the `hook` command"
+SHORT_HELP = "Yet another backup tool for various configurations."
+SHORT_HELP_LIST = "List potential configs of installed Homebrew casks."
+SHORT_HELP_RESTORE = "Restore configurations from backup."
+SHORT_HELP_BACKUP = "Perform backup operations using specified YAML configuration file."
+SHORT_HELP_HOOK = "Run hooks defined in the configuration."
+
+HELP_LIST = f"""
+{SHORT_HELP_LIST}
+
+Example: 
+
+- cockup list
+
+- cockup list cask_name
+"""
+HELP_BACKUP = f"""
+{SHORT_HELP_BACKUP}
+
+Example: cockup backup config.yaml
+"""
+HELP_RESTORE = f"""
+{SHORT_HELP_RESTORE}
+
+Example: cockup restore config.yaml
+"""
+HELP_HOOK = f"""
+{SHORT_HELP_HOOK}
+
+Examples:
+
+- cockup hook config.yaml   # Interactive mode
+
+- cockup hook config.yaml --name hook_name  # Run specific hook
+"""
 
 
 @click.group(
@@ -26,7 +56,7 @@ HELP_HOOKS = "Alias for the `hook` command"
 @click.pass_context
 def main(ctx):
     f"""
-    {HELP}
+    {SHORT_HELP}
     """
 
     if ctx.invoked_subcommand is None:
@@ -34,13 +64,13 @@ def main(ctx):
         ctx.exit(0)
 
 
-@main.command("list", short_help=HELP_LIST)
+@main.command(
+    "list",
+    short_help=SHORT_HELP_LIST,
+    help=HELP_LIST,
+)
 @click.argument("casks", nargs=-1, type=click.STRING)
 def list_command(casks):
-    f"""
-    {HELP_LIST}
-    """
-
     rprint_point("Retrieving potential configs from Homebrew...")
     zap_dict = get_zap_dict(list(casks))
     for package, items in zap_dict.items():
@@ -50,15 +80,13 @@ def list_command(casks):
             rprint(f"  {item}")
 
 
-@main.command("restore", short_help=HELP_RESTORE)
+@main.command(
+    "restore",
+    short_help=SHORT_HELP_RESTORE,
+    help=HELP_RESTORE,
+)
 @click.argument("config_file", type=click.Path(exists=True))
 def restore_command(config_file: str):
-    f"""
-    {HELP_RESTORE}
-
-    Example: cockup restore config.yaml
-    """
-
     cfg = read_config(config_file)
 
     if not cfg:
@@ -67,15 +95,13 @@ def restore_command(config_file: str):
     restore(cfg)
 
 
-@main.command("backup", short_help=HELP_BACKUP)
+@main.command(
+    "backup",
+    short_help=SHORT_HELP_BACKUP,
+    help=HELP_BACKUP,
+)
 @click.argument("config_file", type=click.Path(exists=True))
 def backup_command(config_file: str):
-    f"""
-    {HELP_BACKUP}
-
-    Example: cockup backup config.yaml
-    """
-
     cfg = read_config(config_file)
 
     if not cfg:
@@ -84,27 +110,25 @@ def backup_command(config_file: str):
     backup(cfg)
 
 
-@main.command("hook", short_help=HELP_HOOK)
+@main.command(
+    "hook",
+    short_help=SHORT_HELP_HOOK,
+    help=HELP_HOOK,
+)
 @click.argument("config_file", type=click.Path(exists=True))
-def hook_command(config_file: str):
-    f"""
-    {HELP_HOOK}
-
-    Example: cockup hook config.yaml
-    """
-
+@click.option("--name", "-n", help="Name of a specific hook to run.")
+def hook_command(config_file: str, name: Optional[str] = None):
     cfg = read_config(config_file)
 
     if not cfg:
         return
 
-    select_and_run_hooks(cfg)
-
-
-@main.command("hooks", short_help=HELP_HOOKS)
-@click.argument("config_file", type=click.Path(exists=True))
-def hooks_command(config_file: str):
-    return hook_command(config_file)
+    if name:
+        # Run a single hook by name
+        run_hook_by_name(cfg, name)
+    else:
+        # Run interactive hook selection
+        run_hooks_with_input(cfg)
 
 
 if __name__ == "__main__":

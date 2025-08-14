@@ -1,9 +1,10 @@
 from pathlib import Path
 
+import click
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
-from cockup.src.console import rprint, rprint_error
+from cockup.src.console import rprint, rprint_error, rprint_warning
 
 
 class ConfigModel(BaseModel):
@@ -62,6 +63,15 @@ def read_config(file_path: str) -> Config | None:
         with open(file_path, "r") as file:
             yaml_data = yaml.safe_load(file)
             config = Config.model_validate(yaml_data)
+
+            if has_hooks(config):
+                rprint_warning("Hooks detected in configuration.")
+                rprint_warning(
+                    "Please ensure the safety of commands in hooks before execution."
+                )
+                if not click.confirm("Continue?", default=False):
+                    return
+
             return config
     except ValidationError as e:
         rprint_error("Error in config file:\n")
@@ -73,3 +83,32 @@ def read_config(file_path: str) -> Config | None:
         rprint_error(f"Error reading YAML file: {e}")
 
     return None
+
+
+def has_hooks(cfg: Config) -> bool:
+    """
+    Efficiently check if a configuration contains any hooks without building the full hook dictionary.
+    """
+
+    # Check rule-level hooks first
+    for rule in cfg.rules:
+        if rule.on_start and len(rule.on_start) > 0:
+            return True
+        if rule.on_end and len(rule.on_end) > 0:
+            return True
+
+    # Check global hooks if needed
+    if cfg.hooks:
+        if (
+            cfg.hooks.pre_backup
+            and len(cfg.hooks.pre_backup) > 0
+            or cfg.hooks.post_backup
+            and len(cfg.hooks.post_backup) > 0
+            or cfg.hooks.pre_restore
+            and len(cfg.hooks.pre_restore) > 0
+            or cfg.hooks.post_restore
+            and len(cfg.hooks.post_restore) > 0
+        ):
+            return True
+
+    return False

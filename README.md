@@ -60,7 +60,13 @@ cockup restore /path/to/config.yaml
 
 ### `cockup hook`
 
-Run a specified hook interactively.
+```bash
+# Run hooks interactively
+cockup hook /path/to/config.yaml
+
+# Or, run a specified hook by its name
+cockup hook /path/to/config.yaml --name hook_name
+```
 
 ## Configuration
 

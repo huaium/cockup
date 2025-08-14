@@ -18,14 +18,17 @@ sample-backup:
 sample-restore:
     python cockup/main.py restore sample/config.yaml
 
-sample-hook:
-    python cockup/main.py hook sample/config.yaml
-
-sample-hooks:
-    just sample-hook
+sample-hook NAME="":
+    python cockup/main.py hook sample/config.yaml --name "{{ NAME }}"
 
 build *ARGS:
     uv build {{ ARGS }}
+
+clean:
+    rm -rf dist/
+
+clean-pycache:
+    find . -type d -name "__pycache__" -exec rm -rf {} +
 
 publish *ARGS:
     #!/usr/bin/env bash
@@ -38,35 +41,35 @@ publish *ARGS:
     uv publish {{ ARGS }}
 
 # Create and push a specific tag
-tag version:
+tag VERSION:
     #!/usr/bin/env bash
-    if [[ ! "{{version}}" =~ ^v.+ ]]; then
+    if [[ ! "{{ VERSION }}" =~ ^v.+ ]]; then
         echo "Version must start with v"
         exit 1
     fi
 
-    read -p "Are you sure to create and push tag {{version}}? [y/N] " REPLY
+    read -p "Are you sure to create and push tag {{ VERSION }}? [y/N] " REPLY
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "Operation cancelled"
         exit 0
     fi
-    
-    git tag {{version}}
-    git push origin {{version}}
+
+    git tag {{ VERSION }}
+    git push origin {{ VERSION }}
 
 # Delete a specific tag
-dtag version:
+dtag VERSION:
     #!/usr/bin/env bash
-    if [[ ! "{{version}}" =~ ^v.+ ]]; then
+    if [[ ! "{{ VERSION }}" =~ ^v.+ ]]; then
         echo "Version must start with v"
         exit 1
     fi
 
-    read -p "Are you sure to delete and push tag {{version}}? [y/N] " REPLY
+    read -p "Are you sure to delete and push tag {{ VERSION }}? [y/N] " REPLY
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "Operation cancelled"
         exit 0
     fi
-    
-    git tag -d {{version}}
-    git push origin --delete {{version}}
+
+    git tag -d {{ VERSION }}
+    git push origin --delete {{ VERSION }}

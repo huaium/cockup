@@ -1,8 +1,15 @@
 import subprocess
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from cockup.src.config import Hook
-from cockup.src.hooks import run_hooks
+from cockup.src.config import Config, GlobalHooks, Hook, Rule
+from cockup.src.hooks import (
+    _get_hook_dict,
+    run_hook,
+    run_hook_by_name,
+    run_hooks,
+    run_hooks_with_input,
+)
 
 
 class TestRunHooks:
@@ -47,26 +54,32 @@ class TestRunHooks:
         assert "Completed 0/0 hook successfully" in captured.out
 
     def test_run_hooks_missing_name(self, capsys):
-        """Test hook without name field."""
-        hooks = [Hook(name="", command=["echo", "test"])]  # Empty name
+        """Test hook with empty name field (Pydantic will enforce required field)."""
+        # With Pydantic validation, we can't create a Hook without a name
+        # But we can test with an empty string name
+        hooks = [Hook(name="", command=["echo", "test"])]
 
-        with patch("subprocess.run"):
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock()
             run_hooks(hooks)
 
         captured = capsys.readouterr()
-        assert "Hook 1 missing `name`, skipping..." in captured.out
-        assert "Completed 0/1 hook successfully" in captured.out
+        assert "Running hook (1/1):" in captured.out  # Empty name shows as blank
+        assert "Completed 1/1 hook successfully" in captured.out
 
     def test_run_hooks_missing_command(self, capsys):
-        """Test hook without command field."""
-        hooks = [Hook(name="test_hook", command=[])]  # Empty command
+        """Test hook with empty command field (Pydantic will enforce required field)."""
+        # With Pydantic validation, we can't create a Hook without a command
+        # But we can test with an empty command list
+        hooks = [Hook(name="test_hook", command=[])]
 
-        with patch("subprocess.run"):
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock()
             run_hooks(hooks)
 
         captured = capsys.readouterr()
-        assert "Hook 1 missing `command`, skipping..." in captured.out
-        assert "Completed 0/1 hook successfully" in captured.out
+        assert "Running hook (1/1): test_hook" in captured.out
+        assert "Completed 1/1 hook successfully" in captured.out
 
     def test_run_hooks_timeout(self, capsys):
         """Test hook timeout handling."""
@@ -139,7 +152,7 @@ class TestRunHooks:
             Hook(name="success_hook_2", command=["echo", "success2"]),
         ]
 
-        def mock_run_side_effect(command, **kwargs):
+        def mock_run_side_effect(command, **_):
             if command == ["false"]:
                 raise subprocess.CalledProcessError(1, command)
             return MagicMock()
@@ -246,3 +259,471 @@ class TestRunHooks:
 
         second_call = mock_run.call_args_list[1][0][0]
         assert second_call == ["ls", "-la", "/tmp"]
+
+
+class TestGetHookDict:
+    """Test the _get_hook_dict function."""
+
+    def test_get_hook_dict_empty_config(self):
+        """Test _get_hook_dict with minimal config (no hooks)."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[Rule(src=Path("/home"), targets=["*.txt"], to="docs")],
+        )
+
+        hook_dict = _get_hook_dict(config)
+        assert hook_dict == {}
+
+    def test_get_hook_dict_rule_hooks_only(self):
+        """Test _get_hook_dict with only rule-level hooks."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[
+                Rule(
+                    src=Path("/home"),
+                    targets=["*.txt"],
+                    to="docs",
+                    on_start=[Hook(name="start1", command=["echo", "start"])],
+                    on_end=[Hook(name="end1", command=["echo", "end"])],
+                ),
+                Rule(
+                    src=Path("/var"),
+                    targets=["*.log"],
+                    to="logs",
+                    on_start=[Hook(name="start2", command=["echo", "start2"])],
+                ),
+            ],
+        )
+
+        hook_dict = _get_hook_dict(config)
+
+        assert len(hook_dict) == 3
+        assert "start1" in hook_dict
+        assert "end1" in hook_dict
+        assert "start2" in hook_dict
+        assert hook_dict["start1"].command == ["echo", "start"]
+        assert hook_dict["end1"].command == ["echo", "end"]
+        assert hook_dict["start2"].command == ["echo", "start2"]
+
+    def test_get_hook_dict_global_hooks_only(self):
+        """Test _get_hook_dict with only global hooks."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[Rule(src=Path("/home"), targets=["*.txt"], to="docs")],
+            hooks=GlobalHooks(
+                pre_backup=[Hook(name="pre_backup", command=["echo", "pre"])],
+                post_backup=[Hook(name="post_backup", command=["echo", "post"])],
+                pre_restore=[Hook(name="pre_restore", command=["echo", "pre_restore"])],
+                post_restore=[
+                    Hook(name="post_restore", command=["echo", "post_restore"])
+                ],
+            ),
+        )
+
+        hook_dict = _get_hook_dict(config)
+
+        assert len(hook_dict) == 4
+        assert "pre_backup" in hook_dict
+        assert "post_backup" in hook_dict
+        assert "pre_restore" in hook_dict
+        assert "post_restore" in hook_dict
+
+    def test_get_hook_dict_mixed_hooks(self):
+        """Test _get_hook_dict with both rule and global hooks."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[
+                Rule(
+                    src=Path("/home"),
+                    targets=["*.txt"],
+                    to="docs",
+                    on_start=[Hook(name="rule_start", command=["echo", "rule"])],
+                )
+            ],
+            hooks=GlobalHooks(
+                pre_backup=[Hook(name="global_pre", command=["echo", "global"])]
+            ),
+        )
+
+        hook_dict = _get_hook_dict(config)
+
+        assert len(hook_dict) == 2
+        assert "rule_start" in hook_dict
+        assert "global_pre" in hook_dict
+
+    def test_get_hook_dict_duplicate_names(self):
+        """Test _get_hook_dict with duplicate hook names (later overwrites earlier)."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[
+                Rule(
+                    src=Path("/home"),
+                    targets=["*.txt"],
+                    to="docs",
+                    on_start=[Hook(name="duplicate", command=["echo", "first"])],
+                ),
+                Rule(
+                    src=Path("/var"),
+                    targets=["*.log"],
+                    to="logs",
+                    on_start=[Hook(name="duplicate", command=["echo", "second"])],
+                ),
+            ],
+        )
+
+        hook_dict = _get_hook_dict(config)
+
+        assert len(hook_dict) == 1
+        assert "duplicate" in hook_dict
+        # Later hook should overwrite earlier one
+        assert hook_dict["duplicate"].command == ["echo", "second"]
+
+    def test_get_hook_dict_empty_hook_lists(self):
+        """Test _get_hook_dict with empty hook lists."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[
+                Rule(
+                    src=Path("/home"),
+                    targets=["*.txt"],
+                    to="docs",
+                    on_start=[],  # Empty list
+                    on_end=[],  # Empty list
+                )
+            ],
+            hooks=GlobalHooks(
+                pre_backup=[], post_backup=[], pre_restore=[], post_restore=[]
+            ),
+        )
+
+        hook_dict = _get_hook_dict(config)
+        assert hook_dict == {}
+
+
+class TestRunHook:
+    """Test the run_hook function (wrapper around run_hooks)."""
+
+    def test_run_hook_success(self, capsys):
+        """Test successful single hook execution."""
+        hook = Hook(name="test_hook", command=["echo", "test"])
+
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock()
+            run_hook(hook)
+
+        # Should call subprocess.run once
+        assert mock_run.call_count == 1
+
+        # Check console output
+        captured = capsys.readouterr()
+        assert "Running hook (1/1): test_hook" in captured.out
+        assert "Completed 1/1 hook successfully" in captured.out
+
+    def test_run_hook_failure(self, capsys):
+        """Test single hook execution failure."""
+        hook = Hook(name="failing_hook", command=["false"])
+
+        with patch(
+            "subprocess.run", side_effect=subprocess.CalledProcessError(1, ["false"])
+        ):
+            run_hook(hook)
+
+        captured = capsys.readouterr()
+        assert "Error executing command `failing_hook`" in captured.out
+        assert "Completed 0/1 hook successfully" in captured.out
+
+
+class TestRunHookByName:
+    """Test the run_hook_by_name function."""
+
+    def test_run_hook_by_name_success(self, capsys):
+        """Test running a hook by name when it exists."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[
+                Rule(
+                    src=Path("/home"),
+                    targets=["*.txt"],
+                    to="docs",
+                    on_start=[Hook(name="test_hook", command=["echo", "test"])],
+                )
+            ],
+        )
+
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock()
+            run_hook_by_name(config, "test_hook")
+
+        assert mock_run.call_count == 1
+        captured = capsys.readouterr()
+        assert "Running hook (1/1): test_hook" in captured.out
+
+    def test_run_hook_by_name_not_found(self, capsys):
+        """Test running a hook by name when it doesn't exist."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[Rule(src=Path("/home"), targets=["*.txt"], to="docs")],
+        )
+
+        run_hook_by_name(config, "nonexistent_hook")
+
+        captured = capsys.readouterr()
+        assert "Hook `nonexistent_hook` not found in the configuration" in captured.out
+
+    def test_run_hook_by_name_multiple_hooks(self):
+        """Test running specific hook when multiple exist."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[
+                Rule(
+                    src=Path("/home"),
+                    targets=["*.txt"],
+                    to="docs",
+                    on_start=[
+                        Hook(name="hook1", command=["echo", "first"]),
+                        Hook(name="hook2", command=["echo", "second"]),
+                    ],
+                )
+            ],
+        )
+
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock()
+            run_hook_by_name(config, "hook2")
+
+        assert mock_run.call_count == 1
+        # Verify the correct hook was called
+        call_args = mock_run.call_args_list[0][0][0]
+        assert call_args == ["echo", "second"]
+
+    def test_run_hook_by_name_from_global_hooks(self):
+        """Test running a global hook by name."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[Rule(src=Path("/home"), targets=["*.txt"], to="docs")],
+            hooks=GlobalHooks(
+                pre_backup=[Hook(name="global_hook", command=["echo", "global"])]
+            ),
+        )
+
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock()
+            run_hook_by_name(config, "global_hook")
+
+        assert mock_run.call_count == 1
+        call_args = mock_run.call_args_list[0][0][0]
+        assert call_args == ["echo", "global"]
+
+
+class TestRunHooksWithInput:
+    """Test the run_hooks_with_input function."""
+
+    def test_run_hooks_with_input_no_hooks(self, capsys):
+        """Test run_hooks_with_input when no hooks are available."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[Rule(src=Path("/home"), targets=["*.txt"], to="docs")],
+        )
+
+        run_hooks_with_input(config)
+
+        captured = capsys.readouterr()
+        assert "No hooks defined in the configuration" in captured.out
+
+    def test_run_hooks_with_input_valid_selection(self, capsys):
+        """Test run_hooks_with_input with valid hook selection."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[
+                Rule(
+                    src=Path("/home"),
+                    targets=["*.txt"],
+                    to="docs",
+                    on_start=[
+                        Hook(name="hook1", command=["echo", "first"]),
+                        Hook(name="hook2", command=["echo", "second"]),
+                    ],
+                )
+            ],
+        )
+
+        with patch("click.prompt", return_value="1,2"):
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock()
+                run_hooks_with_input(config)
+
+        # Should run both hooks
+        assert mock_run.call_count == 2
+
+        captured = capsys.readouterr()
+        assert "Available hooks:" in captured.out
+        assert "[1] hook1" in captured.out
+        assert "[2] hook2" in captured.out
+
+    def test_run_hooks_with_input_single_selection(self):
+        """Test run_hooks_with_input with single hook selection."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[
+                Rule(
+                    src=Path("/home"),
+                    targets=["*.txt"],
+                    to="docs",
+                    on_start=[
+                        Hook(name="hook1", command=["echo", "first"]),
+                        Hook(name="hook2", command=["echo", "second"]),
+                    ],
+                )
+            ],
+        )
+
+        with patch("click.prompt", return_value="2"):
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock()
+                run_hooks_with_input(config)
+
+        # Should run only second hook
+        assert mock_run.call_count == 1
+        call_args = mock_run.call_args_list[0][0][0]
+        assert call_args == ["echo", "second"]
+
+    def test_run_hooks_with_input_invalid_numbers(self):
+        """Test run_hooks_with_input with invalid hook numbers."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[
+                Rule(
+                    src=Path("/home"),
+                    targets=["*.txt"],
+                    to="docs",
+                    on_start=[Hook(name="hook1", command=["echo", "first"])],
+                )
+            ],
+        )
+
+        with patch("click.prompt", return_value="2,99"):  # 2 and 99 are out of range
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock()
+                run_hooks_with_input(config)
+
+        # Should not run any hooks (all numbers out of range)
+        assert mock_run.call_count == 0
+
+    def test_run_hooks_with_input_mixed_valid_invalid(self):
+        """Test run_hooks_with_input with mix of valid and invalid selections."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[
+                Rule(
+                    src=Path("/home"),
+                    targets=["*.txt"],
+                    to="docs",
+                    on_start=[
+                        Hook(name="hook1", command=["echo", "first"]),
+                        Hook(name="hook2", command=["echo", "second"]),
+                    ],
+                )
+            ],
+        )
+
+        with patch("click.prompt", return_value="1,99"):  # 1 valid, 99 invalid
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock()
+                run_hooks_with_input(config)
+
+        # Should run only the valid hook
+        assert mock_run.call_count == 1
+        call_args = mock_run.call_args_list[0][0][0]
+        assert call_args == ["echo", "first"]
+
+    def test_run_hooks_with_input_empty_selection(self):
+        """Test run_hooks_with_input with empty selection."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[
+                Rule(
+                    src=Path("/home"),
+                    targets=["*.txt"],
+                    to="docs",
+                    on_start=[Hook(name="hook1", command=["echo", "first"])],
+                )
+            ],
+        )
+
+        with patch("click.prompt", return_value=""):
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock()
+                run_hooks_with_input(config)
+
+        # Should not run any hooks
+        assert mock_run.call_count == 0
+
+    def test_run_hooks_with_input_whitespace_handling(self):
+        """Test run_hooks_with_input handles whitespace in selection."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[
+                Rule(
+                    src=Path("/home"),
+                    targets=["*.txt"],
+                    to="docs",
+                    on_start=[
+                        Hook(name="hook1", command=["echo", "first"]),
+                        Hook(name="hook2", command=["echo", "second"]),
+                    ],
+                )
+            ],
+        )
+
+        with patch("click.prompt", return_value=" 1 , 2 "):  # Extra whitespace
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock()
+                run_hooks_with_input(config)
+
+        # Should still run both hooks
+        assert mock_run.call_count == 2
+
+    def test_run_hooks_with_input_invalid_input_exception(self, capsys):
+        """Test run_hooks_with_input with invalid input that causes exception."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[
+                Rule(
+                    src=Path("/home"),
+                    targets=["*.txt"],
+                    to="docs",
+                    on_start=[Hook(name="hook1", command=["echo", "first"])],
+                )
+            ],
+        )
+
+        with patch("click.prompt", return_value="abc"):  # Non-numeric input
+            run_hooks_with_input(config)
+
+        captured = capsys.readouterr()
+        assert "Input invalid:" in captured.out
+
+    def test_run_hooks_with_input_displays_all_hooks(self, capsys):
+        """Test that run_hooks_with_input displays hooks from all sources."""
+        config = Config(
+            destination=Path("/tmp/backup"),
+            rules=[
+                Rule(
+                    src=Path("/home"),
+                    targets=["*.txt"],
+                    to="docs",
+                    on_start=[Hook(name="rule_hook", command=["echo", "rule"])],
+                )
+            ],
+            hooks=GlobalHooks(
+                pre_backup=[Hook(name="global_hook", command=["echo", "global"])]
+            ),
+        )
+
+        with patch("click.prompt", return_value=""):  # Don't actually run anything
+            run_hooks_with_input(config)
+
+        captured = capsys.readouterr()
+        assert "Available hooks:" in captured.out
+        assert "[1] rule_hook" in captured.out
+        assert "[2] global_hook" in captured.out

@@ -1,5 +1,6 @@
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 
@@ -30,7 +31,8 @@ class TestReadConfig:
             yaml.dump(config_content, f)
             config_file = f.name
 
-        config = read_config(config_file)
+        with patch("click.confirm", return_value=True):
+            config = read_config(config_file)
         Path(config_file).unlink()  # Clean up
 
         assert config is not None
@@ -203,7 +205,8 @@ class TestReadConfig:
             yaml.dump(config_content, f)
             config_file = f.name
 
-        config = read_config(config_file)
+        with patch("click.confirm", return_value=True):
+            config = read_config(config_file)
         Path(config_file).unlink()  # Clean up
 
         assert config is not None
@@ -229,7 +232,8 @@ class TestReadConfig:
             yaml.dump(config_content, f)
             config_file = f.name
 
-        config = read_config(config_file)
+        with patch("click.confirm", return_value=True):
+            config = read_config(config_file)
         Path(config_file).unlink()  # Clean up
 
         assert config is not None
