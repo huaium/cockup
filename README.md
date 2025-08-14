@@ -8,7 +8,15 @@ Yet another backup tool for various configurations.
 
 ## Installation
 
+### PyPI
+
+```bash
+pip install cockup
+```
+
 ### Homebrew
+
+Building some dependencies with Homebrew may require the Rust toolchain, leading to long installation time, so installing via PyPI is preferred.
 
 ```bash
 # Single-line installation
@@ -17,12 +25,6 @@ brew install huaium/tap/cockup
 # Or, using `brew tap`
 brew tap huaium/tap
 brew install cockup
-```
-
-### PyPI
-
-```bash
-pip install cockup
 ```
 
 ### Install from source
