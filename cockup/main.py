@@ -1,5 +1,6 @@
 import click
 
+from cockup import __version__
 from cockup.src.backup import backup
 from cockup.src.config import read_config
 from cockup.src.console import rprint, rprint_point
@@ -18,6 +19,9 @@ HELP_HOOKS = "Alias for the `hook` command"
 @click.group(
     context_settings=dict(help_option_names=["-h", "--help"]),
     invoke_without_command=True,
+)
+@click.version_option(
+    version=__version__, prog_name="cockup", message="%(prog)s v%(version)s"
 )
 @click.pass_context
 def main(ctx):
