@@ -62,7 +62,7 @@ dtag version:
         exit 1
     fi
 
-    read -p "Are you sure to create and push tag {{version}}? [y/N] " REPLY
+    read -p "Are you sure to delete and push tag {{version}}? [y/N] " REPLY
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "Operation cancelled"
         exit 0
