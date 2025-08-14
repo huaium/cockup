@@ -1,22 +1,34 @@
 import os
 import shutil
+from typing import Literal
 
-from cockup.src.config import Config
+from cockup.src.config import Config, GlobalHooks
 from cockup.src.console import rprint_point
 from cockup.src.hooks import run_hooks
 from cockup.src.rules import handle_rules
+
+
+def _handle_hooks(hooks: GlobalHooks | None, stage: Literal["pre", "post"]):
+    """
+    Handle global hooks for the specified stage.
+    """
+    if not hooks:
+        return
+
+    if stage == "pre":
+        rprint_point("Running pre-backup hooks...")
+        run_hooks(hooks.pre_backup)
+    elif stage == "post":
+        rprint_point("Running post-backup hooks...")
+        run_hooks(hooks.post_backup)
 
 
 def backup(cfg: Config):
     """Perform backup operations using specified YAML configuration file."""
     rprint_point("Starting backup...")
 
-    hooks = cfg.hooks
-
     # Execute pre-backup hooks
-    if hooks.pre_backup:
-        rprint_point("Running pre-backup hooks...")
-        run_hooks(hooks.pre_backup)
+    _handle_hooks(cfg.hooks, "pre")
 
     # Check if backup folder exists
     if cfg.clean:
@@ -43,8 +55,6 @@ def backup(cfg: Config):
     handle_rules(cfg.rules, cfg.metadata, "backup")
 
     # Execute post-backup hooks
-    if hooks.post_backup:
-        rprint_point("Running post-backup hooks...")
-        run_hooks(hooks.post_backup)
+    _handle_hooks(cfg.hooks, "post")
 
     rprint_point("Backup completed.")

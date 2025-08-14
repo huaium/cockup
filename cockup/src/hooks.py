@@ -15,14 +15,6 @@ def run_hooks(hooks: list[Hook]):
     total_commands = len(hooks)
 
     for i, hook in enumerate(hooks):
-        if not hook.name:
-            rprint_error(f"Hook {i + 1} missing `name`, skipping...")
-            continue
-
-        if not hook.command:
-            rprint_error(f"Hook {i + 1} missing `command`, skipping...")
-            continue
-
         rprint_point(f"Running hook ({i + 1}/{total_commands}): {hook.name}")
 
         try:
@@ -57,33 +49,25 @@ def _get_all_hooks(cfg: Config):
     all_hooks: list[Hook] = []
 
     # Rule-level hooks
-    rules = cfg.rules
-    for rule in rules:
+    for rule in cfg.rules:
         all_hooks.extend(rule.on_start)
         all_hooks.extend(rule.on_end)
 
     # Global hooks
-    hooks = cfg.hooks
-
-    if not hooks:
+    if not cfg.hooks:
         return
 
-    pre_backup_hooks = hooks.pre_backup
-    post_backup_hooks = hooks.post_backup
-    pre_restore_hooks = hooks.pre_restore
-    post_restore_hooks = hooks.post_restore
-
-    all_hooks.extend(pre_backup_hooks)
-    all_hooks.extend(post_backup_hooks)
-    all_hooks.extend(pre_restore_hooks)
-    all_hooks.extend(post_restore_hooks)
+    all_hooks.extend(cfg.hooks.pre_backup)
+    all_hooks.extend(cfg.hooks.post_backup)
+    all_hooks.extend(cfg.hooks.pre_restore)
+    all_hooks.extend(cfg.hooks.post_restore)
 
     return all_hooks
 
 
-def select_and_run_hook(cfg: Config):
+def select_and_run_hooks(cfg: Config):
     """
-    List available hooks from the configuration and prompt the user to select one and run.
+    List available hooks from the configuration and prompt the user to select some and run.
     """
 
     all_hooks = _get_all_hooks(cfg)
@@ -97,6 +81,13 @@ def select_and_run_hook(cfg: Config):
         rprint(f"[{i}] ", style=Style(bold=True), end="")
         rprint(f"{hook.name}")
 
-    choice = click.prompt("Select a hook", type=int)
-    if 1 <= choice <= len(all_hooks):
-        run_hooks([all_hooks[choice - 1]])
+    try:
+        choices = click.prompt("Select hooks (separate by comma)", type=str)
+        hook_ids = [
+            int(choice.strip()) for choice in choices.split(",") if choice.strip()
+        ]
+        if hook_ids:
+            run_hooks([all_hooks[i - 1] for i in hook_ids if 1 <= i <= len(all_hooks)])
+    except Exception as e:
+        rprint_error(f"Input invalid: {e}")
+        return

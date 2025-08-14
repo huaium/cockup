@@ -21,6 +21,9 @@ sample-restore:
 sample-hook:
     python cockup/main.py hook sample/config.yaml
 
+sample-hooks:
+    just sample-hook
+
 build *ARGS:
     uv build {{ ARGS }}
 
