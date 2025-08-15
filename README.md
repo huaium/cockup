@@ -1,6 +1,6 @@
 # cockup
 
-![PyPI - Version](https://img.shields.io/pypi/v/cockup)
+![PyPI - Version](https://img.shields.io/pypi/v/cockup?link=https%3A%2F%2Fpypi.org%2Fproject%2Fcockup%2F)
 
 English | [中文](README_zh-cn.md)
 
@@ -136,6 +136,8 @@ Each rule defines what to backup:
 ### Hook Structure
 
 Hooks support custom commands.
+
+By default, you will be prompted to confirm if your configuration file contains any hooks. Use the flag `--quiet` or `-q` to suppress it.
 
 If you want to run them within a specified shell, use commands like `bash -c` after ensuring your commands are safe.
 

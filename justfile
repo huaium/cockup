@@ -12,11 +12,11 @@ install-test:
 test *ARGS:
     pytest {{ ARGS }}
 
-sample-backup:
-    python cockup/main.py backup sample/config.yaml
+sample-backup *ARGS:
+    python cockup/main.py backup sample/config.yaml {{ ARGS }}
 
-sample-restore:
-    python cockup/main.py restore sample/config.yaml
+sample-restore *ARGS:
+    python cockup/main.py restore sample/config.yaml {{ ARGS }}
 
 sample-hook NAME="":
     python cockup/main.py hook sample/config.yaml --name "{{ NAME }}"

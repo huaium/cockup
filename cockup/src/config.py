@@ -52,7 +52,7 @@ class Config(ConfigModel):
         return v.expanduser().absolute()
 
 
-def read_config(file_path: str) -> Config | None:
+def read_config(file_path: str, quiet: bool) -> Config | None:
     """
     Read the configuration from a YAML file.
 
@@ -68,12 +68,9 @@ def read_config(file_path: str) -> Config | None:
             )  # Change working directory to config file's directory
             config = Config.model_validate(yaml_data)
 
-            if has_hooks(config):
-                rprint_warning("Hooks detected in configuration.")
-                rprint_warning(
-                    "Please ensure the safety of commands in hooks before execution."
-                )
-                if not click.confirm("Continue?", default=False):
+            # Check whether warnings should be suppressed
+            if not quiet:
+                if not _warn(config):
                     return
 
             return config
@@ -89,7 +86,23 @@ def read_config(file_path: str) -> Config | None:
     return None
 
 
-def has_hooks(cfg: Config) -> bool:
+def _warn(cfg: Config) -> bool:
+    """
+    Warns and prompts if hooks are present in the config.
+
+    Returns True if safe to continue, False otherwise.
+    """
+
+    if _has_hooks(cfg):
+        rprint_warning("Hooks detected in configuration.")
+        rprint_warning(
+            "Please ensure the safety of commands in hooks before execution."
+        )
+        return click.confirm("Continue?", default=False)
+    return True
+
+
+def _has_hooks(cfg: Config) -> bool:
     """
     Efficiently check if a configuration contains any hooks without building the full hook dictionary.
     """

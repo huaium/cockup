@@ -5,7 +5,7 @@ from unittest.mock import patch
 import yaml
 from click.testing import CliRunner
 
-from cockup.main import backup_command, list_command, main, restore_command
+from cockup.main import backup_command, hook_command, list_command, main, restore_command
 
 
 class TestBackupCommand:
@@ -158,6 +158,7 @@ class TestMainGroup:
         assert "backup" in result.output
         assert "restore" in result.output
         assert "list" in result.output
+        assert "hook" in result.output
 
     def test_main_version_option(self):
         """Test main command with version flags."""
@@ -224,6 +225,7 @@ class TestCommandIntegration:
         assert "backup" in result.output
         assert "restore" in result.output
         assert "list" in result.output
+        assert "hook" in result.output
 
     def test_command_specific_help(self):
         """Test help output for individual commands."""
@@ -245,6 +247,94 @@ class TestCommandIntegration:
         result = runner.invoke(list_command, ["--help"])
         assert result.exit_code == 0
 
+        # Test hook command help
+        result = runner.invoke(hook_command, ["--help"])
+        assert result.exit_code == 0
+
+
+class TestHookCommand:
+    """Test the hook command functionality."""
+
+    def test_hook_command_success_with_name(self):
+        """Test successful hook command execution with specific hook name."""
+        config_content = {
+            "destination": "~/backup",
+            "rules": [
+                {
+                    "from": "~/Documents",
+                    "targets": ["*.txt"],
+                    "to": "docs",
+                    "on_start": [{"name": "test_hook", "command": ["echo", "test"]}],
+                }
+            ],
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            yaml.dump(config_content, f)
+            config_file = f.name
+
+        runner = CliRunner()
+        with patch("cockup.main.run_hook_by_name") as mock_run_hook_by_name:
+            with patch("click.confirm", return_value=True):
+                result = runner.invoke(hook_command, [config_file, "--name", "test_hook"])
+
+        Path(config_file).unlink()  # Clean up
+
+        assert result.exit_code == 0
+        mock_run_hook_by_name.assert_called_once()
+
+    def test_hook_command_success_interactive(self):
+        """Test successful hook command execution in interactive mode."""
+        config_content = {
+            "destination": "~/backup",
+            "rules": [
+                {
+                    "from": "~/Documents",
+                    "targets": ["*.txt"],
+                    "to": "docs",
+                    "on_start": [{"name": "test_hook", "command": ["echo", "test"]}],
+                }
+            ],
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            yaml.dump(config_content, f)
+            config_file = f.name
+
+        runner = CliRunner()
+        with patch("cockup.main.run_hooks_with_input") as mock_run_hooks_with_input:
+            with patch("click.confirm", return_value=True):
+                result = runner.invoke(hook_command, [config_file])
+
+        Path(config_file).unlink()  # Clean up
+
+        assert result.exit_code == 0
+        mock_run_hooks_with_input.assert_called_once()
+
+    def test_hook_command_nonexistent_file(self):
+        """Test hook command with non-existent config file."""
+        runner = CliRunner()
+        result = runner.invoke(hook_command, ["nonexistent.yaml"])
+
+        assert result.exit_code != 0
+        assert "does not exist" in result.output
+
+    def test_hook_command_invalid_config(self):
+        """Test hook command with invalid config."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write("invalid: config: missing required fields")
+            config_file = f.name
+
+        runner = CliRunner()
+        with patch("cockup.main.run_hook_by_name") as mock_run_hook_by_name:
+            with patch("click.confirm", return_value=True):
+                result = runner.invoke(hook_command, [config_file, "--name", "test"])
+
+        Path(config_file).unlink()  # Clean up
+
+        assert result.exit_code == 0  # Function returns gracefully
+        mock_run_hook_by_name.assert_not_called()  # But hook is not called
+
 
 class TestErrorHandling:
     """Test error handling scenarios."""
@@ -260,6 +350,11 @@ class TestErrorHandling:
 
         # Restore command without config file
         result = runner.invoke(restore_command)
+        assert result.exit_code != 0
+        assert "Missing argument" in result.output
+
+        # Hook command without config file
+        result = runner.invoke(hook_command)
         assert result.exit_code != 0
         assert "Missing argument" in result.output
 

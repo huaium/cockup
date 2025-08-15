@@ -32,7 +32,7 @@ class TestReadConfig:
             config_file = f.name
 
         with patch("click.confirm", return_value=True):
-            config = read_config(config_file)
+            config = read_config(config_file, quiet=False)
         Path(config_file).unlink()  # Clean up
 
         assert config is not None
@@ -57,7 +57,7 @@ class TestReadConfig:
             yaml.dump(config_content, f)
             config_file = f.name
 
-        config = read_config(config_file)
+        config = read_config(config_file, quiet=True)
         Path(config_file).unlink()  # Clean up
 
         assert config is not None
@@ -77,7 +77,7 @@ class TestReadConfig:
             yaml.dump(config_content, f)
             config_file = f.name
 
-        config = read_config(config_file)
+        config = read_config(config_file, quiet=True)
         Path(config_file).unlink()  # Clean up
 
         assert config is None
@@ -91,7 +91,7 @@ class TestReadConfig:
             yaml.dump(config_content, f)
             config_file = f.name
 
-        config = read_config(config_file)
+        config = read_config(config_file, quiet=True)
         Path(config_file).unlink()  # Clean up
 
         assert config is None
@@ -108,7 +108,7 @@ class TestReadConfig:
             yaml.dump(config_content, f)
             config_file = f.name
 
-        config = read_config(config_file)
+        config = read_config(config_file, quiet=True)
         Path(config_file).unlink()  # Clean up
 
         assert config is None
@@ -125,7 +125,7 @@ class TestReadConfig:
             yaml.dump(config_content, f)
             config_file = f.name
 
-        config = read_config(config_file)
+        config = read_config(config_file, quiet=True)
         Path(config_file).unlink()  # Clean up
 
         assert config is None
@@ -142,7 +142,7 @@ class TestReadConfig:
             yaml.dump(config_content, f)
             config_file = f.name
 
-        config = read_config(config_file)
+        config = read_config(config_file, quiet=True)
         Path(config_file).unlink()  # Clean up
 
         assert config is None
@@ -151,7 +151,7 @@ class TestReadConfig:
 
     def test_read_nonexistent_config(self):
         """Test handling of non-existent config file."""
-        config = read_config("nonexistent.yaml")
+        config = read_config("nonexistent.yaml", quiet=True)
         assert config is None
 
     def test_config_path_expansion(self):
@@ -164,7 +164,7 @@ class TestReadConfig:
             yaml.dump(config_content, f)
             config_file = f.name
 
-        config = read_config(config_file)
+        config = read_config(config_file, quiet=True)
         Path(config_file).unlink()  # Clean up
 
         assert config is not None
@@ -182,7 +182,7 @@ class TestReadConfig:
             yaml.dump(config_content, f)
             config_file = f.name
 
-        config = read_config(config_file)
+        config = read_config(config_file, quiet=True)
         Path(config_file).unlink()  # Clean up
 
         assert config is not None
@@ -206,7 +206,7 @@ class TestReadConfig:
             config_file = f.name
 
         with patch("click.confirm", return_value=True):
-            config = read_config(config_file)
+            config = read_config(config_file, quiet=False)
         Path(config_file).unlink()  # Clean up
 
         assert config is not None
@@ -233,7 +233,7 @@ class TestReadConfig:
             config_file = f.name
 
         with patch("click.confirm", return_value=True):
-            config = read_config(config_file)
+            config = read_config(config_file, quiet=False)
         Path(config_file).unlink()  # Clean up
 
         assert config is not None

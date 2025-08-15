@@ -97,8 +97,9 @@ def list_command(casks):
     help=HELP_RESTORE,
 )
 @click.argument("config_file", type=click.Path(exists=True))
-def restore_command(config_file: str):
-    cfg = read_config(config_file)
+@click.option("--quiet", "-q", help="Suppress warning messages.", is_flag=True)
+def restore_command(config_file: str, quiet: bool = False):
+    cfg = read_config(config_file, quiet)
 
     if not cfg:
         return
@@ -112,8 +113,9 @@ def restore_command(config_file: str):
     help=HELP_BACKUP,
 )
 @click.argument("config_file", type=click.Path(exists=True))
-def backup_command(config_file: str):
-    cfg = read_config(config_file)
+@click.option("--quiet", "-q", help="Suppress warning messages.", is_flag=True)
+def backup_command(config_file: str, quiet: bool = False):
+    cfg = read_config(config_file, quiet)
 
     if not cfg:
         return
@@ -128,8 +130,9 @@ def backup_command(config_file: str):
 )
 @click.argument("config_file", type=click.Path(exists=True))
 @click.option("--name", "-n", help="Name of a specific hook to run.")
-def hook_command(config_file: str, name: Optional[str] = None):
-    cfg = read_config(config_file)
+@click.option("--quiet", "-q", help="Suppress warning messages.", is_flag=True)
+def hook_command(config_file: str, name: Optional[str] = None, quiet: bool = False):
+    cfg = read_config(config_file, quiet)
 
     if not cfg:
         return

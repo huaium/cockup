@@ -1,6 +1,6 @@
 # cockup
 
-![PyPI - Version](https://img.shields.io/pypi/v/cockup)
+![PyPI - Version](https://img.shields.io/pypi/v/cockup?link=https%3A%2F%2Fpypi.org%2Fproject%2Fcockup%2F)
 
 [English](README.md) | 中文
 
@@ -136,6 +136,8 @@ hooks:
 ### Hook 结构
 
 Hooks 允许用户自定义运行命令。
+
+默认情况下，如果你的配置文件包含任何 Hooks，程序会在执行命令前要求手动确认。使用 `--quiet` 或 `-q` 标志可以规避该行为。
 
 如果你需要在一个特定的 Shell 里面运行命令，则请务必在检查安全性之后再使用诸如 `bash -c` 的命令来运行。
 
