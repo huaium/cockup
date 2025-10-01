@@ -1,3 +1,4 @@
+import os
 import platform
 import re
 import subprocess
@@ -5,6 +6,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from subprocess import CalledProcessError, TimeoutExpired
 
 from cockup.src.console import rprint_error
+
+env = os.environ.copy()
+env["HOMEBREW_NO_AUTO_UPDATE"] = "1"
 
 
 def _is_brew_installed() -> bool:
@@ -18,6 +22,7 @@ def _is_brew_installed() -> bool:
             text=True,
             check=True,
             timeout=5,
+            env=env,
         )
         return True
     except (
@@ -43,6 +48,7 @@ def _process_cask(cask) -> tuple[str, list[str]]:
             text=True,
             check=True,
             timeout=5,
+            env=env,
         )
 
         content = cat_result.stdout
@@ -80,8 +86,10 @@ def _process_cask(cask) -> tuple[str, list[str]]:
 
         return cask, zap_items
 
-    except Exception as e:
-        rprint_error(f"Error processing cask `{cask}`: {e}")
+    except Exception as _:
+        rprint_error(
+            f"Error processing cask `{cask}`. Please check if it is installed."
+        )
         return cask, []
 
 
@@ -113,6 +121,7 @@ def get_zap_dict(casks: list[str] = []) -> dict[str, list[str]]:
                 text=True,
                 check=True,
                 timeout=5,
+                env=env,
             )
             stripped_result = result.stdout.strip()
             casks = stripped_result.split("\n") if stripped_result else []

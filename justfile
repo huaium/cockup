@@ -1,13 +1,13 @@
 default: run
 
 run *ARGS:
-    python cockup/main.py {{ ARGS }}
+    python -m cockup.main {{ ARGS }}
 
 install:
-    pip install -e .
+    uv pip install -e .
 
 install-test:
-    pip install -e ".[test]"
+    uv pip install -e ".[test]"
 
 test *ARGS:
     pytest {{ ARGS }}
