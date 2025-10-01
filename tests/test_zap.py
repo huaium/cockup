@@ -212,13 +212,15 @@ end
             mock_run.return_value = MagicMock(stdout=mock_output)
             _process_cask("test-cask")
 
-        mock_run.assert_called_once_with(
-            ["brew", "cat", "--cask", "test-cask"],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=5,
-        )
+        assert mock_run.call_count == 1
+        call_args = mock_run.call_args_list[0]
+        # Check positional argument (command)
+        assert call_args[0][0] == ["brew", "cat", "--cask", "test-cask"]
+        # Check keyword arguments
+        assert call_args[1]["capture_output"] is True
+        assert call_args[1]["text"] is True
+        assert call_args[1]["check"] is True
+        assert call_args[1]["timeout"] == 5
 
 
 class TestGetZapDict:
@@ -353,22 +355,20 @@ class TestGetZapDict:
         assert mock_run.call_count == 2
 
         # First call should be brew --version (from _is_brew_installed)
-        mock_run.assert_any_call(
-            ["brew", "--version"],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=5,
-        )
+        first_call = mock_run.call_args_list[0]
+        assert first_call[0][0] == ["brew", "--version"]
+        assert first_call[1]["capture_output"] is True
+        assert first_call[1]["text"] is True
+        assert first_call[1]["check"] is True
+        assert first_call[1]["timeout"] == 5
 
         # Second call should be brew list --casks
-        mock_run.assert_any_call(
-            ["brew", "list", "--casks"],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=5,
-        )
+        second_call = mock_run.call_args_list[1]
+        assert second_call[0][0] == ["brew", "list", "--casks"]
+        assert second_call[1]["capture_output"] is True
+        assert second_call[1]["text"] is True
+        assert second_call[1]["check"] is True
+        assert second_call[1]["timeout"] == 5
 
     def test_get_zap_dict_handles_newlines_in_output(self):
         """Test handling of cask list with trailing/leading newlines."""

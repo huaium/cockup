@@ -201,6 +201,7 @@ class TestRunHooks:
             run_hooks(hooks)
 
         call_args = mock_run.call_args_list[0][1]
+        assert "text" in call_args
         assert call_args["text"] is True
 
     def test_run_hooks_check_parameter(self):
@@ -212,6 +213,7 @@ class TestRunHooks:
             run_hooks(hooks)
 
         call_args = mock_run.call_args_list[0][1]
+        assert "check" in call_args
         assert call_args["check"] is True
 
     def test_run_hooks_singular_plural_output(self, capsys):
