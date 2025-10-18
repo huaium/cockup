@@ -39,6 +39,7 @@ hooks:
       timeout: 3
       env:
         USER: "cockup_user"
+        CUSTOM_VAR: "custom_value"
 
   post-backup:
     - name: "Show goodbye message"
