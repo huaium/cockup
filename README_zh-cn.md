@@ -145,8 +145,13 @@ Hooks 允许用户自定义运行命令。
 - name: "Hook Name" # 必要：作为 Hook 的标识符
   command: ["cmd", "arg1"] # 必要：命令参数列表
   output: false # 可选：显示命令输出 (default: false)
-  timeout: 10 # 可选：允许运行秒数 (default: 10)
+  timeout: 10 # 可选：允许运行秒数
+  env: # 可选: 用于该命令的环境变量
+    ENV_1: 1
+    ENV_2: 2
 ```
+
+请注意，你无法直接使用类似 `$ENV_1` 的语法传递环境变量，但所启动的子进程能够访问这些变量。
 
 一个典型的场景是备份 Homebrew bundle 列表，生成的文件将放置在 `destination` 指定的文件夹下：
 
@@ -193,6 +198,9 @@ just sample-backup
 
 # 或者测试 `cockup restore`
 just sample-restore
+
+# 或者测试 `cockup hook`
+just sample-hook [hook_name]
 ```
 
 ### 测试
@@ -216,26 +224,4 @@ just test tests/test_config.py -v
 
 ## 许可证
 
-```
-MIT License
-
-Copyright (c) 2025 huaium
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
+请查阅 [LICENSE](./LICENSE)。

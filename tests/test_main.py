@@ -5,7 +5,13 @@ from unittest.mock import patch
 import yaml
 from click.testing import CliRunner
 
-from cockup.main import backup_command, hook_command, list_command, main, restore_command
+from cockup.main import (
+    backup_command,
+    hook_command,
+    list_command,
+    main,
+    restore_command,
+)
 
 
 class TestBackupCommand:
@@ -276,7 +282,9 @@ class TestHookCommand:
         runner = CliRunner()
         with patch("cockup.main.run_hook_by_name") as mock_run_hook_by_name:
             with patch("click.confirm", return_value=True):
-                result = runner.invoke(hook_command, [config_file, "--name", "test_hook"])
+                result = runner.invoke(
+                    hook_command, [config_file, "--name", "test_hook"]
+                )
 
         Path(config_file).unlink()  # Clean up
 

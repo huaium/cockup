@@ -8,8 +8,8 @@ from cockup.src.backup import backup
 from cockup.src.config import read_config
 from cockup.src.console import rprint, rprint_error, rprint_point
 from cockup.src.hooks import run_hook_by_name, run_hooks_with_input
+from cockup.src.list import get_zap_dict
 from cockup.src.restore import restore
-from cockup.src.zap import get_zap_dict
 
 SHORT_HELP = "Yet another backup tool for various configurations."
 SHORT_HELP_LIST = "List potential configs of installed Homebrew casks."

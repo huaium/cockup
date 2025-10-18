@@ -1,26 +1,20 @@
-# If you use relative path, it will be relative to the config file's directory
 destination: "dst"
 
-# Clean mode, whether to remove existing backup folder (default: false)
 clean: true
 
-# Whether to preserve metadata when backing up (default: true)
 metadata: true
 
 rules:
   - from: "src"
     targets:
-      # Folders or files under `from`
-      # Wildcards are supported
       - "log_folder"
       - "*log.txt"
-    to: "log" # A folder under `destination`
-    # `on-start` & `on-end` are not necessarily required
+    to: "log"
     on-start:
-      - name: "Show Rule 1 welcome message" # `name` is required
-        command: ["echo", "This is the first rule!"] # `command` is also required
-        output: true # Output to console (default: false)
-        timeout: 3 # Running timeout (default: 10)
+      - name: "Show Rule 1 welcome message"
+        command: ["echo", "This is the first rule!"]
+        output: true
+        timeout: 3
     on-end:
       - name: "Show Rule 1 goodbye message"
         command: ["echo", "Bye Rule 1!"]
@@ -33,13 +27,18 @@ rules:
       - "config_link.txt"
     to: "config"
 
-# Global hooks
 hooks:
   pre-backup:
     - name: "Show welcome message"
       command: ["echo", "Welcome to cockup!"]
       output: true
       timeout: 3
+    - name: "Show environment variable"
+      command: ["env"]
+      output: true
+      timeout: 3
+      env:
+        FOOL: "This is a custom environment variable."
 
   post-backup:
     - name: "Show goodbye message"

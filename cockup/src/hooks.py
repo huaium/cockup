@@ -50,6 +50,7 @@ def run_hooks(hooks: list[Hook]):
                 text=True,
                 check=True,
                 timeout=hook.timeout,
+                env=hook.env,
             )
 
         except subprocess.TimeoutExpired:

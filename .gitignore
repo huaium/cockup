@@ -202,11 +202,5 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Claude Code
-CLAUDE.md
-
 # macOS Finder
 **/.DS_Store
-
-# Serena
-.serena/

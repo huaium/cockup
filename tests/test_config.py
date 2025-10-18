@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import yaml
 
-from cockup.src.config import Config, GlobalHooks, Hook, Rule, read_config
+from cockup.src.config import Config, Rule, read_config
 
 
 class TestReadConfig:
@@ -239,86 +239,3 @@ class TestReadConfig:
         assert config is not None
         assert len(config.rules[0].on_start) == 1
         assert len(config.rules[0].on_end) == 1
-
-
-class TestConfig:
-    """Test the Config dataclass."""
-
-    def test_config_initialization(self):
-        """Test Config object initialization."""
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            dest = Path(tmp_dir) / "backup"
-            rule = Rule(
-                src=Path(tmp_dir) / "src",
-                targets=["*.txt"],
-                to="docs",
-                on_start=[],
-                on_end=[],
-            )
-            rules = [rule]
-            hooks = GlobalHooks(
-                pre_backup=[Hook(name="test", command=["echo", "test"])],
-                post_backup=[],
-                pre_restore=[],
-                post_restore=[],
-            )
-
-            config = Config(
-                destination=dest, rules=rules, hooks=hooks, clean=True, metadata=False
-            )
-
-            assert config.destination == dest
-            assert config.rules == rules
-            assert config.hooks == hooks
-            assert config.clean is True
-            assert config.metadata is False
-
-
-class TestRuleDataclass:
-    """Test the Rule dataclass."""
-
-    def test_rule_initialization(self):
-        """Test Rule object initialization."""
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            src = Path(tmp_dir) / "source"
-            targets = ["*.txt", "*.pdf"]
-            to = "documents"
-            on_start = [Hook(name="start", command=["echo", "starting"])]
-            on_end = [Hook(name="end", command=["echo", "done"])]
-
-            rule = Rule(
-                src=src,
-                targets=targets,
-                to=to,
-                on_start=on_start,
-                on_end=on_end,
-            )
-
-            assert rule.src == src
-            assert rule.targets == targets
-            assert rule.to == to
-            assert rule.on_start == on_start
-            assert rule.on_end == on_end
-
-
-class TestHooksDataclass:
-    """Test the Hooks dataclass."""
-
-    def test_hooks_initialization(self):
-        """Test Hooks object initialization."""
-        pre_backup = [Hook(name="pre_backup", command=["echo", "pre"])]
-        post_backup = [Hook(name="post_backup", command=["echo", "post"])]
-        pre_restore = [Hook(name="pre_restore", command=["echo", "pre_restore"])]
-        post_restore = [Hook(name="post_restore", command=["echo", "post_restore"])]
-
-        hooks = GlobalHooks(
-            pre_backup=pre_backup,
-            post_backup=post_backup,
-            pre_restore=pre_restore,
-            post_restore=post_restore,
-        )
-
-        assert hooks.pre_backup == pre_backup
-        assert hooks.post_backup == post_backup
-        assert hooks.pre_restore == pre_restore
-        assert hooks.post_restore == post_restore

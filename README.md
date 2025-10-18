@@ -145,8 +145,13 @@ If you want to run them within a specified shell, use commands like `bash -c` af
 - name: "Hook Name" # Required: Hook identifier
   command: ["cmd", "arg1"] # Required: Command args list
   output: false # Optional: Print output (default: false)
-  timeout: 10 # Optional: Timeout in seconds (default: 10)
+  timeout: 10 # Optional: Timeout in seconds
+  env: # Optional: environment variables used for the command
+    ENV_1: 1
+    ENV_2: 2
 ```
+
+Please note that you cannot pass environment variables directly using syntax like `$ENV_1`, but the subprocess you launch can access those variables.
 
 For example, you may want to use it to dump Homebrew bundle into a file and place it under the folder defined by `destination`:
 
@@ -193,6 +198,9 @@ just sample-backup
 
 # Or test `cockup restore`
 just sample-restore
+
+# Or test `cockup hook`
+just sample-hook [hook_name]
 ```
 
 ### Test
@@ -216,26 +224,4 @@ just test tests/test_config.py -v
 
 ## License
 
-```
-MIT License
-
-Copyright (c) 2025 huaium
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
+Please refer to [LICENSE](./LICENSE).

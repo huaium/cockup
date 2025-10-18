@@ -16,7 +16,8 @@ class Hook(ConfigModel):
     name: str
     command: list[str]
     output: bool = False
-    timeout: int = 10
+    timeout: int | None = None
+    env: dict[str, str] | None = None
 
 
 class Rule(ConfigModel):

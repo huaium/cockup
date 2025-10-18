@@ -1,14 +1,21 @@
+import json
 import os
 import platform
-import re
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from subprocess import CalledProcessError, TimeoutExpired
+from subprocess import CalledProcessError
 
 from cockup.src.console import rprint_error
 
-env = os.environ.copy()
-env["HOMEBREW_NO_AUTO_UPDATE"] = "1"
+_env = os.environ.copy()
+_env["HOMEBREW_NO_AUTO_UPDATE"] = "1"
+
+_cpu_count_tmp = os.cpu_count()
+try:
+    _cpu_count = int(_cpu_count_tmp) if _cpu_count_tmp is not None else 1
+except (TypeError, ValueError):
+    _cpu_count = 1
+_cpu_count = max(1, min(_cpu_count, 32))
 
 
 def _is_brew_installed() -> bool:
@@ -21,14 +28,10 @@ def _is_brew_installed() -> bool:
             capture_output=True,
             text=True,
             check=True,
-            timeout=5,
-            env=env,
+            env=_env,
         )
         return True
-    except (
-        CalledProcessError,
-        TimeoutExpired,
-    ):
+    except CalledProcessError:
         return False
     except Exception as e:
         rprint_error(f"Error checking Homebrew installation: {e}")
@@ -41,50 +44,45 @@ def _process_cask(cask) -> tuple[str, list[str]]:
     """
 
     try:
-        # Get cask formula using brew cat
+        # Get cask formula using brew info
         cat_result = subprocess.run(
-            ["brew", "cat", "--cask", cask],
+            ["brew", "info", "--json=v2", "--cask", cask],
             capture_output=True,
             text=True,
             check=True,
-            timeout=5,
-            env=env,
+            env=_env,
         )
 
-        content = cat_result.stdout
+        json_content = cat_result.stdout
+        json_data = json.loads(json_content)
 
-        # Find all quoted paths in the zap section
-        zap_items = []
-        lines = content.split("\n")
-        in_zap = False
-        in_trash_or_rmdir = False
+        cask_lst = json_data.get("casks", [])
+        if not cask_lst:
+            rprint_error(f"Cask `{cask}` not found in Homebrew repo.")
+            return cask, []
 
-        for line in lines:
-            line = line.strip()
+        artifact_lst = cask_lst[0].get("artifacts", [])
+        if not artifact_lst:
+            rprint_error(f"Artifact for cask `{cask}` not found in Homebrew repo.")
+            return cask, []
 
-            # Check for start of zap section
-            if not in_zap and line.startswith("zap"):
-                in_zap = True
+        zap_lst = []
+        for artifact in artifact_lst:
+            if "zap" in artifact:
+                for zap_item in artifact["zap"]:
+                    rmdir = zap_item.get("rmdir", [])
+                    if isinstance(rmdir, str):
+                        zap_lst.append(rmdir)
+                    elif isinstance(rmdir, list):
+                        zap_lst.extend(rmdir)
 
-            if not in_trash_or_rmdir:
-                directive_match = re.search(r"(trash|rmdir):", line)
-                in_trash_or_rmdir = True if directive_match else False
+                    trash = zap_item.get("trash", [])
+                    if isinstance(trash, str):
+                        zap_lst.append(trash)
+                    elif isinstance(trash, list):
+                        zap_lst.extend(trash)
 
-            # Check for end of zap section
-            if in_zap and line.startswith("end"):
-                in_zap = False
-
-            # If we're in the zap section, look for paths
-            if in_zap and in_trash_or_rmdir:
-                # Find quoted strings (paths)
-                for path_match in re.finditer(r'"([^"]+)"|\'([^\']+)\'', line):
-                    # Match content wrapped in quotation marks, whether single or double
-                    path = path_match.group(1) or path_match.group(2)
-                    # Replace version placeholders with *
-                    path = re.sub(r"#\{version[^}]*\}", "*", path)
-                    zap_items.append(path)
-
-        return cask, zap_items
+        return cask, zap_lst
 
     except Exception as _:
         rprint_error(
@@ -120,8 +118,7 @@ def get_zap_dict(casks: list[str] = []) -> dict[str, list[str]]:
                 capture_output=True,
                 text=True,
                 check=True,
-                timeout=5,
-                env=env,
+                env=_env,
             )
             stripped_result = result.stdout.strip()
             casks = stripped_result.split("\n") if stripped_result else []
@@ -136,7 +133,7 @@ def get_zap_dict(casks: list[str] = []) -> dict[str, list[str]]:
     zap_dict = {}
 
     # Use ThreadPoolExecutor to process casks in parallel
-    with ThreadPoolExecutor(max_workers=min(16, len(casks))) as executor:
+    with ThreadPoolExecutor(max_workers=min(_cpu_count, len(casks))) as executor:
         # Submit all casks for processing
         future_to_cask = {executor.submit(_process_cask, cask): cask for cask in casks}
 

@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "cockup"
 description = "Yet another backup tool for various configurations"
 readme = "README.md"
-version = "0.1.4"
+version = "0.1.5"
 requires-python = ">=3.12,<3.13"
 authors = [{ name = "huaium", email = "huaium233@gmail.com" }]
 classifiers = [

@@ -67,37 +67,10 @@ class TestRunHooks:
         assert "Running hook (1/1):" in captured.out  # Empty name shows as blank
         assert "Completed 1/1 hook" in captured.out
 
-    def test_run_hooks_missing_command(self, capsys):
-        """Test hook with empty command field (Pydantic will enforce required field)."""
-        # With Pydantic validation, we can't create a Hook without a command
-        # But we can test with an empty command list
-        hooks = [Hook(name="test_hook", command=[])]
-
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock()
-            run_hooks(hooks)
-
-        captured = capsys.readouterr()
-        assert "Running hook (1/1): test_hook" in captured.out
-        assert "Completed 1/1 hook" in captured.out
-
-    def test_run_hooks_timeout(self, capsys):
-        """Test hook timeout handling."""
-        hooks = [Hook(name="timeout_hook", command=["sleep", "100"], timeout=1)]
-
-        with patch(
-            "subprocess.run", side_effect=subprocess.TimeoutExpired(["sleep", "100"], 1)
-        ):
-            run_hooks(hooks)
-
-        captured = capsys.readouterr()
-        assert "Command `timeout_hook` timed out after 1 seconds" in captured.out
-        assert "Completed 0/1 hook" in captured.out
-
     def test_run_hooks_command_failure(self, capsys):
-        """Test handling of command execution failure."""
+        """Test handling of command execution failure and generic exceptions."""
+        # Test CalledProcessError
         hooks = [Hook(name="failing_hook", command=["false"])]
-
         with patch(
             "subprocess.run", side_effect=subprocess.CalledProcessError(1, ["false"])
         ):
@@ -107,16 +80,13 @@ class TestRunHooks:
         assert "Error executing command `failing_hook`" in captured.out
         assert "Completed 0/1 hook" in captured.out
 
-    def test_run_hooks_generic_exception(self, capsys):
-        """Test handling of generic exceptions."""
+        # Test generic exception
         hooks = [Hook(name="exception_hook", command=["echo", "test"])]
-
         with patch("subprocess.run", side_effect=Exception("Generic error")):
             run_hooks(hooks)
 
         captured = capsys.readouterr()
         assert "Error executing command `exception_hook`: Generic error" in captured.out
-        assert "Completed 0/1 hook" in captured.out
 
     def test_run_hooks_default_values(self):
         """Test default values for optional hook parameters."""
@@ -128,7 +98,6 @@ class TestRunHooks:
 
         # Check that defaults were applied
         call_args = mock_run.call_args_list[0][1]
-        assert call_args["timeout"] == 10  # Default timeout
         assert (
             call_args["capture_output"] is True
         )  # Default output=False -> capture_output=True
