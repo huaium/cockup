@@ -82,7 +82,7 @@ class TestReadConfig:
 
         assert config is None
         captured = capsys.readouterr()
-        assert "Error in config file" in captured.out
+        assert "Error reading config file" in captured.out
 
     def test_read_config_missing_rules(self, capsys):
         """Test handling of config without rules."""
@@ -96,7 +96,7 @@ class TestReadConfig:
 
         assert config is None
         captured = capsys.readouterr()
-        assert "Error in config file" in captured.out
+        assert "Error reading config file" in captured.out
 
     def test_read_config_rule_vs_rules_hint(self, capsys):
         """Test hint when user uses 'rule' instead of 'rules'."""
@@ -113,7 +113,7 @@ class TestReadConfig:
 
         assert config is None
         captured = capsys.readouterr()
-        assert "Error in config file" in captured.out
+        assert "Error reading config file" in captured.out
 
     def test_read_config_invalid_rule_format(self, capsys):
         """Test handling of invalid rule format."""
@@ -130,7 +130,7 @@ class TestReadConfig:
 
         assert config is None
         captured = capsys.readouterr()
-        assert "Error in config file" in captured.out
+        assert "Error reading config file" in captured.out
 
     def test_read_config_missing_rule_fields(self, capsys):
         """Test handling of rules missing required fields."""
@@ -147,7 +147,7 @@ class TestReadConfig:
 
         assert config is None
         captured = capsys.readouterr()
-        assert "Error in config file" in captured.out
+        assert "Error reading config file" in captured.out
 
     def test_read_nonexistent_config(self):
         """Test handling of non-existent config file."""

@@ -16,8 +16,6 @@ pip install cockup
 
 ### Homebrew
 
-Homebrew 在构建部分依赖时会安装 Rust 工具链，可能会导致过长的安装时间，建议优先考虑通过 PyPI 安装。
-
 ```bash
 # 单行命令
 brew install huaium/tap/cockup

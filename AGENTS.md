@@ -6,6 +6,16 @@ This file provides guidance to AI coding agents (such as Claude Code, Cursor, et
 
 Cockup is a configuration backup and restore tool that copies files and folders between user-specified locations and a backup directory. It supports pattern matching, metadata preservation, and hooks for custom operations. The tool provides backup, restore, hook, and list commands with a flexible rule-based configuration system.
 
+## Important: Virtual Environment
+
+**Before executing any commands, you MUST activate the `.venv` virtual environment:**
+
+```bash
+source .venv/bin/activate
+```
+
+This ensures all commands run with the correct Python dependencies and environment configuration.
+
 ## Development Commands
 
 ### Installation & Setup

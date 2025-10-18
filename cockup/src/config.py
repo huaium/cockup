@@ -1,56 +1,85 @@
 import os
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import click
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
-from cockup.src.console import rprint, rprint_error, rprint_warning
-
-
-class ConfigModel(BaseModel):
-    model_config = ConfigDict(validate_by_name=True)
+from cockup.src.console import rprint_error, rprint_warning
 
 
-class Hook(ConfigModel):
+@dataclass
+class Hook:
     name: str
     command: list[str]
     output: bool = False
     timeout: int | None = None
     env: dict[str, str] | None = None
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "Hook":
+        return cls(
+            name=data["name"],
+            command=data["command"],
+            output=data.get("output", False),
+            timeout=data.get("timeout"),
+            env=data.get("env"),
+        )
 
-class Rule(ConfigModel):
-    src: Path = Field(validation_alias="from")
+
+@dataclass
+class Rule:
+    src: Path
     targets: list[str]
     to: str
-    on_start: list[Hook] = Field(default=[], validation_alias="on-start")
-    on_end: list[Hook] = Field(default=[], validation_alias="on-end")
+    on_start: list[Hook] = field(default_factory=list)
+    on_end: list[Hook] = field(default_factory=list)
 
-    @field_validator("src")
     @classmethod
-    def expand_src_path(cls, v: Path):
-        return v.expanduser().absolute()
+    def from_dict(cls, data: dict) -> "Rule":
+        return cls(
+            src=Path(data["from"]).expanduser().absolute(),
+            targets=data["targets"],
+            to=data["to"],
+            on_start=[Hook.from_dict(h) for h in data.get("on-start", [])],
+            on_end=[Hook.from_dict(h) for h in data.get("on-end", [])],
+        )
 
 
-class GlobalHooks(ConfigModel):
-    pre_backup: list[Hook] = Field(default=[], validation_alias="pre-backup")
-    post_backup: list[Hook] = Field(default=[], validation_alias="post-backup")
-    pre_restore: list[Hook] = Field(default=[], validation_alias="pre-restore")
-    post_restore: list[Hook] = Field(default=[], validation_alias="post-restore")
+@dataclass
+class GlobalHooks:
+    pre_backup: list[Hook] = field(default_factory=list)
+    post_backup: list[Hook] = field(default_factory=list)
+    pre_restore: list[Hook] = field(default_factory=list)
+    post_restore: list[Hook] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "GlobalHooks":
+        return cls(
+            pre_backup=[Hook.from_dict(h) for h in data.get("pre-backup", [])],
+            post_backup=[Hook.from_dict(h) for h in data.get("post-backup", [])],
+            pre_restore=[Hook.from_dict(h) for h in data.get("pre-restore", [])],
+            post_restore=[Hook.from_dict(h) for h in data.get("post-restore", [])],
+        )
 
 
-class Config(ConfigModel):
+@dataclass
+class Config:
     destination: Path
     rules: list[Rule]
     hooks: GlobalHooks | None = None
     clean: bool = False
     metadata: bool = True
 
-    @field_validator("destination")
     @classmethod
-    def expand_destination_path(cls, v: Path):
-        return v.expanduser().absolute()
+    def from_dict(cls, data: dict) -> "Config":
+        return cls(
+            destination=Path(data["destination"]).expanduser().absolute(),
+            rules=[Rule.from_dict(r) for r in data["rules"]],
+            hooks=GlobalHooks.from_dict(data.get("hooks", {})),
+            clean=data.get("clean", False),
+            metadata=data.get("metadata", True),
+        )
 
 
 def read_config(file_path: str, quiet: bool) -> Config | None:
@@ -67,7 +96,7 @@ def read_config(file_path: str, quiet: bool) -> Config | None:
             os.chdir(
                 Path(file_path).parent
             )  # Change working directory to config file's directory
-            config = Config.model_validate(yaml_data)
+            config = Config.from_dict(yaml_data)
 
             # Check whether warnings should be suppressed
             if not quiet:
@@ -75,14 +104,8 @@ def read_config(file_path: str, quiet: bool) -> Config | None:
                     return
 
             return config
-    except ValidationError as e:
-        rprint_error("Error in config file:\n")
-        for error in e.errors():
-            rprint_error(f"Location: {' -> '.join(str(loc) for loc in error['loc'])}")
-            rprint_error(f"Message: {error['msg']}")
-            rprint()
     except Exception as e:
-        rprint_error(f"Error reading YAML file: {e}")
+        rprint_error(f"Error reading config file: {e}")
 
     return None
 

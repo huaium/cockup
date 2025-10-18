@@ -4,10 +4,10 @@ run *ARGS:
     python -m cockup.main {{ ARGS }}
 
 install:
-    uv pip install -e .
+    uv sync
 
 install-test:
-    uv pip install -e ".[test]"
+    uv sync --all-extras
 
 test *ARGS:
     pytest {{ ARGS }}
