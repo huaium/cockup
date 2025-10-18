@@ -1,3 +1,6 @@
+include:
+  - "./another_config.yaml"
+
 destination: "dst"
 
 clean: true
@@ -20,12 +23,6 @@ rules:
         command: ["echo", "Bye Rule 1!"]
         output: true
         timeout: 5
-
-  - from: "src"
-    targets:
-      - "config_file.txt"
-      - "config_link.txt"
-    to: "config"
 
 hooks:
   pre-backup:

@@ -89,6 +89,10 @@ rules:
 ### 可选字段
 
 ```yaml
+# 导入其他配置文件中的规则和 Hooks
+include:
+  - "./another_config.yaml"
+
 # 清洁模式，即是否先删除现有备份 (default: false)
 clean: false
 
@@ -158,6 +162,18 @@ Hooks 允许用户自定义运行命令。
   command: ["brew", "bundle", "dump", "--force", "--file", "Brewfile"]
   output: true
   timeout: 10
+```
+
+### 配置导入
+
+你可以简单地通过 `include` 语句导入其他配置文件中的规则和 Hooks。
+
+请注意，仅有规则和 Hooks 会被导入，且它们将被置于主配置中定义的规则和 Hooks 之前，执行时将使用主配置中的 `clean` 和 `metadata` 字段。
+
+```yaml
+include:
+  - "path_to/config_one.yaml"
+  - "path_to/config_two.yaml"
 ```
 
 请访问 [sample](sample) 查看配置用例。

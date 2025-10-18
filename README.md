@@ -89,6 +89,10 @@ rules:
 ### Optional Fields
 
 ```yaml
+# Include rules and hooks from other config files
+include:
+  - "./another_config.yaml"
+
 # Clean mode, whether to remove existing backup folder (default: false)
 clean: false
 
@@ -158,6 +162,18 @@ For example, you may want to use it to dump Homebrew bundle into a file and plac
   command: ["brew", "bundle", "dump", "--force", "--file", "Brewfile"]
   output: true
   timeout: 10
+```
+
+### Include
+
+You can simply include rules and hooks from other configuration files using `include`.
+
+Please note that only rules and hooks will be included, and they will be placed before the rules and hooks defined in the main config, using the `clean` and `metadata` fields from the main config for execution.
+
+```yaml
+include:
+  - "path_to/config_one.yaml"
+  - "path_to/config_two.yaml"
 ```
 
 Refer to [sample](sample) to view a configuration demo.

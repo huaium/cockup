@@ -1,0 +1,12 @@
+destination: "another_dst"
+
+clean: true
+
+metadata: true
+
+rules:
+  - from: "src"
+    targets:
+      - "config_file.txt"
+      - "config_link.txt"
+    to: "config"

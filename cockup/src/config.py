@@ -72,14 +72,53 @@ class Config:
     metadata: bool = True
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Config":
-        return cls(
-            destination=Path(data["destination"]).expanduser().absolute(),
-            rules=[Rule.from_dict(r) for r in data["rules"]],
-            hooks=GlobalHooks.from_dict(data.get("hooks", {})),
-            clean=data.get("clean", False),
-            metadata=data.get("metadata", True),
-        )
+    def from_path(cls, file_path: str, quiet: bool) -> "Config | None":
+        try:
+            with open(file_path, "r") as file:
+                yaml_data = yaml.safe_load(file)
+
+                os.chdir(
+                    Path(file_path).parent
+                )  # Change working directory to config file's directory
+
+                rules: list[Rule] = []
+                hooks: GlobalHooks | None = None
+
+                include_lst = [
+                    config
+                    for path in yaml_data.get("include", [])
+                    if (config := Config.from_path(path, quiet=False)) is not None
+                ]
+
+                for cfg in include_lst:
+                    rules.extend(cfg.rules)
+                    hooks = _merge_hooks(hooks, cfg.hooks)
+
+                this_rules = [Rule.from_dict(r) for r in yaml_data["rules"]]
+                this_hooks = GlobalHooks.from_dict(yaml_data.get("hooks", {}))
+
+                rules.extend(this_rules)
+                hooks = _merge_hooks(hooks, this_hooks)
+
+                config = cls(
+                    destination=Path(yaml_data["destination"]).expanduser().absolute(),
+                    rules=rules,
+                    hooks=hooks,
+                    clean=yaml_data.get("clean", False),
+                    metadata=yaml_data.get("metadata", True),
+                )
+
+                # Check whether warnings should be suppressed
+                if not quiet:
+                    if not _warn(config):
+                        return
+
+                return config
+
+        except Exception as e:
+            rprint_error(f"Error reading config file {file_path}: {e}")
+
+        return None
 
 
 def read_config(file_path: str, quiet: bool) -> Config | None:
@@ -89,25 +128,7 @@ def read_config(file_path: str, quiet: bool) -> Config | None:
     Returns:
         A Config object if the configuration is valid, None otherwise.
     """
-
-    try:
-        with open(file_path, "r") as file:
-            yaml_data = yaml.safe_load(file)
-            os.chdir(
-                Path(file_path).parent
-            )  # Change working directory to config file's directory
-            config = Config.from_dict(yaml_data)
-
-            # Check whether warnings should be suppressed
-            if not quiet:
-                if not _warn(config):
-                    return
-
-            return config
-    except Exception as e:
-        rprint_error(f"Error reading config file: {e}")
-
-    return None
+    return Config.from_path(file_path, quiet)
 
 
 def _warn(cfg: Config) -> bool:
@@ -153,3 +174,23 @@ def _has_hooks(cfg: Config) -> bool:
             return True
 
     return False
+
+
+def _merge_hooks(
+    base_hooks: GlobalHooks | None, new_hooks: GlobalHooks | None
+) -> GlobalHooks | None:
+    """
+    Merge two GlobalHooks objects.
+    """
+    if base_hooks is None:
+        return new_hooks
+
+    if new_hooks is None:
+        return base_hooks
+
+    base_hooks.pre_backup.extend(new_hooks.pre_backup)
+    base_hooks.post_backup.extend(new_hooks.post_backup)
+    base_hooks.pre_restore.extend(new_hooks.pre_restore)
+    base_hooks.post_restore.extend(new_hooks.post_restore)
+
+    return base_hooks
