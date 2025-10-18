@@ -1,6 +1,6 @@
 # cockup
 
-![PyPI - Version](https://img.shields.io/pypi/v/cockup?link=https%3A%2F%2Fpypi.org%2Fproject%2Fcockup%2F)
+[![PyPI - Version](https://img.shields.io/pypi/v/cockup?link=https%3A%2F%2Fpypi.org%2Fproject%2Fcockup%2F)](https://pypi.org/project/cockup/)
 
 English | [中文](README_zh-cn.md)
 
