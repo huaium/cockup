@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 import click
@@ -43,6 +44,10 @@ def run_hooks(hooks: list[Hook]):
     for i, hook in enumerate(hooks):
         rprint_point(f"Running hook ({i + 1}/{total_commands}): {hook.name}")
 
+        env = os.environ.copy()
+        if hook.env:
+            env.update(hook.env)
+
         try:
             subprocess.run(
                 hook.command,
@@ -50,7 +55,7 @@ def run_hooks(hooks: list[Hook]):
                 text=True,
                 check=True,
                 timeout=hook.timeout,
-                env=hook.env,
+                env=env,
             )
 
         except subprocess.TimeoutExpired:

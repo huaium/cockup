@@ -33,12 +33,12 @@ hooks:
       command: ["echo", "Welcome to cockup!"]
       output: true
       timeout: 3
-    - name: "Show environment variable"
+    - name: "Show environment variables"
       command: ["env"]
       output: true
       timeout: 3
       env:
-        FOOL: "This is a custom environment variable."
+        USER: "cockup_user"
 
   post-backup:
     - name: "Show goodbye message"
