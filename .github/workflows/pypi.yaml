@@ -15,10 +15,10 @@ jobs:
       # Set up Python environment
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: 3.13
       - uses: astral-sh/setup-uv@v6
         with:
-          python-version: 3.12
+          python-version: 3.13
 
       # Install dependencies and build
       - name: Install dependencies and build

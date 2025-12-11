@@ -120,12 +120,11 @@ hooks:
 Each rule defines what to backup:
 
 ```yaml
-- from: "/source/directory"
+- from: "/source/directory/in/pattern" # Wildcards are supported
   targets:
     # Folders or files under `from`
-    # Wildcards are supported
-    - "pattern1"
-    - "pattern2"
+    - "pattern1" # Wildcards are also supported
+    - "relative/path/to/file"
   to: "backup/subdirectory" # A folder under `destination`
   on-start: # Optional rule-level hooks
     - name: "Before Rule"
@@ -133,6 +132,26 @@ Each rule defines what to backup:
   on-end:
     - name: "After Rule"
       command: ["echo", "Rule complete"]
+```
+
+Please be aware that when using wildcards in `from`, to prevent duplicate files caused by matching multiple directories, cockup will locate the first safe directory without wildcards and set it as `from`. The paths containing wildcards encountered during the search process will be prepended to each `target`.
+
+For example, if you have:
+
+```yaml
+- from: "/source/directory/in/prefix*/pattern"
+  targets:
+    - "relative/path/to/file"
+  to: "backup/subdirectory"
+```
+
+We will finally get:
+
+```yaml
+- from: "/source/directory/in"
+  targets:
+    - "prefix*/pattern/relative/path/to/file"
+  to: "backup/subdirectory"
 ```
 
 ### Hook Structure
@@ -187,7 +206,7 @@ Basically, this project use `just` to unify the development workflow. If you are
 Use `pytest` as the test framework.
 
 ```bash
-just install-test
+just sync-all
 ```
 
 ### Run directly

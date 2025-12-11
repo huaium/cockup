@@ -120,12 +120,11 @@ hooks:
 每条规则都定义了程序所要备份的内容：
 
 ```yaml
-- from: "/source/directory"
+- from: "/source/directory/in/pattern" # 允许使用通配符匹配
   targets:
     # 在 `from` 目录下的文件夹或文件
-    # 允许使用通配符匹配
-    - "pattern1"
-    - "pattern2"
+    - "pattern1" # 同样允许使用通配符匹配
+    - "relative/path/to/file"
   to: "backup/subdirectory" # 在 `destination` 下的子文件夹
   on-start: # 规则层面的可选 Hooks
     - name: "Before Rule"
@@ -133,6 +132,26 @@ hooks:
   on-end:
     - name: "After Rule"
       command: ["echo", "Rule complete"]
+```
+
+请注意，当你在 `from` 中使用通配符时，为避免匹配多个目录导致的文件重复，cockup 会向上寻找第一个不存在通配符的安全目录，并将其设置为 `from`。而寻找过程中经过的包含通配符的路径，会拼接在每个 `target` 前。
+
+例如，假设有如下的配置文件：
+
+```yaml
+- from: "/source/directory/in/prefix*/pattern"
+  targets:
+    - "relative/path/to/file"
+  to: "backup/subdirectory"
+```
+
+我们最终会得到：
+
+```yaml
+- from: "/source/directory/in"
+  targets:
+    - "prefix*/pattern/relative/path/to/file"
+  to: "backup/subdirectory"
 ```
 
 ### Hook 结构
@@ -187,7 +206,7 @@ include:
 使用 `pytest` 作为测试框架。
 
 ```bash
-just install-test
+just sync-all
 ```
 
 ### 直接运行

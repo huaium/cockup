@@ -258,22 +258,21 @@ class TestHandleRule:
             )
 
             with patch("pathlib.Path.cwd", return_value=Path(tmp_dir)):
-                with patch("glob.has_magic", return_value=True):
-                    with patch(
-                        "glob.glob",
-                        return_value=[
-                            str(src_dir / "file1.txt"),
-                            str(src_dir / "file2.txt"),
-                        ],
-                    ):
-                        with patch("cockup.src.rules._smart_copy") as mock_smart_copy:
-                            _handle_rule(rule, metadata=True, direction="backup")
+                with patch(
+                    "glob.glob",
+                    return_value=[
+                        str(src_dir / "file1.txt"),
+                        str(src_dir / "file2.txt"),
+                    ],
+                ):
+                    with patch("cockup.src.rules._smart_copy") as mock_smart_copy:
+                        _handle_rule(rule, metadata=True, direction="backup")
 
                 # Should be called twice for the two matched files
                 assert mock_smart_copy.call_count == 2
 
                 captured = capsys.readouterr()
-                assert "Pattern matched (2 founded):" in captured.out
+                assert "Target pattern matched (2 found):" in captured.out
 
     def test_handle_rule_glob_no_matches(self, capsys):
         """Test handling rule with glob pattern that matches nothing."""
@@ -290,9 +289,8 @@ class TestHandleRule:
             )
 
             with patch("pathlib.Path.cwd", return_value=Path(tmp_dir)):
-                with patch("glob.has_magic", return_value=True):
-                    with patch("glob.glob", return_value=[]):
-                        _handle_rule(rule, metadata=True, direction="backup")
+                with patch("glob.glob", return_value=[]):
+                    _handle_rule(rule, metadata=True, direction="backup")
 
                 captured = capsys.readouterr()
                 assert "Matches not found for pattern:" in captured.out

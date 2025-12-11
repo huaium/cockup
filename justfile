@@ -3,23 +3,24 @@ default: run
 run *ARGS:
     python -m cockup.main {{ ARGS }}
 
-install:
+sync:
     uv sync
 
-install-test:
+sync-all:
     uv sync --all-extras
 
 test *ARGS:
     pytest {{ ARGS }}
 
 sample-backup *ARGS:
-    python cockup/main.py backup sample/config.yaml {{ ARGS }}
+    python -m cockup.main backup sample/config.yaml {{ ARGS }}
+    # python cockup/main.py backup sample/config.yaml {{ ARGS }}
 
 sample-restore *ARGS:
-    python cockup/main.py restore sample/config.yaml {{ ARGS }}
+    python -m cockup.main restore sample/config.yaml {{ ARGS }}
 
 sample-hook NAME="":
-    python cockup/main.py hook sample/config.yaml --name "{{ NAME }}"
+    python -m cockup.main hook sample/config.yaml --name "{{ NAME }}"
 
 build *ARGS:
     uv build {{ ARGS }}

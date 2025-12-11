@@ -30,8 +30,8 @@ class Hook:
 @dataclass
 class Rule:
     src: Path
-    targets: list[str]
     to: str
+    targets: list[str] = field(default_factory=list)
     on_start: list[Hook] = field(default_factory=list)
     on_end: list[Hook] = field(default_factory=list)
 
@@ -39,10 +39,10 @@ class Rule:
     def from_dict(cls, data: dict) -> "Rule":
         return cls(
             src=Path(data["from"]).expanduser().absolute(),
-            targets=data["targets"],
+            targets=data.get("targets", []) or [],  # Handle `None` case
             to=data["to"],
-            on_start=[Hook.from_dict(h) for h in data.get("on-start", [])],
-            on_end=[Hook.from_dict(h) for h in data.get("on-end", [])],
+            on_start=[Hook.from_dict(h) for h in data.get("on-start", []) or []],
+            on_end=[Hook.from_dict(h) for h in data.get("on-end", []) or []],
         )
 
 

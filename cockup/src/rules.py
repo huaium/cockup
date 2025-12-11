@@ -6,6 +6,8 @@ import stat
 from pathlib import Path
 from typing import Literal
 
+import click
+
 from cockup.src.config import Rule
 from cockup.src.console import Style, rprint, rprint_error, rprint_point, rprint_warning
 from cockup.src.hooks import run_hooks
@@ -103,18 +105,52 @@ def _smart_copy(src: Path, dst: Path, metadata: bool, print_progress: bool = Tru
         rprint_error(str(e))
 
 
+def _handle_src_glob(src: Path, targets: list[str]) -> tuple[Path, list[str]] | None:
+    if not glob.has_magic(src.as_posix()):
+        return src, targets
+
+    # Users may use glob patterns in src
+    if glob.has_magic(src.as_posix()):
+        # Find the clean base folder
+        clean_src = src
+        while glob.has_magic(clean_src.as_posix()):
+            clean_src = clean_src.parent
+
+        # Warn if glob is at root level
+        if clean_src == Path("."):
+            rprint_warning(
+                "Glob patterns detected at root level, which may be dangerous."
+            )
+
+            # Return if user says no
+            if not click.confirm("Continue?", default=False):
+                return
+
+        # Get the glob part relative to that base
+        glob_part = src.relative_to(clean_src)
+
+        # Update targets to include the directory structure of the glob pattern
+        src = clean_src
+        targets = [f"{glob_part}/{target}" for target in targets]
+
+
 def _handle_rule(rule: Rule, metadata: bool, direction: Literal["backup", "restore"]):
     def smart_copy_inner(src: Path, dst: Path):
         _smart_copy(src=src, dst=dst, metadata=metadata)
 
-    for target in rule.targets:
+    if not (result := _handle_src_glob(rule.src, rule.targets)):
+        return
+
+    src, targets = result
+
+    for target in targets:
         if direction == "backup":
-            source_path = (rule.src / target).absolute()
+            source_path = (src / target).absolute()
             dest_dir_path = (Path.cwd() / rule.to).absolute()
-            glob_base = rule.src
+            glob_base = src
         else:  # restore
             source_path = (Path.cwd() / rule.to / target).absolute()
-            dest_dir_path = rule.src.absolute()
+            dest_dir_path = src.absolute()
             glob_base = Path.cwd() / rule.to
 
         # Check if the path exists directly
@@ -130,7 +166,7 @@ def _handle_rule(rule: Rule, metadata: bool, direction: Literal["backup", "resto
 
             if matched_paths:
                 rprint_point(
-                    f"Pattern matched ({len(matched_paths)} founded): {_abbreviate_home(source_path)}"
+                    f"Target pattern matched ({len(matched_paths)} found): {_abbreviate_home(source_path)}"
                 )
 
                 # Process each matched file
@@ -144,7 +180,9 @@ def _handle_rule(rule: Rule, metadata: bool, direction: Literal["backup", "resto
                     f"Matches not found for pattern: {_abbreviate_home(source_path)}"
                 )
         else:
-            rprint_error(f"Source not found, skipping: {_abbreviate_home(source_path)}")
+            rprint_warning(
+                f"Source not found, skipping: {_abbreviate_home(source_path)}"
+            )
 
 
 def handle_rules(
