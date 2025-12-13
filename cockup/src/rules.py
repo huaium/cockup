@@ -130,8 +130,9 @@ def _handle_src_glob(src: Path, targets: list[str]) -> tuple[Path, list[str]] | 
         glob_part = src.relative_to(clean_src)
 
         # Update targets to include the directory structure of the glob pattern
-        src = clean_src
         targets = [f"{glob_part}/{target}" for target in targets]
+
+        return clean_src, targets
 
 
 def _handle_rule(rule: Rule, metadata: bool, direction: Literal["backup", "restore"]):

@@ -54,6 +54,30 @@ python -m cockup.main backup config.yaml
 python -m cockup.main restore config.yaml
 ```
 
+### justfile workflows
+
+```
+# Synchronize dependencies described in pyproject
+just sync
+just sync-all
+
+# Run commands via the `python -m cockup.main` entry point (aliases to `cockup ...`)
+just run [ARGS]
+
+# Manual samples for interactive testing (see sample/config.yaml)
+just sample-backup [ARGS]
+just sample-restore [ARGS]
+just sample-hook [HOOK_NAME]
+
+# Testing and building
+just test [ARGS]
+just build [ARGS]
+
+# Cleanup helpers
+just clean
+just clean-pycache
+```
+
 ### Testing
 
 ```bash

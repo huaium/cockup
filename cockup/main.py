@@ -97,7 +97,14 @@ def list_command(casks):
     help=HELP_RESTORE,
 )
 @click.argument("config_file", type=click.Path(exists=True))
-@click.option("--quiet", "-q", help="Suppress warning messages.", is_flag=True)
+@click.option(
+    "--quiet",
+    "-q",
+    "--yes",
+    "-y",
+    help="Auto-confirm all prompts.",
+    is_flag=True,
+)
 def restore_command(config_file: str, quiet: bool = False):
     cfg = read_config(config_file, quiet)
 
@@ -113,7 +120,14 @@ def restore_command(config_file: str, quiet: bool = False):
     help=HELP_BACKUP,
 )
 @click.argument("config_file", type=click.Path(exists=True))
-@click.option("--quiet", "-q", help="Suppress warning messages.", is_flag=True)
+@click.option(
+    "--quiet",
+    "-q",
+    "--yes",
+    "-y",
+    help="Auto-confirm all prompts.",
+    is_flag=True,
+)
 def backup_command(config_file: str, quiet: bool = False):
     cfg = read_config(config_file, quiet)
 
@@ -130,7 +144,14 @@ def backup_command(config_file: str, quiet: bool = False):
 )
 @click.argument("config_file", type=click.Path(exists=True))
 @click.option("--name", "-n", help="Name of a specific hook to run.")
-@click.option("--quiet", "-q", help="Suppress warning messages.", is_flag=True)
+@click.option(
+    "--quiet",
+    "-q",
+    "--yes",
+    "-y",
+    help="Auto-confirm all prompts.",
+    is_flag=True,
+)
 def hook_command(config_file: str, name: Optional[str] = None, quiet: bool = False):
     cfg = read_config(config_file, quiet)
 
