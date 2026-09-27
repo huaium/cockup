@@ -1,0 +1,54 @@
+mod brew;
+mod cli;
+mod config;
+mod files;
+mod hooks;
+mod report;
+use clap::{CommandFactory, Parser};
+use cli::{Commands, ConfigArgs};
+fn configured(args: &ConfigArgs) -> Result<Option<config::Config>, String> {
+    let cfg = config::load(&args.config_file)?;
+    if !args.quiet && cfg.all_hooks().next().is_some() {
+        report::warning(
+            "Hooks detected in configuration. Ensure commands are safe before execution.",
+        );
+        if !report::confirm()? {
+            return Ok(None);
+        }
+    }
+    Ok(Some(cfg))
+}
+fn run() -> Result<(), String> {
+    if std::env::args_os().len() == 1 {
+        cli::Cli::command()
+            .print_help()
+            .map_err(|e| e.to_string())?;
+        println!();
+        return Ok(());
+    }
+    match cli::Cli::parse().command {
+        Commands::Backup(args) => {
+            if let Some(cfg) = configured(&args)? {
+                files::execute(&cfg, false)?;
+            }
+        }
+        Commands::Restore(args) => {
+            if let Some(cfg) = configured(&args)? {
+                files::execute(&cfg, true)?;
+            }
+        }
+        Commands::Hook { config, name } => {
+            if let Some(cfg) = configured(&config)? {
+                hooks::select(&cfg, name.as_deref())?;
+            }
+        }
+        Commands::List { casks } => brew::list(casks)?,
+    }
+    Ok(())
+}
+fn main() {
+    if let Err(error) = run() {
+        report::error(&error);
+        std::process::exit(1);
+    }
+}

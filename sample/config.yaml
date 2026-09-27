@@ -39,25 +39,14 @@ hooks:
         CUSTOM_VAR: "custom_value"
 
     - name: "Check created file"
-      command:
-        - python
-        - -c
-        - "from pathlib import Path; Path('.hook-check-result.txt').write_text('ready')"
-      check:
-        - python
-        - -c
-        - "from pathlib import Path; p = Path('.hook-check-result.txt'); result = p.read_text(); p.unlink(); assert result == 'ready'; print('Check passed')"
+      command: ["sh", "-c", "printf ready > .hook-check-result.txt"]
+      check: ["sh", "-c", 'value=$(cat .hook-check-result.txt) && rm .hook-check-result.txt && test "$value" = ready && echo "Check passed"']
       output: true
       timeout: 5
 
     - name: "Check failure"
-      command: ["python", "-c", "print('Main command succeeded')"]
-      check:
-        [
-          "python",
-          "-c",
-          "import sys; print('Check failed intentionally'); sys.exit(1)",
-        ]
+      command: ["sh", "-c", "echo 'Main command succeeded'"]
+      check: ["sh", "-c", "echo 'Check failed intentionally'; exit 1"]
       output: true
       timeout: 5
 

@@ -1,22 +1,20 @@
 # Sample
 
-This directory contains fixtures for simple manual testing of cockup.
+Fixtures for manual backup, restore, and hook tests. From the project root:
 
-## Hook checks
-
-From the project root, with `.venv` activated:
-
-```bash
-python -m cockup.main hook sample/config.yaml --name "Check created file" --quiet
-python -m cockup.main hook sample/config.yaml --name "Check failure" --quiet
+```sh
+cargo run --locked -- hook sample/config.yaml --name "Check created file" --quiet
+cargo run --locked -- hook sample/config.yaml --name "Check failure" --quiet
 ```
 
-The first hook writes a file, checks its contents, and removes it. Expect
-`Check passed` and `Completed 1/1 hook`.
+The first hook creates a file, checks its contents, and removes it. Expect
+`Check passed`, `Completed 1/1 hook`, and exit status 0.
 
-The second hook runs successfully but its check deliberately exits with code 1.
-Expect an error executing the check and `Completed 0/1 hook`. Hook failures are
-reported in the output; the CLI currently still exits with code 0.
+The second hook's check intentionally fails. Expect a red error summary and
+exit status 1. Both hooks also run during sample backups: processing continues,
+but the overall backup exits with status 1. Confirmation applies once to all
+included hooks; `--quiet` skips it.
 
-These hooks also run during sample backups; the intentional failure demonstrates
-that subsequent hooks continue. Included configurations may still prompt for confirmation.
+`just sample-backup`, `just sample-restore`, and `just sample-hook` are shortcuts.
+Sample backup/restore commands modify the tracked fixtures; use a temporary copy
+of this directory if you want to keep them unchanged.

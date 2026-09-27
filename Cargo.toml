@@ -1,0 +1,43 @@
+[package]
+name = "cockup"
+version = "0.2.0"
+edition = "2024"
+description = "A configuration backup and restore tool"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/huaium/cockup"
+homepage = "https://github.com/huaium/cockup"
+authors = ["huaium <huaium233@gmail.com>"]
+keywords = ["backup", "restore", "configuration", "macos", "cli"]
+categories = ["command-line-utilities", "filesystem"]
+include = [
+    "/src/**",
+    "/tests/cli.rs",
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/LICENSE",
+    "/README*.md",
+    "/sample/**/*.yaml",
+    "/sample/**/*.md",
+    "/sample/**/*.txt",
+    "/docs/**",
+]
+
+[package.metadata.docs.rs]
+default-target = "aarch64-apple-darwin"
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
+
+[[bin]]
+name = "cockup"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_yaml_ng = "0.10"
+serde_json = "1"
+glob = "0.3"
+filetime = "0.2"
+
+[dev-dependencies]
+tempfile = "3"

@@ -1,47 +1,36 @@
-python := justfile_directory() / ".venv/bin/python"
-export PATH := justfile_directory() / ".venv/bin" + ":" + env("PATH")
-
 default:
     @just --list
 
 run *ARGS:
-    "{{ python }}" -m cockup.main {{ ARGS }}
+    cargo run --locked -- {{ ARGS }}
 
+# Download the locked dependencies
 sync:
-    uv sync
+    cargo fetch --locked
 
-sync-all:
-    uv sync --all-extras
+sync-all: sync
 
 test *ARGS:
-    "{{ python }}" -m pytest {{ ARGS }}
+    cargo test --locked {{ ARGS }}
 
 sample-backup *ARGS:
-    "{{ python }}" -m cockup.main backup sample/config.yaml {{ ARGS }}
+    cargo run --locked -- backup sample/config.yaml {{ ARGS }}
 
 sample-restore *ARGS:
-    "{{ python }}" -m cockup.main restore sample/config.yaml {{ ARGS }}
+    cargo run --locked -- restore sample/config.yaml {{ ARGS }}
 
 sample-hook NAME="":
-    "{{ python }}" -m cockup.main hook sample/config.yaml --name "{{ NAME }}"
+    cargo run --locked -- hook sample/config.yaml {{ if NAME == "" { "" } else { "--name " + quote(NAME) } }}
 
 build *ARGS:
-    uv build {{ ARGS }}
+    cargo build --release --locked {{ ARGS }}
+
+check:
+    cargo fmt --check
+    cargo clippy --locked --all-targets -- -D warnings
 
 clean:
-    rm -rf dist/
-
-clean-pycache:
-    find . -type d -name "__pycache__" -exec rm -rf {} +
-
-# publish *ARGS:
-#     #!/usr/bin/env bash
-#     read -p "Are you sure to publish? [y/N] " REPLY
-#     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-#         echo "Operation cancelled"
-#         exit 0
-#     fi
-#     uv publish {{ ARGS }}
+    cargo clean
 
 # Create and push a specific tag
 tag VERSION:

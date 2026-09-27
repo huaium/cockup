@@ -1,6 +1,6 @@
 # cockup
 
-[![PyPI - Version](https://img.shields.io/pypi/v/cockup?link=https%3A%2F%2Fpypi.org%2Fproject%2Fcockup%2F)](https://pypi.org/project/cockup/)
+[![CI](https://github.com/huaium/cockup/actions/workflows/rust.yml/badge.svg)](https://github.com/huaium/cockup/actions/workflows/rust.yml)
 
 English | [中文](README_zh-cn.md)
 
@@ -8,31 +8,27 @@ Yet another backup tool for various configurations.
 
 ## Installation
 
-### PyPI
+Cockup 0.2.0 is written in Rust and supports Apple Silicon and Intel macOS.
+Python is no longer required.
 
-```bash
-pip install cockup
+Once released, download the matching archive from
+[GitHub Releases](https://github.com/huaium/cockup/releases), verify its SHA256,
+and place the extracted `cockup` binary in a directory on `PATH`.
+After publication to crates.io, you can also install it with:
+
+```sh
+cargo install cockup --locked
 ```
 
-### Homebrew
+To build from source:
 
-```bash
-# Single-line installation
-brew install huaium/tap/cockup
-
-# Or, using `brew tap`
-brew tap huaium/tap
-brew install cockup
+```sh
+cargo build --release --locked
+./target/release/cockup --help
 ```
 
-### Install from source
-
-1. Clone or download this repository
-2. Navigate to the project root, and run:
-
-```bash
-pip install -e .
-```
+Existing PyPI releases remain available but do not install the Rust version.
+The existing Homebrew tap requires a separate formula update.
 
 ## Usage
 
@@ -205,61 +201,33 @@ Refer to [sample](sample) to view a configuration demo.
 
 ## Development
 
-Basically, this project use `just` to unify the development workflow. If you are not going to use it, please refer to `justfile` in the project root to get access to the original commands.
+Use native macOS and a Rust toolchain supporting Rust 2024. No virtual environment is needed.
 
-### Install test dependencies
-
-Use `pytest` as the test framework.
-
-```bash
-just sync-all
+```sh
+cargo run --locked -- list
+cargo test --locked
+cargo fmt --check
+cargo clippy --locked --all-targets -- -D warnings
+cargo build --release --locked
 ```
 
-### Run directly
+`just` lists recipes; `just run`, `just test`, `just build`, and sample recipes wrap Cargo.
+Tests exercise the CLI using temporary files and executable Homebrew/hook fixtures.
+For a real Homebrew smoke test, run `cargo run --locked -- list iterm2`.
 
-With the command form of `just run [ARGS]`.
+## Migrating from Python
 
-```bash
-# `cockup list`
-just run list
+Commands and YAML fields remain compatible. Relative paths resolve against each
+configuration file's directory. Invalid configuration and include cycles fail before
+execution. Hook confirmation happens once; `--quiet` (or `--yes`) covers included hooks.
 
-# `cockup backup`
-just run backup /path/to/config.yaml
-```
+Exit codes are 0 for success or declined confirmation, 1 for configuration/copy/hook/
+Homebrew failures, and 2 for CLI usage errors. Recoverable failures do not stop later
+work, but the final summary reports failure. Special files and missing literal targets
+are still skipped with a warning. Metadata mode preserves file permissions, timestamps,
+and supported macOS file flags; ACLs, ownership, and extended attributes are not guaranteed.
 
-### Run sample
-
-A [sample](sample) with minimal configs is provided for manual testing.
-
-```bash
-# Test `cockup backup`
-just sample-backup
-
-# Or test `cockup restore`
-just sample-restore
-
-# Or test `cockup hook`
-just sample-hook [hook_name]
-```
-
-### Test
-
-`just test` works as an alias for `pytest`.
-
-```bash
-# Run all tests
-just test
-
-# Run with coverage
-just test --cov=cockup
-
-# Run specific test
-just test tests/test_config.py -v
-```
-
-### Build
-
-`just build` works as an alias for `uv build`.
+See the [migration validation notes](docs/migration.md) and [samples](sample/README.md).
 
 ## License
 

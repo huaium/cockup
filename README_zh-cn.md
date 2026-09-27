@@ -1,6 +1,6 @@
 # cockup
 
-[![PyPI - Version](https://img.shields.io/pypi/v/cockup?link=https%3A%2F%2Fpypi.org%2Fproject%2Fcockup%2F)](https://pypi.org/project/cockup/)
+[![CI](https://github.com/huaium/cockup/actions/workflows/rust.yml/badge.svg)](https://github.com/huaium/cockup/actions/workflows/rust.yml)
 
 [English](README.md) | 中文
 
@@ -8,31 +8,24 @@
 
 ## 安装
 
-### PyPI
+Cockup 0.2.0 改用 Rust，支持 Apple Silicon 和 Intel macOS，无需 Python。
 
-```bash
-pip install cockup
+发布后可从 [GitHub Releases](https://github.com/huaium/cockup/releases) 下载对应架构的
+压缩包，校验 SHA256 后解压，将 `cockup` 放入 `PATH` 中的目录。
+也可在 crates.io 发布后安装：
+
+```sh
+cargo install cockup --locked
 ```
 
-### Homebrew
+从源码构建：
 
-```bash
-# 单行命令
-brew install huaium/tap/cockup
-
-# 或者使用 `brew tap`
-brew tap huaium/tap
-brew install cockup
+```sh
+cargo build --release --locked
+./target/release/cockup --help
 ```
 
-### 从源码安装
-
-1. 克隆或下载本项目
-2. 切换到项目根目录，运行：
-
-```bash
-pip install -e .
-```
+旧版 PyPI 包仍然可用，但不会安装 Rust 版本。现有 Homebrew tap 需要单独更新。
 
 ## 使用
 
@@ -204,61 +197,30 @@ include:
 
 ## 开发
 
-本项目使用 `just` 来标准化开发工作流。如果你不打算使用它，请查看位于项目根目录的 `justfile` 来获取原始命令。
+使用原生 macOS 和支持 Rust 2024 的 Rust 工具链，无需虚拟环境。
 
-### 安装测试依赖
-
-使用 `pytest` 作为测试框架。
-
-```bash
-just sync-all
+```sh
+cargo run --locked -- list
+cargo test --locked
+cargo fmt --check
+cargo clippy --locked --all-targets -- -D warnings
+cargo build --release --locked
 ```
 
-### 直接运行
+`just` 显示所有命令；`just run`、`just test`、`just build` 和样例命令调用 Cargo。
+测试通过 CLI 和临时文件验证行为，使用可执行脚本模拟 Homebrew 和 Hooks。
+真实的 Homebrew 验证可运行 `cargo run --locked -- list iterm2`。
 
-通过 `just run [ARGS]`。
+## 从 Python 迁移
 
-```bash
-# `cockup list`
-just run list
+命令和 YAML 字段保持兼容。相对路径以各自配置文件所在目录为准，循环导入和无效配置会在执行前报错。
+Hooks 只确认一次，`--quiet`（或 `--yes`）同时作用于导入的 Hooks。
 
-# `cockup backup`
-just run backup /path/to/config.yaml
-```
+成功或拒绝确认返回 0；配置、复制、Hook 或 Homebrew 错误返回 1；命令行用法错误返回 2。
+可恢复的错误不会阻止后续操作，但最终摘要显示失败。特殊文件和不存在的普通目标仍会跳过并提示。
+元数据模式保留文件权限、时间戳和受支持的 macOS 文件标志，不保证 ACL、所有者或扩展属性。
 
-### 运行用例
-
-[sample](sample) 是一个最小化用例，可用于手动运行测试。
-
-```bash
-# 测试 `cockup backup`
-just sample-backup
-
-# 或者测试 `cockup restore`
-just sample-restore
-
-# 或者测试 `cockup hook`
-just sample-hook [hook_name]
-```
-
-### 测试
-
-`just test` 可作为 `pytest` 的别名。
-
-```bash
-# 运行所有测试
-just test
-
-# 运行所有测试并生成 Coverage
-just test --cov=cockup
-
-# 运行指定测试
-just test tests/test_config.py -v
-```
-
-### 构建
-
-`just build` 可作为 `uv build` 的别名。
+参见 [迁移验证记录](docs/migration.md) 和 [样例](sample/README.md)。
 
 ## 许可证
 
