@@ -137,7 +137,20 @@ pub fn load(path: &Path) -> Result<Config> {
             serde_yaml_ng::from_str(&source).map_err(|e| format!("{}: {e}", path.display()))?;
         cfg.directory = path.parent().unwrap().to_path_buf();
         cfg.destination = absolute(&cfg.destination, &cfg.directory)?;
-        for rule in &mut cfg.rules {
+        for (index, rule) in cfg.rules.iter_mut().enumerate() {
+            for (field, pattern) in std::iter::once(("from", rule.src.to_string_lossy())).chain(
+                rule.targets
+                    .iter()
+                    .map(|target| ("targets", target.as_str().into())),
+            ) {
+                glob::Pattern::new(&pattern).map_err(|error| {
+                    format!(
+                        "{}: rule {}: invalid {field} glob {pattern:?}: {error}",
+                        path.display(),
+                        index + 1
+                    )
+                })?;
+            }
             rule.src = absolute(&rule.src, &cfg.directory)?;
             for relative in
                 std::iter::once(rule.to.as_path()).chain(rule.targets.iter().map(Path::new))

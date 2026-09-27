@@ -631,3 +631,51 @@ fn invalid_rule_paths_fail_before_cleaning_backup() {
         );
     }
 }
+
+#[test]
+fn malformed_globs_fail_before_confirmation_hooks_or_cleanup() {
+    for (from, target, pattern) in [("source", "[", "["), ("source/[", "file", "source/[")] {
+        for included in [false, true] {
+            for quiet in [false, true] {
+                let d = TempDir::new().unwrap();
+                let p = d.path();
+                write(p, "backup/keep", "previous backup");
+                let rules = format!(
+                    "destination: backup\nrules:\n  - from: '{from}'\n    targets: ['{target}']\n    to: files\n"
+                );
+                let (config, invalid_file) = if included {
+                    write(p, "nested/child.yaml", &rules);
+                    (
+                        "destination: backup\nrules: []\ninclude: [nested/child.yaml]\n"
+                            .to_string(),
+                        "child.yaml",
+                    )
+                } else {
+                    (rules, "config.yaml")
+                };
+                write(
+                    p,
+                    "config.yaml",
+                    &(config
+                        + "clean: true\nhooks:\n  pre-backup:\n    - name: marker\n      command: [sh, -c, 'touch hook-ran']\n"),
+                );
+                let mut args = vec!["backup", "config.yaml"];
+                if quiet {
+                    args.push("-q");
+                }
+                let out = cli(p, &args, "y\n");
+                assert_eq!(out.status.code(), Some(1), "{}", text(&out));
+                assert_eq!(
+                    fs::read_to_string(p.join("backup/keep")).unwrap(),
+                    "previous backup"
+                );
+                assert!(!p.join("hook-ran").exists());
+                assert!(!text(&out).contains("Continue?"));
+                let error = String::from_utf8_lossy(&out.stderr);
+                assert!(error.contains(invalid_file), "{error}");
+                assert!(error.contains("rule 1"), "{error}");
+                assert!(error.contains(pattern), "{error}");
+            }
+        }
+    }
+}
