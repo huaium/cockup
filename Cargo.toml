@@ -16,10 +16,10 @@ include = [
     "/Cargo.toml",
     "/Cargo.lock",
     "/LICENSE",
+    "/justfile",
     "/README*.md",
-    "/sample/**/*.yaml",
-    "/sample/**/*.md",
-    "/sample/**/*.txt",
+    "/sample/*.yaml",
+    "/sample/*.md",
     "/docs/**",
 ]
 

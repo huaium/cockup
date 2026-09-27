@@ -13,15 +13,6 @@ sync-all: sync
 test *ARGS:
     cargo test --locked {{ ARGS }}
 
-sample-backup *ARGS:
-    cargo run --locked -- backup sample/config.yaml {{ ARGS }}
-
-sample-restore *ARGS:
-    cargo run --locked -- restore sample/config.yaml {{ ARGS }}
-
-sample-hook NAME="":
-    cargo run --locked -- hook sample/config.yaml {{ if NAME == "" { "" } else { "--name " + quote(NAME) } }}
-
 build *ARGS:
     cargo build --release --locked {{ ARGS }}
 
@@ -65,3 +56,27 @@ dtag VERSION:
 
     git tag -d {{ VERSION }}
     git push origin --delete {{ VERSION }}
+
+# Back up with sample/CASE.yaml; user-remap simulates Alice only for Cockup.
+sample-backup CASE="basic" *ARGS:
+    #!/bin/sh
+    set -eu
+    cargo build --locked
+    case {{ quote(CASE) }} in
+        user-remap) env HOME="$(pwd -P)/sample/src/homes/alice" USER=alice ./target/debug/cockup backup sample/user-remap.yaml {{ ARGS }} ;;
+        *) ./target/debug/cockup backup "sample/"{{ quote(CASE) }}".yaml" {{ ARGS }} ;;
+    esac
+
+# Restore with sample/CASE.yaml; user-remap simulates Bob only for Cockup.
+sample-restore CASE="basic" *ARGS:
+    #!/bin/sh
+    set -eu
+    cargo build --locked
+    case {{ quote(CASE) }} in
+        user-remap) env HOME="$(pwd -P)/sample/src/homes/bob" USER=bob ./target/debug/cockup restore sample/user-remap.yaml {{ ARGS }} ;;
+        *) ./target/debug/cockup restore "sample/"{{ quote(CASE) }}".yaml" {{ ARGS }} ;;
+    esac
+
+# Run a named sample hook, or select interactively when NAME is omitted.
+sample-hook NAME="":
+    cargo run --locked -- hook sample/hooks.yaml --quiet {{ if NAME == "" { "" } else { "--name " + quote(NAME) } }}

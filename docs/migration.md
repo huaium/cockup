@@ -9,7 +9,7 @@ the direct child is killed and reaped on timeout (not its entire process tree).
 
 Configuration paths are resolved relative to each file. Included rules/hooks
 precede local definitions; the root configuration controls destination, clean,
-and metadata. Includes are validated before actions, cycles fail, and hook
+metadata, and symlinks. Includes are validated before actions, cycles fail, and hook
 confirmation is shared across includes. A standalone hook or global pre-hook
 runs in the root configuration directory; rule hooks and global post-hooks run
 in the backup destination, matching the existing lifecycle.
@@ -21,7 +21,25 @@ warnings; unmatched patterns are errors. Clean operations refuse the filesystem
 root, home directory, and source-containing destinations. Overlapping copies fail. Rule `to` and target paths must be relative and may not
 contain `..`; invalid paths are rejected before clean mode removes anything.
 
-Symlinks, including dangling links, are copied as links. Directory targets are
+Every configuration, including includes, now requires `symlinks`: `referece`
+copies links (including dangling links), `dereference` copies their targets, and
+`prompt` asks once for all encountered links. The root policy applies to all merged rules
+during backup. Existing configurations should add `symlinks: referece`.
+Backup writes a versioned `.cockup-symlinks.json` with user/home identity and
+link locations, target text, resolved targets, modes, target chains and relative
+content paths. Restore uses recorded modes: reference restores only the link;
+dereference restores target contents and recreates links. Prompt choices are
+collected before cleanup and reused for copying and restore. Copied reference links keep their original
+targets by adjusting relative paths; restore recreates the recorded link text.
+Links into source or destination are allowed. Cleanup never follows symlinks when
+deleting; files inside the cleaned destination are still removed normally.
+Different-home restores ask once whether to map home prefixes to the current user
+or keep the original paths, even with `--quiet`. Blank/invalid input aborts before
+restore writes. The JSON manifest is atomically replaced on successful backup;
+failed/interrupted operations leave `.cockup-incomplete`, blocking restore until
+backup succeeds. Completed copies are not rolled back. Missing manifests support
+legacy reference-only restore without user remapping; corrupt manifests fail.
+Directory targets are
 replaced when updated; unrelated destination entries remain unless clean is true.
 Regular-file permissions are always preserved. Metadata mode also preserves
 file/link timestamps and macOS file flags; directory metadata, ownership, ACLs,

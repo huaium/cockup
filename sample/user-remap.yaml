@@ -1,0 +1,7 @@
+# just recipes simulate Alice/Bob using homes inside the shared src tree.
+symlinks: dereference
+destination: dst/user-remap
+rules:
+  - from: src/homes/alice/config
+    targets: [plain.txt, file-link, directory-link]
+    to: files

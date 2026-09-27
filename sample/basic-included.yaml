@@ -1,0 +1,7 @@
+# Imported by basic.yaml; the root config supplies destination/settings.
+symlinks: referece
+destination: dst/basic-included
+rules:
+  - from: src
+    targets: [config_file.txt]
+    to: config

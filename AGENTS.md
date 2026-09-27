@@ -24,7 +24,16 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
   Included rules/hooks precede local ones; top-level settings win. Reject cycles
   and invalid configuration before operations. Prompt once for hook execution.
 - File operations: explicit source/destination paths, glob layout preservation,
-  clean/update modes, symlinks copied as links, special files skipped. Preserve
+  clean/update modes, special files skipped. Required `symlinks` policy: referece
+  links, dereference targets with cycle detection, or prompt once for all links. Root policy
+  applies to included rules for backup. Discover links/choices before cleanup;
+  keep copied links pointing at their original targets. Cleanup unlinks links
+  without following them; destination contents remain subject to normal cleanup. `.cockup-symlinks.json` records
+  modes, locations, targets/chains and user/home identity. Restore uses recorded
+  modes: reference recreates only links; dereference restores contents then links.
+  Cross-user restore asks once for current/original home mapping. Quiet only skips
+  hook confirmation. Atomically replace manifests on success; incomplete backups
+  block restore until a successful rerun. Preserve
   permissions; metadata mode also preserves file/link timestamps and macOS flags.
 - Hooks: sequential command/check argument vectors (no implicit shell), inherited
   environment plus overrides, per-command timeout, configurable output. Checks
@@ -40,8 +49,11 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
 Use CLI-first TDD: one failing behavior test, then minimal implementation.
 Agreed seams: CLI output/status/prompts and filesystem results. Use temporary
 folders and executable fixtures for Homebrew and hooks; do not mock internals.
-Never run sample backups against real user configuration directories. Existing
-sample backups intentionally contain a failing check and return status 1.
+Never run sample backups against real user configuration directories. Shared
+fixtures live in sample/src; configs use separate sample/dst/CASE destinations.
+Use just sample-backup CASE, just sample-restore CASE, or just sample-hook NAME.
+These recipes do not reset or mutate fixtures automatically. Intentional hook
+failures are isolated in sample/hooks.yaml.
 
 ## Releases
 

@@ -1,0 +1,7 @@
+symlinks: referece
+destination: dst/symlink-chain
+clean: true
+rules:
+  - from: src/symlink-chain
+    targets: [link, alias, file.txt]
+    to: files

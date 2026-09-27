@@ -3,6 +3,7 @@ mod cli;
 mod config;
 mod files;
 mod hooks;
+mod manifest;
 mod report;
 use clap::{CommandFactory, Parser};
 use cli::{Commands, ConfigArgs};

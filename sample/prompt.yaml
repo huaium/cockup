@@ -1,0 +1,7 @@
+symlinks: prompt
+destination: dst/prompt
+clean: true
+rules:
+  - from: src
+    targets: [file-link, directory-link]
+    to: files

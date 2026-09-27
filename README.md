@@ -75,12 +75,62 @@ Create a YAML configuration file with the following structure:
 # If you use relative path, it will be relative to the config file's directory
 destination: "/path/to/backup/directory"
 
+# Required: referece, dereference, or prompt
+symlinks: referece
+
 # List of backup rules
 rules:
   - from: "/source/directory"
     targets: ["*.conf", "*.json"]
     to: "subdirectory"
 ```
+
+`symlinks` is required in every configuration file, including includes. The root
+configuration's value controls backup, including included rules:
+
+| Mode | Behavior |
+| --- | --- |
+| `referece` | Copy the link itself, preserving its target meaning by adjusting relative paths, including dangling links. |
+| `dereference` | Save target contents and record the link for restoration. |
+| `prompt` | Ask once during backup: `r`/`referece` or `d`/`dereference`; apply the decision to all links. |
+
+The policy applies to matched entries and symlinks encountered while recursively
+copying directories. In `prompt` mode, `--quiet` only suppresses hook confirmation;
+it does not answer symlink questions. Blank, invalid, or unavailable input reports
+an error. Use `referece` or `dereference` for unattended runs. Dereferencing broken
+links, cycles, or overlapping source/destination paths reports an error. Link
+choices are collected before cleanup or directory replacement; planning failures
+abort clean/prompt backups before deleting backup data.
+
+Backup writes `.cockup-symlinks.json` at the backup root. Keep it with the backup.
+It records the backup user/home, original link locations, exact targets, resolved
+targets, handling modes, target chains, and relative paths to backed-up contents.
+Restore follows the recorded modes, regardless of the current YAML mode:
+
+- `referece`: recreate the link only; leave target contents untouched.
+- `dereference`: restore target contents, then recreate the original link and any
+  recorded links in its target chain.
+- `prompt`: reuse the choices recorded during backup; do not ask for them again.
+
+Reference copies keep pointing to their original targets, adjusting relative link
+paths for the backup location. Restore recreates the original link text. Links
+pointing into the source or destination are allowed. With `clean: true`, cleanup
+removes links without following them; files inside the cleaned destination are
+still subject to normal cleanup.
+
+When restoring paths belonging to a different backup user/home, Cockup asks once:
+`c`/`current` maps them to the current home; `o`/`original` retains the old home.
+The choice applies to file locations, restored target contents, and link targets,
+including relative links that explicitly name the old user. It matches home-path
+prefixes, not arbitrary username text. `--quiet` does not skip this question.
+Invalid or missing input aborts before restoration writes.
+
+The manifest is replaced atomically after a successful backup. A failed or
+interrupted copy leaves `.cockup-incomplete`; restore refuses that backup until a
+successful backup clears the marker. This detects incomplete backups, but does
+not roll back copies already made. Missing manifests are accepted only for legacy
+`referece` restores (without user remapping); malformed manifests fail before
+restoration. The manifest and incomplete-marker paths are reserved.
 
 ### Optional Fields
 
@@ -189,7 +239,7 @@ A failed or timed-out check is reported, and subsequent hooks still run.
 
 You can simply include rules and hooks from other configuration files using `include`.
 
-Please note that only rules and hooks will be included, and they will be placed before the rules and hooks defined in the main config, using the `clean` and `metadata` fields from the main config for execution.
+Please note that only rules and hooks will be included, and they will be placed before the rules and hooks defined in the main config, using the `clean`, `metadata`, and `symlinks` fields from the main config for execution.
 
 ```yaml
 include:
@@ -217,7 +267,8 @@ For a real Homebrew smoke test, run `cargo run --locked -- list iterm2`.
 
 ## Migrating from Python
 
-Commands and YAML fields remain compatible. Relative paths resolve against each
+Existing configurations must add `symlinks: referece` to retain link-copying behavior.
+Commands and other YAML fields remain compatible. Relative paths resolve against each
 configuration file's directory. Invalid configuration and include cycles fail before
 execution. Hook confirmation happens once; `--quiet` (or `--yes`) covers included hooks.
 

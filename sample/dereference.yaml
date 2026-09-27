@@ -1,0 +1,7 @@
+symlinks: dereference
+destination: dst/dereference
+clean: false
+rules:
+  - from: src
+    targets: [file-link, directory-link]
+    to: files

@@ -1,0 +1,9 @@
+# Basic files, globs, metadata and included rules.
+symlinks: referece
+destination: dst/basic
+include: [basic-included.yaml]
+metadata: true
+rules:
+  - from: src
+    targets: [log_folder, '*log.txt']
+    to: log

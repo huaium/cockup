@@ -90,8 +90,16 @@ impl Hooks {
             .chain(&self.post_restore)
     }
 }
+#[derive(Clone, Copy, Deserialize, serde::Serialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Symlinks {
+    Referece,
+    Dereference,
+    Prompt,
+}
 #[derive(Deserialize)]
 pub struct Config {
+    pub symlinks: Symlinks,
     pub destination: PathBuf,
     pub rules: Vec<Rule>,
     #[serde(default, deserialize_with = "null_default")]

@@ -1,0 +1,22 @@
+symlinks: referece
+destination: dst/hooks
+rules: []
+hooks:
+  pre-backup:
+    - name: Check created file
+      command: [sh, -c, 'printf ready > .hook-check-result.txt']
+      check: [sh, -c, 'value=$(cat .hook-check-result.txt) && rm .hook-check-result.txt && test "$value" = ready && echo "Check passed"']
+      output: true
+      timeout: 5
+    - name: Check failure
+      command: [sh, -c, "echo 'Main command succeeded'"]
+      check: [sh, -c, "echo 'Check failed intentionally'; exit 1"]
+      output: true
+      timeout: 5
+    - name: Show environment
+      command: [sh, -c, 'printf "%s\n" "$SAMPLE_MESSAGE"']
+      check: [sh, -c, 'test "$SAMPLE_MESSAGE" = "Hello from a hook"']
+      env:
+        SAMPLE_MESSAGE: Hello from a hook
+      output: true
+      timeout: 5
