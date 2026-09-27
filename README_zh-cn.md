@@ -179,9 +179,14 @@ Hooks 允许用户自定义运行命令。
 ```yaml
 - name: "Brewfile Dumping"
   command: ["brew", "bundle", "dump", "--force", "--file", "Brewfile"]
+  check: ["test", "-s", "Brewfile"]
   output: true
   timeout: 10
 ```
+
+可选的 `check` 命令在 `command` 成功退出后执行，两者退出码都为 0 才算 Hook 成功。
+检查命令使用相同的工作目录、`env` 和 `output`，`timeout` 分别作用于两个命令。
+检查失败或超时会报告错误，但仍会继续执行后续 Hooks。
 
 ### 配置导入
 

@@ -48,6 +48,7 @@ def run_hooks(hooks: list[Hook]):
         if hook.env:
             env.update(hook.env)
 
+        stage = "command"
         try:
             subprocess.run(
                 hook.command,
@@ -58,13 +59,24 @@ def run_hooks(hooks: list[Hook]):
                 env=env,
             )
 
+            if hook.check is not None:
+                stage = "check"
+                subprocess.run(
+                    hook.check,
+                    capture_output=not hook.output,
+                    text=True,
+                    check=True,
+                    timeout=hook.timeout,
+                    env=env,
+                )
+
         except subprocess.TimeoutExpired:
             rprint_error(
-                f"Command `{hook.name}` timed out after {hook.timeout} seconds."
+                f"{stage.capitalize()} `{hook.name}` timed out after {hook.timeout} seconds."
             )
 
         except Exception as e:
-            rprint_error(f"Error executing command `{hook.name}`: {str(e)}.")
+            rprint_error(f"Error executing {stage} `{hook.name}`: {str(e)}.")
 
         else:
             success_count += 1

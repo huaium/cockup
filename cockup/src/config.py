@@ -15,6 +15,7 @@ class Hook:
     output: bool = False
     timeout: int | None = None
     env: dict[str, str] | None = None
+    check: list[str] | None = None
 
     @classmethod
     def from_dict(cls, data: dict) -> "Hook":
@@ -24,6 +25,7 @@ class Hook:
             output=data.get("output", False),
             timeout=data.get("timeout"),
             env=data.get("env"),
+            check=data.get("check"),
         )
 
 
