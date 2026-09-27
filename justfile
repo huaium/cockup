@@ -1,7 +1,11 @@
-default: run
+python := justfile_directory() / ".venv/bin/python"
+export PATH := justfile_directory() / ".venv/bin" + ":" + env("PATH")
+
+default:
+    @just --list
 
 run *ARGS:
-    python -m cockup.main {{ ARGS }}
+    "{{ python }}" -m cockup.main {{ ARGS }}
 
 sync:
     uv sync
@@ -10,17 +14,16 @@ sync-all:
     uv sync --all-extras
 
 test *ARGS:
-    pytest {{ ARGS }}
+    "{{ python }}" -m pytest {{ ARGS }}
 
 sample-backup *ARGS:
-    python -m cockup.main backup sample/config.yaml {{ ARGS }}
-    # python cockup/main.py backup sample/config.yaml {{ ARGS }}
+    "{{ python }}" -m cockup.main backup sample/config.yaml {{ ARGS }}
 
 sample-restore *ARGS:
-    python -m cockup.main restore sample/config.yaml {{ ARGS }}
+    "{{ python }}" -m cockup.main restore sample/config.yaml {{ ARGS }}
 
 sample-hook NAME="":
-    python -m cockup.main hook sample/config.yaml --name "{{ NAME }}"
+    "{{ python }}" -m cockup.main hook sample/config.yaml --name "{{ NAME }}"
 
 build *ARGS:
     uv build {{ ARGS }}

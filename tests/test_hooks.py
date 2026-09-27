@@ -1,9 +1,9 @@
 import subprocess
 import sys
-
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from cockup.src.config import Config, GlobalHooks, Hook, Rule
 from cockup.src.hooks import (
@@ -705,7 +705,11 @@ class TestRunHooksWithInput:
 
 class TestHookCheck:
     def test_check_parsed_for_global_and_rule_hooks(self):
-        data = {"name": "checked", "command": ["true"], "check": ["test", "-f", "result"]}
+        data = {
+            "name": "checked",
+            "command": ["true"],
+            "check": ["test", "-f", "result"],
+        }
         global_hooks = GlobalHooks.from_dict({"pre-backup": [data]})
         rule = Rule.from_dict({"from": ".", "to": "backup", "on-end": [data]})
         assert global_hooks.pre_backup[0].check == data["check"]
@@ -716,16 +720,32 @@ class TestHookCheck:
         target = tmp_path / "result"
         hook = Hook(
             name="write",
-            command=[sys.executable, "-c", "from pathlib import Path; Path(__import__('sys').argv[1]).write_text('done')", str(target)],
-            check=[sys.executable, "-c", "from pathlib import Path; assert Path(__import__('sys').argv[1]).read_text() == 'done'", str(target)],
+            command=[
+                sys.executable,
+                "-c",
+                "from pathlib import Path; Path(__import__('sys').argv[1]).write_text('done')",
+                str(target),
+            ],
+            check=[
+                sys.executable,
+                "-c",
+                "from pathlib import Path; assert Path(__import__('sys').argv[1]).read_text() == 'done'",
+                str(target),
+            ],
         )
         run_hooks([hook])
         assert "Completed 1/1 hook" in capsys.readouterr().out
 
     @pytest.mark.parametrize("output", [True, False])
     def test_check_inherits_execution_settings(self, output):
-        hook = Hook(name="checked", command=["main"], check=["verify"],
-                    env={"HOOK_TEST": "value"}, timeout=7, output=output)
+        hook = Hook(
+            name="checked",
+            command=["main"],
+            check=["verify"],
+            env={"HOOK_TEST": "value"},
+            timeout=7,
+            output=output,
+        )
         with patch("subprocess.run") as run:
             run_hooks([hook])
         assert [call.args[0] for call in run.call_args_list] == [["main"], ["verify"]]
@@ -735,14 +755,19 @@ class TestHookCheck:
         assert options["timeout"] == 7
         assert options["capture_output"] is not output
 
-    @pytest.mark.parametrize("error", [
-        subprocess.CalledProcessError(1, ["verify"]),
-        subprocess.TimeoutExpired(["verify"], 7),
-        FileNotFoundError("verify not found"),
-    ])
+    @pytest.mark.parametrize(
+        "error",
+        [
+            subprocess.CalledProcessError(1, ["verify"]),
+            subprocess.TimeoutExpired(["verify"], 7),
+            FileNotFoundError("verify not found"),
+        ],
+    )
     def test_failed_check_does_not_count_success_and_continues(self, error, capsys):
-        hooks = [Hook(name="checked", command=["main"], check=["verify"], timeout=7),
-                 Hook(name="next", command=["next"])]
+        hooks = [
+            Hook(name="checked", command=["main"], check=["verify"], timeout=7),
+            Hook(name="next", command=["next"]),
+        ]
         with patch("subprocess.run", side_effect=[None, error, None]) as run:
             run_hooks(hooks)
         assert run.call_count == 3
@@ -750,12 +775,40 @@ class TestHookCheck:
         assert "Completed 1/2 hooks" in output
         assert "check `checked`" in output.lower()
 
-    @pytest.mark.parametrize("error", [
-        subprocess.CalledProcessError(1, ["main"]),
-        subprocess.TimeoutExpired(["main"], 7),
-    ])
+    @pytest.mark.parametrize(
+        "error",
+        [
+            subprocess.CalledProcessError(1, ["main"]),
+            subprocess.TimeoutExpired(["main"], 7),
+        ],
+    )
     def test_failed_command_skips_check(self, error, capsys):
         with patch("subprocess.run", side_effect=error) as run:
             run_hooks([Hook(name="checked", command=["main"], check=["verify"])])
         assert run.call_count == 1
         assert "Completed 0/1 hook" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("failures", [0, 1, 2])
+def test_hook_summary_color_and_failure_error(failures):
+    hooks = [
+        Hook(name="first", command=["first"]),
+        Hook(name="second", command=["second"]),
+    ]
+    results = [subprocess.CalledProcessError(1, ["command"])] * failures
+    results += [None] * (2 - failures)
+    with (
+        patch("subprocess.run", side_effect=results),
+        patch("cockup.src.console.rprint") as printed,
+    ):
+        run_hooks(hooks)
+
+    summary = printed.call_args.kwargs
+    assert summary["message"].startswith(f"Completed {2 - failures}/2 hooks.")
+    if failures:
+        noun = "hook" if failures == 1 else "hooks"
+        assert f"Error: {failures} {noun} failed." in summary["message"]
+        assert summary["style"].color == "red"
+    else:
+        assert "Error" not in summary["message"]
+        assert summary["style"].color == "green"

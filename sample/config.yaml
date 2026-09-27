@@ -38,6 +38,29 @@ hooks:
         USER: "cockup_user"
         CUSTOM_VAR: "custom_value"
 
+    - name: "Check created file"
+      command:
+        - python
+        - -c
+        - "from pathlib import Path; Path('.hook-check-result.txt').write_text('ready')"
+      check:
+        - python
+        - -c
+        - "from pathlib import Path; p = Path('.hook-check-result.txt'); result = p.read_text(); p.unlink(); assert result == 'ready'; print('Check passed')"
+      output: true
+      timeout: 5
+
+    - name: "Check failure"
+      command: ["python", "-c", "print('Main command succeeded')"]
+      check:
+        [
+          "python",
+          "-c",
+          "import sys; print('Check failed intentionally'); sys.exit(1)",
+        ]
+      output: true
+      timeout: 5
+
   post-backup:
     - name: "Show goodbye message"
       command: ["echo", "See you next time!"]
