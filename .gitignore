@@ -204,3 +204,7 @@ __marimo__/
 
 # macOS Finder
 **/.DS_Store
+
+# Coding agents
+.codex/
+.claude/
