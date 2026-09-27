@@ -16,6 +16,10 @@ test *ARGS:
 build *ARGS:
     cargo build --release --locked {{ ARGS }}
 
+# Format all Rust source files in the workspace
+format:
+    cargo fmt --all
+
 check:
     cargo fmt --check
     cargo clippy --locked --all-targets -- -D warnings
