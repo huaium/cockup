@@ -90,7 +90,7 @@ pub fn list(mut names: Vec<String>) -> Result<(), String> {
         match result {
             Ok(paths) if !paths.is_empty() => {
                 found = true;
-                println!("{name}:");
+                report::app_name(&name);
                 for path in paths {
                     println!("  {path}");
                 }

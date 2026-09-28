@@ -233,7 +233,9 @@ For example, you may want to use it to dump Homebrew bundle into a file and plac
 An optional `check` command runs after `command` exits successfully. Both must exit
 with code 0 for the hook to count as successful. The check uses the same working
 directory, `env`, and `output`; `timeout` applies separately to each command.
-A failed or timed-out check is reported, and subsequent hooks still run.
+A failed or timed-out check is reported, and subsequent hooks in that stage still run.
+If any pre-backup or pre-restore hook fails, the operation stops before cleanup,
+copying, rule hooks, or post-hooks.
 
 ### Include
 

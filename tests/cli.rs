@@ -479,7 +479,7 @@ fn nested_prompt_choices_are_collected_before_replacing_directories() {
     fs::remove_file(p.join("original/file")).unwrap();
     let out = cli(p, &["restore", "config.yaml", "-q"], "");
     assert!(out.status.success(), "{}", text(&out));
-    assert!(!text(&out).contains("Symlink "));
+    assert!(!text(&out).contains("[r]eferece link or [d]ereference target?"));
     assert_eq!(
         fs::read_link(p.join("source/folder/link")).unwrap(),
         Path::new("../../original/file")
@@ -706,6 +706,7 @@ fn directory_updates_preserve_links_and_metadata_and_skip_sockets() {
     );
     assert!(!p.join("backup/files/folder/socket").exists());
     assert!(text(&out).contains("Skipping non-regular file"));
+    assert!(text(&out).contains("(0o14"));
     let yaml = fs::read_to_string(p.join("config.yaml")).unwrap();
     write(p, "config.yaml", &(yaml + "clean: true\nmetadata: false\n"));
     assert!(
@@ -887,6 +888,21 @@ esac
     assert!(output.find("alpha:").unwrap() < output.find("zeta:").unwrap());
     assert!(output.contains("~/alpha") && output.contains("~/empty"));
     assert!(String::from_utf8_lossy(&out.stderr).contains("missing"));
+    let colored = Command::new(env!("CARGO_BIN_EXE_cockup"))
+        .current_dir(p)
+        .args(["list", "alpha"])
+        .env("PATH", p)
+        .env_remove("NO_COLOR")
+        .env("FORCE_COLOR", "1")
+        .output()
+        .unwrap();
+    assert!(colored.status.success(), "{}", text(&colored));
+    assert!(
+        String::from_utf8_lossy(&colored.stdout)
+            .contains("\x1b[32;1malpha:\x1b[0m\n  ~/empty\n  ~/alpha\n"),
+        "{}",
+        text(&colored)
+    );
     assert!(run(&["list", "zeta"]).status.success());
     fs::remove_file(p.join("brew")).unwrap();
     let out = run(&["list"]);
@@ -895,7 +911,7 @@ esac
 }
 
 #[test]
-fn failures_are_red_and_backup_continues_after_copy_or_hook_errors() {
+fn pre_backup_hook_failures_are_red_and_stop_backup() {
     let d = TempDir::new().unwrap();
     let p = d.path();
     write(p, "source/file", "kept");
@@ -930,14 +946,11 @@ hooks:
     assert_eq!(out.status.code(), Some(1));
     assert!(
         String::from_utf8_lossy(&out.stderr)
-            .contains("\x1b[31;1m=> Completed 0/2 hooks. Error: 2 hooks failed.")
+            .contains("\x1b[36;1m=> \x1b[0m\x1b[31;1mCompleted 0/2 hooks. Error: 2 hooks failed.")
     );
     assert!(!p.join("forbidden").exists());
-    assert!(p.join("finished").exists());
-    assert_eq!(
-        fs::read_to_string(p.join("backup/files/file")).unwrap(),
-        "kept"
-    );
+    assert!(!p.join("finished").exists());
+    assert!(!p.join("backup").exists());
     assert!(!text(&out).contains("Backup completed."));
 }
 
@@ -1261,7 +1274,7 @@ fn symlink_prompt_is_yellow_with_choices_on_the_next_line() {
     let out = child.wait_with_output().unwrap();
     assert!(out.status.success(), "{}", text(&out));
     let stderr = String::from_utf8_lossy(&out.stderr);
-    assert!(stderr.contains("\x1b[33;1m=> Symlink "));
+    assert!(stderr.contains("\x1b[36;1m=> \x1b[0m\x1b[33;1mSymlink "));
     assert!(stderr.contains(
         " -> original:\n[r]eferece link or [d]ereference target? (applies to all symlinks)\x1b[0m"
     ));
@@ -1393,4 +1406,121 @@ fn clean_backup_replaces_previous_user_identity_and_link_records() {
         fs::read_to_string(p.join("alice/config/file")).unwrap(),
         "alice"
     );
+}
+
+#[test]
+fn backup_and_restore_progress_use_green_with_color_enabled() {
+    let d = TempDir::new().unwrap();
+    let p = d.path();
+    write(p, "source/file", "content");
+    write(
+        p,
+        "config.yaml",
+        "symlinks: referece\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n",
+    );
+    for command in ["backup", "restore"] {
+        let out = Command::new(env!("CARGO_BIN_EXE_cockup"))
+            .current_dir(p)
+            .args([command, "config.yaml", "-q"])
+            .env_remove("NO_COLOR")
+            .env("FORCE_COLOR", "1")
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "{}", text(&out));
+        let stdout = String::from_utf8_lossy(&out.stdout);
+        assert!(
+            stdout.contains("\x1b[36;1m=> \x1b[0m\x1b[32;1m"),
+            "{stdout}"
+        );
+        assert!(
+            stdout.contains("\x1b[1mFile copied:\x1b[0m ")
+                || stdout.contains("\x1b[1mFile existed, updating:\x1b[0m "),
+            "{stdout}"
+        );
+        let summary = if command == "backup" {
+            "Backup completed."
+        } else {
+            "Restore completed."
+        };
+        assert!(stdout.contains(summary), "{stdout}");
+        assert!(stdout.contains("\x1b[0m"), "{stdout}");
+    }
+}
+
+#[test]
+fn backup_and_restore_report_original_operation_progress() {
+    let d = TempDir::new().unwrap();
+    let p = d.path();
+    write(p, "source/one.txt", "one");
+    write(p, "source/two.txt", "two");
+    write(p, "source/folder/item", "nested");
+    write(p, "backup/stale", "old");
+    write(
+        p,
+        "config.yaml",
+        "symlinks: referece\nclean: true\nmetadata: false\ndestination: backup\nrules:\n  - from: source\n    targets: ['*.txt', 'folder*']\n    to: files\nhooks:\n  post-backup:\n    - name: done\n      command: [sh, -c, 'true']\n",
+    );
+    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    assert!(out.status.success(), "{}", text(&out));
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    for expected in [
+        "Starting backup...",
+        "Clean mode enabled, will remove backup folder first if exists.",
+        "Found existing backup folder, removing...",
+        "Metadata preservation disabled.",
+        "Target pattern matched (2 found):",
+        "File copied:",
+        "Folder copied:",
+        "Running post-backup hooks...",
+        "Running hook (1/1): done",
+        "Completed 1/1 hook.",
+        "Backup completed.",
+    ] {
+        assert!(stdout.contains(expected), "missing {expected}: {stdout}");
+    }
+    assert!(stdout.find("Starting backup...").unwrap() < stdout.find("File copied:").unwrap());
+    assert!(
+        stdout.find("File copied:").unwrap() < stdout.find("Running post-backup hooks...").unwrap()
+    );
+    assert!(!p.join("backup/stale").exists());
+    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    assert!(out.status.success(), "{}", text(&out));
+    assert!(text(&out).contains("Starting restore..."));
+}
+
+#[test]
+fn failing_pre_hooks_stop_backup_and_restore_before_file_changes() {
+    for command in ["backup", "restore"] {
+        let d = TempDir::new().unwrap();
+        let p = d.path();
+        write(p, "source/file", "source content");
+        write(p, "backup/files/file", "backup content");
+        write(p, "backup/stale", "keep");
+        write(
+            p,
+            "config.yaml",
+            "symlinks: referece\nclean: true\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n    on-start:\n      - name: rule\n        command: [sh, -c, 'touch ../rule-ran']\nhooks:\n  pre-backup:\n    - name: fail\n      command: [sh, -c, 'exit 1']\n    - name: later\n      command: [sh, -c, 'touch later-pre-ran']\n  pre-restore:\n    - name: fail\n      command: [sh, -c, 'exit 1']\n    - name: later\n      command: [sh, -c, 'touch later-pre-ran']\n  post-backup:\n    - name: post\n      command: [sh, -c, 'touch ../post-ran']\n  post-restore:\n    - name: post\n      command: [sh, -c, 'touch ../post-ran']\n",
+        );
+        let out = cli(p, &[command, "config.yaml", "-q"], "");
+        assert_eq!(out.status.code(), Some(1), "{}", text(&out));
+        assert!(
+            text(&out).contains("Completed 1/2 hooks."),
+            "{}",
+            text(&out)
+        );
+        assert!(p.join("later-pre-ran").exists());
+        assert!(!p.join("rule-ran").exists());
+        assert!(!p.join("post-ran").exists());
+        assert_eq!(
+            fs::read_to_string(p.join("source/file")).unwrap(),
+            "source content"
+        );
+        assert_eq!(
+            fs::read_to_string(p.join("backup/files/file")).unwrap(),
+            "backup content"
+        );
+        assert_eq!(fs::read_to_string(p.join("backup/stale")).unwrap(), "keep");
+        assert!(!p.join("backup/.cockup-incomplete").exists());
+        assert!(!p.join("backup/.cockup-symlinks.json").exists());
+    }
 }

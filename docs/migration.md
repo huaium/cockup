@@ -13,6 +13,8 @@ metadata, and symlinks. Includes are validated before actions, cycles fail, and 
 confirmation is shared across includes. A standalone hook or global pre-hook
 runs in the root configuration directory; rule hooks and global post-hooks run
 in the backup destination, matching the existing lifecycle.
+Pre-backup and pre-restore hook failures stop their operation after the pre-hook
+stage, before cleanup, copying, rule hooks, or post-hooks.
 
 Failures now return status 1, including partial Homebrew discovery. Work continues
 where possible; unusable destinations stop the operation. Usage errors return 2.

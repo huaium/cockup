@@ -38,6 +38,8 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
 - Hooks: sequential command/check argument vectors (no implicit shell), inherited
   environment plus overrides, per-command timeout, configurable output. Checks
   run only after successful commands. Timeouts kill and reap the direct child.
+  Complete the pre-hook stage, then abort backup or restore before file changes
+  if any pre-hook failed.
 - Discovery: bounded parallel `brew` subprocesses with auto-update disabled;
   parse cask JSON and print results in deterministic name order.
 - Reporting: operational errors on stderr, red failed summaries, green successes.

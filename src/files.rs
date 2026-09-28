@@ -174,6 +174,7 @@ fn copy(
     ancestors: &[PathBuf],
     state: &mut CopyState,
 ) -> Result<(), String> {
+    let top_level = ancestors.is_empty();
     let key: PathBuf = (if state.restore { src } else { dst })
         .strip_prefix(&state.root)
         .map_err(|e| e.to_string())?
@@ -197,6 +198,7 @@ fn copy(
             .position(|l| l.backup_path == key)
     {
         let link = state.manifest.links.remove(index);
+        let updating = fs::symlink_metadata(dst).is_ok();
         let result = (|| -> Result<(), String> {
             check_overlap(src, dst)?;
             if link.mode == Symlinks::Dereference {
@@ -234,6 +236,9 @@ fn copy(
             .manifest
             .links
             .insert(index.min(state.manifest.links.len()), link);
+        if result.is_ok() {
+            report::copied("Symlink", updating, dst);
+        }
         return result;
     }
     let source_entry = entry_path(src).map_err(|e| e.to_string())?;
@@ -385,10 +390,6 @@ fn copy(
         state: &mut CopyState,
     ) -> std::io::Result<()> {
         let meta = fs::symlink_metadata(src)?;
-        if !meta.is_file() && !meta.is_dir() && !meta.is_symlink() {
-            report::warning(&format!("Skipping non-regular file: {}", src.display()));
-            return Ok(());
-        }
         remove(dst)?;
         fs::create_dir_all(
             dst.parent()
@@ -440,6 +441,16 @@ fn copy(
         }
         Ok(())
     }
+    let source_metadata = fs::symlink_metadata(src).map_err(|e| e.to_string())?;
+    if !source_metadata.is_file() && !source_metadata.is_dir() && !source_metadata.is_symlink() {
+        use std::os::unix::fs::MetadataExt;
+        report::warning(&format!(
+            "Skipping non-regular file: {} (0o{:o})",
+            report::display_path(src),
+            source_metadata.mode()
+        ));
+        return Ok(());
+    }
     let updating = fs::symlink_metadata(dst).is_ok();
     inner(src, dst, metadata, symlinks, &ancestors, state)
         .map_err(|e| format!("{} -> {}: {e}", src.display(), dst.display()))?;
@@ -449,11 +460,16 @@ fn copy(
             state.manifest.links.push(record);
         }
     }
-    report::success(&format!(
-        "{}: {}",
-        if updating { "Updated" } else { "Copied" },
-        src.display()
-    ));
+    if top_level {
+        let kind = if source_metadata.is_symlink() {
+            "Symlink"
+        } else if source_metadata.is_dir() {
+            "Folder"
+        } else {
+            "File"
+        };
+        report::copied(kind, updating, src);
+    }
     Ok(())
 }
 #[cfg(target_os = "macos")]
@@ -550,6 +566,13 @@ fn rule(
                 failures += 1;
             }
             Ok(paths) => {
+                if !state.planning && magic(&source) && !paths.is_empty() {
+                    report::success(&format!(
+                        "Target pattern matched ({} found): {}",
+                        paths.len(),
+                        report::display_path(&source)
+                    ));
+                }
                 if paths.is_empty() && magic(&source) {
                     report::error(&format!(
                         "Matches not found for pattern: {}",
@@ -581,6 +604,7 @@ fn rule(
     failures
 }
 pub fn execute(cfg: &Config, restore: bool) -> Result<(), String> {
+    let destination_existed = fs::symlink_metadata(&cfg.destination).is_ok();
     let incomplete = cfg.destination.join(".cockup-incomplete");
     if restore && fs::symlink_metadata(&incomplete).is_ok() {
         return Err("Backup is incomplete; run a successful backup before restoring".into());
@@ -647,14 +671,32 @@ pub fn execute(cfg: &Config, restore: bool) -> Result<(), String> {
             return Err("Symlink planning failed; backup destination was not modified".into());
         }
     }
-    let mut failures = hooks::run(
-        if restore {
-            &cfg.hooks.pre_restore
+    report::success(if restore {
+        "Starting restore..."
+    } else {
+        "Starting backup..."
+    });
+    let pre_hooks = if restore {
+        &cfg.hooks.pre_restore
+    } else {
+        &cfg.hooks.pre_backup
+    };
+    if !pre_hooks.is_empty() {
+        report::success(if restore {
+            "Running pre-restore hooks..."
         } else {
-            &cfg.hooks.pre_backup
-        },
-        &cfg.directory,
-    );
+            "Running pre-backup hooks..."
+        });
+    }
+    let mut failures = hooks::run(pre_hooks, &cfg.directory);
+    if failures > 0 {
+        return Err(format!(
+            "{} stopped: {failures} pre-{} {} failed.",
+            if restore { "Restore" } else { "Backup" },
+            if restore { "restore" } else { "backup" },
+            if failures == 1 { "hook" } else { "hooks" }
+        ));
+    }
     if !restore {
         fs::create_dir_all(&cfg.destination).map_err(|e| e.to_string())?;
         match fs::OpenOptions::new()
@@ -675,11 +717,29 @@ pub fn execute(cfg: &Config, restore: bool) -> Result<(), String> {
         }
     } else {
         if cfg.clean {
+            report::success("Clean mode enabled, will remove backup folder first if exists.");
+            report::success(if destination_existed {
+                "Found existing backup folder, removing..."
+            } else {
+                "Existing backup folder not found, creating a new one."
+            });
             clean_backup(&cfg.destination).map_err(|e| e.to_string())?;
+        } else {
+            report::success(
+                "Clean mode disabled, will not remove existing backup folder, just update.",
+            );
         }
         fs::create_dir_all(&cfg.destination).map_err(|e| e.to_string())?;
     }
-    for r in &cfg.rules {
+    report::success(if cfg.metadata {
+        "Metadata preservation enabled."
+    } else {
+        "Metadata preservation disabled."
+    });
+    for (index, r) in cfg.rules.iter().enumerate() {
+        if !r.on_start.is_empty() {
+            report::success(&format!("Running pre-rule hooks for Rule {}...", index + 1));
+        }
         failures += hooks::run(&r.on_start, &cfg.destination);
         failures += rule(
             r,
@@ -693,16 +753,27 @@ pub fn execute(cfg: &Config, restore: bool) -> Result<(), String> {
             },
             &mut state,
         );
+        if !r.on_end.is_empty() {
+            report::success(&format!(
+                "Running post-rule hooks for Rule {}...",
+                index + 1
+            ));
+        }
         failures += hooks::run(&r.on_end, &cfg.destination);
     }
-    failures += hooks::run(
-        if restore {
-            &cfg.hooks.post_restore
+    let post_hooks = if restore {
+        &cfg.hooks.post_restore
+    } else {
+        &cfg.hooks.post_backup
+    };
+    if !post_hooks.is_empty() {
+        report::success(if restore {
+            "Running post-restore hooks..."
         } else {
-            &cfg.hooks.post_backup
-        },
-        &cfg.destination,
-    );
+            "Running post-backup hooks..."
+        });
+    }
+    failures += hooks::run(post_hooks, &cfg.destination);
     if failures > 0 {
         return Err(format!("Operation completed with {failures} failures."));
     }

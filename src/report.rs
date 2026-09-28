@@ -1,31 +1,86 @@
-use std::io::{self, IsTerminal, Write};
-fn colored(message: &str, color: u8, error: bool) {
-    let terminal = if error {
-        io::stderr().is_terminal()
+use owo_colors::{OwoColorize, Stream, Style};
+use std::io::{self, Write};
+
+fn colors_enabled() -> bool {
+    // Preserve Cockup's existing precedence when both overrides are present.
+    std::env::var_os("NO_COLOR").is_none()
+}
+
+pub fn app_name(name: &str) {
+    let heading = format!("{name}:");
+    if colors_enabled() {
+        println!(
+            "{}",
+            heading.if_supports_color(Stream::Stdout, |text| text
+                .style(Style::new().green().bold()))
+        );
     } else {
-        io::stdout().is_terminal()
+        println!("{heading}");
+    }
+}
+fn point(message: &str, style: Style, error: bool) {
+    let stream = if error {
+        Stream::Stderr
+    } else {
+        Stream::Stdout
     };
-    let use_color = std::env::var_os("NO_COLOR").is_none()
-        && (terminal || std::env::var("FORCE_COLOR").is_ok_and(|v| v != "0"));
-    let line = if use_color {
-        format!("\x1b[{color};1m=> {message}\x1b[0m")
+    if colors_enabled() {
+        let prefix = "=> ";
+        if error {
+            eprintln!(
+                "{}{}",
+                prefix.if_supports_color(stream, |text| text.style(Style::new().cyan().bold())),
+                message.if_supports_color(stream, |text| text.style(style))
+            );
+        } else {
+            println!(
+                "{}{}",
+                prefix.if_supports_color(stream, |text| text.style(Style::new().cyan().bold())),
+                message.if_supports_color(stream, |text| text.style(style))
+            );
+        }
+    } else if error {
+        eprintln!("=> {message}");
     } else {
-        format!("=> {message}")
-    };
-    if error {
-        eprintln!("{line}");
-    } else {
-        println!("{line}");
+        println!("=> {message}");
     }
 }
 pub fn success(message: &str) {
-    colored(message, 32, false);
+    point(message, Style::new().green().bold(), false);
 }
 pub fn error(message: &str) {
-    colored(message, 31, true);
+    point(message, Style::new().red().bold(), true);
 }
 pub fn warning(message: &str) {
-    colored(message, 33, true);
+    point(message, Style::new().yellow().bold(), true);
+}
+pub fn display_path(path: &std::path::Path) -> String {
+    if let Some(home) = std::env::var_os("HOME")
+        && let Ok(suffix) = path.strip_prefix(home)
+    {
+        return if suffix.as_os_str().is_empty() {
+            "~".into()
+        } else {
+            format!("~/{}", suffix.display())
+        };
+    }
+    path.display().to_string()
+}
+pub fn copied(kind: &str, updating: bool, path: &std::path::Path) {
+    let label = if updating {
+        format!("{kind} existed, updating:")
+    } else {
+        format!("{kind} copied:")
+    };
+    if colors_enabled() {
+        println!(
+            "{} {}",
+            label.if_supports_color(Stream::Stdout, |text| text.style(Style::new().bold())),
+            display_path(path)
+        );
+    } else {
+        println!("{} {}", label, display_path(path));
+    }
 }
 pub fn input(prompt: &str) -> Result<String, String> {
     print!("{prompt}");
