@@ -1,4 +1,4 @@
-symlinks: referece
+symlinks: reference
 destination: dst/hooks
 rules: []
 hooks:

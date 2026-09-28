@@ -47,7 +47,7 @@ fn check_link(root: &Path, link: &crate::manifest::Link) -> Result<(), String> {
     }
     let metadata = fs::symlink_metadata(&path).map_err(|e| format!("{}: {e}", path.display()))?;
     let valid = match link.mode {
-        Symlinks::Referece => metadata.is_symlink(),
+        Symlinks::Reference => metadata.is_symlink(),
         Symlinks::Dereference => metadata.is_file() || metadata.is_dir(),
         Symlinks::Prompt => false,
     };

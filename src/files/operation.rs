@@ -24,7 +24,7 @@ pub(crate) fn execute(cfg: &Config, restore: bool, dry_run: bool) -> Result<(), 
         && cfg
             .rules
             .iter()
-            .any(|r| r.symlinks != Some(Symlinks::Referece))
+            .any(|r| r.symlinks != Some(Symlinks::Reference))
     {
         return Err(
             "Missing symlink manifest: cannot restore dereference/prompt backup safely".into(),
@@ -177,7 +177,7 @@ pub(crate) fn execute(cfg: &Config, restore: bool, dry_run: bool) -> Result<(), 
             restore,
             r.metadata.unwrap(),
             if restore {
-                Symlinks::Referece
+                Symlinks::Reference
             } else {
                 r.symlinks.unwrap()
             },

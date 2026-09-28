@@ -8,7 +8,7 @@ fn hooks_run_in_order_with_checks_environment_and_working_directories() {
     write(
         p,
         "config.yaml",
-        r#"symlinks: referece
+        r#"symlinks: reference
 destination: backup
 rules:
   - from: source
@@ -48,7 +48,7 @@ fn named_and_interactive_hooks_report_failed_checks_and_continue() {
     write(
         p,
         "config.yaml",
-        r#"symlinks: referece
+        r#"symlinks: reference
 destination: backup
 rules: []
 hooks:
@@ -96,7 +96,7 @@ fn timed_out_commands_and_checks_fail_and_skip_dependent_work() {
     write(
         p,
         "config.yaml",
-        r#"symlinks: referece
+        r#"symlinks: reference
 destination: backup
 rules: []
 hooks:
@@ -138,7 +138,7 @@ fn pre_backup_hook_failures_are_red_and_stop_backup() {
     write(
         p,
         "config.yaml",
-        r#"symlinks: referece
+        r#"symlinks: reference
 destination: backup
 rules:
   - from: source
@@ -182,7 +182,7 @@ fn restore_lifecycle_and_hook_output_settings_are_preserved() {
     write(
         p,
         "config.yaml",
-        r#"symlinks: referece
+        r#"symlinks: reference
 destination: backup
 rules:
   - from: source
@@ -222,7 +222,7 @@ fn empty_null_and_invalid_hook_configuration_are_handled() {
             p,
             "config.yaml",
             &format!(
-                "symlinks: referece\ndestination: backup\nrules: []\nhooks:\n  pre-backup:\n    - {hook}\n"
+                "symlinks: reference\ndestination: backup\nrules: []\nhooks:\n  pre-backup:\n    - {hook}\n"
             ),
         );
         assert_eq!(
@@ -234,7 +234,7 @@ fn empty_null_and_invalid_hook_configuration_are_handled() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules:\n  - from: source\n    to: .\n    targets: null\n    on-start: null\nhooks: null\n",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    to: .\n    targets: null\n    on-start: null\nhooks: null\n",
     );
     assert!(
         cli(p, &["backup", "config.yaml", "-q"], "")
@@ -258,7 +258,7 @@ fn failing_pre_hooks_stop_backup_and_restore_before_file_changes() {
         write(
             p,
             "config.yaml",
-            "symlinks: referece\nclean: true\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n    on-start:\n      - name: rule\n        command: [sh, -c, 'touch ../rule-ran']\nhooks:\n  pre-backup:\n    - name: fail\n      command: [sh, -c, 'exit 1']\n    - name: later\n      command: [sh, -c, 'touch later-pre-ran']\n  pre-restore:\n    - name: fail\n      command: [sh, -c, 'exit 1']\n    - name: later\n      command: [sh, -c, 'touch later-pre-ran']\n  post-backup:\n    - name: post\n      command: [sh, -c, 'touch ../post-ran']\n  post-restore:\n    - name: post\n      command: [sh, -c, 'touch ../post-ran']\n",
+            "symlinks: reference\nclean: true\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n    on-start:\n      - name: rule\n        command: [sh, -c, 'touch ../rule-ran']\nhooks:\n  pre-backup:\n    - name: fail\n      command: [sh, -c, 'exit 1']\n    - name: later\n      command: [sh, -c, 'touch later-pre-ran']\n  pre-restore:\n    - name: fail\n      command: [sh, -c, 'exit 1']\n    - name: later\n      command: [sh, -c, 'touch later-pre-ran']\n  post-backup:\n    - name: post\n      command: [sh, -c, 'touch ../post-ran']\n  post-restore:\n    - name: post\n      command: [sh, -c, 'touch ../post-ran']\n",
         );
         let out = cli(p, &[command, "config.yaml", "-q"], "");
         assert_eq!(out.status.code(), Some(1), "{}", text(&out));

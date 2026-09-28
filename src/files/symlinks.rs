@@ -39,7 +39,7 @@ pub(super) fn restore_link(
                     src,
                     &state.mapped(&link.resolved_target),
                     metadata,
-                    Symlinks::Referece,
+                    Symlinks::Reference,
                     ancestors,
                     state,
                 )?;
@@ -124,13 +124,13 @@ pub(super) fn choose_mode(
             loop {
                 report::warning(&warning);
                 match report::input_bold(
-                    "[r]eferece link or [d]ereference target? (applies to all symlinks): ",
+                    "[r]eference link or [d]ereference target? (applies to all symlinks): ",
                 )?
                 .to_lowercase()
                 .as_str()
                 {
-                    "r" | "referece" => {
-                        state.prompt_choice = Some(Ok(Symlinks::Referece));
+                    "r" | "reference" => {
+                        state.prompt_choice = Some(Ok(Symlinks::Reference));
                         break;
                     }
                     "d" | "dereference" => {

@@ -9,7 +9,7 @@ fn dry_run_clean_backup_lists_changes_without_writing_or_running_hooks() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nclean: true\nrules:\n  - from: source\n    targets: [file]\n    to: files\nhooks:\n  pre-backup:\n    - name: marker\n      command: [sh, -c, 'touch hook-ran']\n",
+        "symlinks: reference\ndestination: backup\nclean: true\nrules:\n  - from: source\n    targets: [file]\n    to: files\nhooks:\n  pre-backup:\n    - name: marker\n      command: [sh, -c, 'touch hook-ran']\n",
     );
     let out = cli(p, &["backup", "config.yaml", "--dry-run"], "");
     assert!(out.status.success(), "{}", text(&out));
@@ -32,7 +32,7 @@ fn dry_run_restore_lists_changes_without_writing_or_running_hooks() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\nhooks:\n  pre-restore:\n    - name: marker\n      command: [sh, -c, 'touch hook-ran']\n",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\nhooks:\n  pre-restore:\n    - name: marker\n      command: [sh, -c, 'touch hook-ran']\n",
     );
     let backup = cli(p, &["backup", "config.yaml", "-q"], "");
     assert!(backup.status.success(), "{}", text(&backup));
@@ -57,7 +57,7 @@ fn dry_run_backup_rejects_non_directory_destination() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n",
     );
     let out = cli(p, &["backup", "config.yaml", "--dry-run"], "");
     assert_eq!(out.status.code(), Some(1), "{}", text(&out));
@@ -76,17 +76,17 @@ fn backup_restore_preserves_nested_include_paths_and_glob_layout() {
     write(
         p,
         "configs/child/deep/grand.yaml",
-        "symlinks: referece\ndestination: ignored\nrules: []\n",
+        "symlinks: reference\ndestination: ignored\nrules: []\n",
     );
     write(
         p,
         "configs/child/child.yaml",
-        "symlinks: referece\ndestination: ignored\ninclude: [{file: deep/grand.yaml}]\nrules:\n  - from: source/*\n    targets: ['*.txt']\n    to: child\n",
+        "symlinks: reference\ndestination: ignored\ninclude: [{file: deep/grand.yaml}]\nrules:\n  - from: source/*\n    targets: ['*.txt']\n    to: child\n",
     );
     write(
         p,
         "configs/root.yaml",
-        "symlinks: referece\ndestination: ../backup\ninclude: [{file: child/child.yaml}]\nrules:\n  - from: source\n    targets: [top.txt]\n    to: top\n",
+        "symlinks: reference\ndestination: ../backup\ninclude: [{file: child/child.yaml}]\nrules:\n  - from: source\n    targets: [top.txt]\n    to: top\n",
     );
     let out = cli(p, &["backup", "configs/root.yaml", "-q"], "");
     assert!(out.status.success(), "{}", text(&out));
@@ -132,7 +132,7 @@ fn directory_updates_preserve_links_and_metadata_and_skip_sockets() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules:\n  - from: source\n    targets: [folder, broken]\n    to: files\n",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [folder, broken]\n    to: files\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert!(out.status.success(), "{}", text(&out));
@@ -182,7 +182,7 @@ fn overlapping_copy_is_rejected_without_destroying_source() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: source\nclean: true\nrules:\n  - from: source\n    targets: [file]\n    to: .\n",
+        "symlinks: reference\ndestination: source\nclean: true\nrules:\n  - from: source\n    targets: [file]\n    to: .\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert_eq!(out.status.code(), Some(1));
@@ -202,7 +202,7 @@ fn copy_failure_does_not_prevent_later_targets() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules:\n  - from: source\n    targets: [sub/file, good]\n    to: files\n",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [sub/file, good]\n    to: files\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert_eq!(out.status.code(), Some(1));
@@ -230,7 +230,7 @@ fn macos_file_flags_are_preserved_with_metadata() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert!(out.status.success(), "{}", text(&out));

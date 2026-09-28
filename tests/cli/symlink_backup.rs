@@ -12,7 +12,7 @@ fn preserve_symlinks_to_ancestors_and_reject_copying_onto_itself() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules:\n  - from: source\n    targets: [root, ancestor, broken]\n    to: files\n",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [root, ancestor, broken]\n    to: files\n",
     );
     for command in ["backup", "backup", "restore"] {
         let out = cli(p, &[command, "config.yaml", "-q"], "");
@@ -30,7 +30,7 @@ fn preserve_symlinks_to_ancestors_and_reject_copying_onto_itself() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: source\nrules:\n  - from: source\n    targets: [root]\n    to: .\n",
+        "symlinks: reference\ndestination: source\nrules:\n  - from: source\n    targets: [root]\n    to: .\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert_eq!(out.status.code(), Some(1));
@@ -115,13 +115,13 @@ fn prompt_chooses_once_for_all_links_and_requires_an_explicit_answer() {
             &format!("invalid\n{answer}"),
         );
         assert!(retried.status.success(), "{}", text(&retried));
-        assert_eq!(text(&retried).matches("[r]eferece").count(), 2);
+        assert_eq!(text(&retried).matches("[r]eference").count(), 2);
         let out = cli(p, &["backup", "config.yaml", "-q"], answer);
         assert!(out.status.success(), "{}", text(&out));
-        assert_eq!(text(&out).matches("[r]eferece").count(), 1);
+        assert_eq!(text(&out).matches("[r]eference").count(), 1);
         assert!(
             String::from_utf8_lossy(&out.stdout)
-                .contains("[r]eferece link or [d]ereference target?")
+                .contains("[r]eference link or [d]ereference target?")
         );
         for name in ["one", "two"] {
             let dest = p.join("backup/files").join(name);
@@ -149,7 +149,7 @@ fn root_symlink_policy_controls_included_rules_and_dereference_rejects_overlap()
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [{file: child.yaml}]\n",
+        "symlinks: reference\ndestination: backup\nrules: []\ninclude: [{file: child.yaml}]\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert!(out.status.success(), "{}", text(&out));
@@ -182,7 +182,7 @@ fn reference_backup_retains_targets_and_cleanup_does_not_follow_links() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\nclean: true\ndestination: backup\nrules:\n  - from: source\n    targets: [link, directory-link]\n    to: files\n",
+        "symlinks: reference\nclean: true\ndestination: backup\nrules:\n  - from: source\n    targets: [link, directory-link]\n    to: files\n",
     );
     for _ in 0..2 {
         let out = cli(p, &["backup", "config.yaml", "-q"], "");
@@ -236,7 +236,7 @@ fn nested_prompt_choices_are_collected_before_replacing_directories() {
     fs::remove_file(p.join("original/file")).unwrap();
     let out = cli(p, &["restore", "config.yaml", "-q"], "");
     assert!(out.status.success(), "{}", text(&out));
-    assert!(!text(&out).contains("[r]eferece link or [d]ereference target?"));
+    assert!(!text(&out).contains("[r]eference link or [d]ereference target?"));
     assert_eq!(
         fs::read_link(p.join("source/folder/link")).unwrap(),
         Path::new("../../original/file")
@@ -258,7 +258,7 @@ fn source_links_may_point_into_backup_destination() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nclean: false\nrules:\n  - from: source\n    targets: [link]\n    to: files\n",
+        "symlinks: reference\ndestination: backup\nclean: false\nrules:\n  - from: source\n    targets: [link]\n    to: files\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert!(out.status.success(), "{}", text(&out));
@@ -297,7 +297,7 @@ fn symlink_prompt_is_yellow_with_choices_on_the_next_line() {
     assert!(stderr.contains(" -> original:\x1b[0m"));
     let stdout = String::from_utf8_lossy(&out.stdout);
     assert!(stdout.contains(
-        "\x1b[37;1m[r]eferece link or [d]ereference target? (applies to all symlinks): \x1b[0m"
+        "\x1b[37;1m[r]eference link or [d]ereference target? (applies to all symlinks): \x1b[0m"
     ));
 }
 
@@ -353,7 +353,7 @@ fn reference_links_preserve_parent_traversal_after_symlinks() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\nclean: true\ndestination: backup\nrules:\n  - from: source\n    targets: [file-link, missing-link]\n    to: files\n",
+        "symlinks: reference\nclean: true\ndestination: backup\nrules:\n  - from: source\n    targets: [file-link, missing-link]\n    to: files\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert!(out.status.success(), "{}", text(&out));

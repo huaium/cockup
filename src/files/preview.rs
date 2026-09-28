@@ -34,7 +34,7 @@ pub(super) fn run(cfg: &Config, state: &mut CopyState) -> Result<(), String> {
             state.restore,
             config_rule.metadata.unwrap(),
             if state.restore {
-                Symlinks::Referece
+                Symlinks::Reference
             } else {
                 config_rule.symlinks.unwrap()
             },

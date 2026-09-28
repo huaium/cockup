@@ -63,7 +63,7 @@ fn every_library_ingredient_round_trips_through_the_cli() {
             home,
             "config.yaml",
             &format!(
-                "symlinks: referece\ndestination: backup\nrules: []\ninclude: [{{file: {}, wrap: {name}}}]\n",
+                "symlinks: reference\ndestination: backup\nrules: []\ninclude: [{{file: {}, wrap: {name}}}]\n",
                 ingredient.display()
             ),
         );

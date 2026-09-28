@@ -95,7 +95,7 @@ pub(super) fn copy(
             } else {
                 "Would copy"
             };
-            let kind = if link && choice == Symlinks::Referece {
+            let kind = if link && choice == Symlinks::Reference {
                 "symlink"
             } else if meta.is_dir() {
                 "folder"

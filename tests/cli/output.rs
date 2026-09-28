@@ -82,7 +82,7 @@ fn quiet_accepts_only_quiet_and_q_flags() {
     write(
         dir.path(),
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules: []\n",
+        "symlinks: reference\ndestination: backup\nrules: []\n",
     );
     for flag in ["--quiet", "-q"] {
         let out = cli(dir.path(), &["backup", "config.yaml", flag], "");
@@ -132,7 +132,7 @@ fn backup_and_restore_progress_use_green_with_color_enabled() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n",
     );
     for command in ["backup", "restore"] {
         let out = Command::new(env!("CARGO_BIN_EXE_cockup"))
@@ -174,7 +174,7 @@ fn backup_and_restore_report_original_operation_progress() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\nclean: true\nmetadata: false\ndestination: backup\nrules:\n  - from: source\n    targets: ['*.txt', 'folder*']\n    to: files\nhooks:\n  post-backup:\n    - name: done\n      command: [sh, -c, 'true']\n",
+        "symlinks: reference\nclean: true\nmetadata: false\ndestination: backup\nrules:\n  - from: source\n    targets: ['*.txt', 'folder*']\n    to: files\nhooks:\n  post-backup:\n    - name: done\n      command: [sh, -c, 'true']\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert!(out.status.success(), "{}", text(&out));

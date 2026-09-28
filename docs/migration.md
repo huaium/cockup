@@ -30,11 +30,11 @@ warnings; unmatched patterns are errors. Clean operations refuse the filesystem
 root, home directory, and source-containing destinations. Overlapping copies fail. Rule `to` and target paths must be relative and may not
 contain `..`; invalid paths are rejected before clean mode removes anything.
 
-Every standalone configuration requires `symlinks`: `referece`
+Every standalone configuration requires `symlinks`: `reference`
 copies links (including dangling links), `dereference` copies their targets, and
 `prompt` asks once for links whose effective rule policy is prompt. The root policy
 is the default and can be overridden by include objects and rules. Existing
-configurations should add `symlinks: referece`.
+configurations should add `symlinks: reference`.
 Backup writes a versioned `.cockup-symlinks.json` with user/home identity and
 link locations, target text, resolved targets, modes, target chains and relative
 content paths. Restore uses recorded modes: reference restores only the link;

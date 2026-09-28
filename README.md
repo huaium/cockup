@@ -117,8 +117,8 @@ Create a YAML configuration file with the following structure:
 # If you use relative path, it will be relative to the config file's directory
 destination: "/path/to/backup/directory"
 
-# Required: referece, dereference, or prompt
-symlinks: referece
+# Required: reference, dereference, or prompt
+symlinks: reference
 
 # List of backup rules
 rules:
@@ -134,14 +134,14 @@ The root value is the default; include objects and rules can override it:
 
 | Mode | Behavior |
 | --- | --- |
-| `referece` | Copy the link itself, preserving its target meaning by adjusting relative paths, including dangling links. |
+| `reference` | Copy the link itself, preserving its target meaning by adjusting relative paths, including dangling links. |
 | `dereference` | Save target contents and record the link for restoration. |
-| `prompt` | Ask once during backup: `r`/`referece` or `d`/`dereference`; apply the decision to all links. |
+| `prompt` | Ask once during backup: `r`/`reference` or `d`/`dereference`; apply the decision to all links. |
 
 The policy applies to matched entries and symlinks encountered while recursively
 copying directories. In `prompt` mode, `--quiet` only suppresses hook confirmation;
 it does not answer symlink questions. Invalid answers are prompted again; closed
-input reports an error. Use `referece` or `dereference` for unattended runs. Dereferencing broken
+input reports an error. Use `reference` or `dereference` for unattended runs. Dereferencing broken
 links, cycles, or overlapping source/destination paths reports an error. Link
 choices are collected before cleanup or directory replacement; planning failures
 abort clean/prompt backups before deleting backup data.
@@ -151,7 +151,7 @@ It records the backup user/home, original link locations, exact targets, resolve
 targets, handling modes, target chains, and relative paths to backed-up contents.
 Restore follows the recorded modes, regardless of the current YAML mode:
 
-- `referece`: recreate the link only; leave target contents untouched.
+- `reference`: recreate the link only; leave target contents untouched.
 - `dereference`: restore target contents, then recreate the original link and any
   recorded links in its target chain.
 - `prompt`: reuse the choices recorded during backup; do not ask for them again.
@@ -173,7 +173,7 @@ The manifest is replaced atomically after a successful backup. A failed or
 interrupted copy leaves `.cockup-incomplete`; restore refuses that backup until a
 successful backup clears the marker. This detects incomplete backups, but does
 not roll back copies already made. Missing manifests are accepted only for legacy
-`referece` restores (without user remapping); malformed manifests fail before
+`reference` restores (without user remapping); malformed manifests fail before
 restoration. The manifest and incomplete-marker paths are reserved.
 
 ### Optional Fields
@@ -323,7 +323,7 @@ For a real Homebrew smoke test, run `cargo run --locked -- list iterm2`.
 
 ## Migrating from Python
 
-Existing configurations must add `symlinks: referece` to retain link-copying behavior.
+Existing configurations must add `symlinks: reference` to retain link-copying behavior.
 Commands and other YAML fields remain compatible except for `include`, which now
 requires objects with a `file` field. Relative paths resolve against each
 configuration file's directory. Invalid configuration and include cycles fail before

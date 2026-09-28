@@ -1,9 +1,8 @@
 # Cockup configuration template. Save this output as a .yaml file and edit it.
 # Required for a standalone config; optional for an include-only ingredient.
 # Included ingredients inherit the enclosing symlink policy.
-# Values: referece (copy the link), dereference (copy its target), prompt (ask once).
-# The spelling "referece" is part of the current configuration format.
-symlinks: referece
+# Values: reference (copy the link), dereference (copy its target), prompt (ask once).
+symlinks: reference
 
 # Required for a standalone config; optional for an include-only ingredient.
 # The backup directory is relative to this YAML file.
@@ -43,7 +42,7 @@ rules: []
 #     # Optional: targets selects names or globs below from (default: []).
 #     targets: ['*.plist']
 #     # Optional: symlinks overrides the inherited mode for this rule.
-#     symlinks: referece
+#     symlinks: reference
 #     # Optional: metadata overrides the inherited value for this rule.
 #     metadata: true
 #     # Optional: on-start hooks run before this rule (default: []).

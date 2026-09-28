@@ -13,7 +13,7 @@ fn destinationless_ingredients_can_be_included_but_not_run_directly() {
     write(
         p,
         "root.yaml",
-        "symlinks: referece\ndestination: backup\ninclude: [{file: nested/ingredient.yaml}]\nrules: []\n",
+        "symlinks: reference\ndestination: backup\ninclude: [{file: nested/ingredient.yaml}]\nrules: []\n",
     );
     let backup = cli(p, &["backup", "root.yaml", "-q"], "");
     assert!(backup.status.success(), "{}", text(&backup));
@@ -45,7 +45,7 @@ fn destinationless_ingredient_inherits_symlinks_and_still_requires_rules() {
         "ingredient.yaml",
         "rules:\n  - from: source\n    targets: [link]\n    to: files\n",
     );
-    for (policy, kind) in [("referece", "link"), ("dereference", "file")] {
+    for (policy, kind) in [("reference", "link"), ("dereference", "file")] {
         write(
             p,
             "root.yaml",
@@ -74,12 +74,12 @@ fn included_rules_are_wrapped_under_the_root_destination() {
     write(
         p,
         "nested/child.yaml",
-        "symlinks: referece\ndestination: ignored\nrules:\n  - from: ../source\n    targets: [file]\n    to: config\n",
+        "symlinks: reference\ndestination: ignored\nrules:\n  - from: ../source\n    targets: [file]\n    to: config\n",
     );
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\ninclude:\n  - file: nested/child.yaml\n    wrap: imported\nrules: []\n",
+        "symlinks: reference\ndestination: backup\ninclude:\n  - file: nested/child.yaml\n    wrap: imported\nrules: []\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert!(out.status.success(), "{}", text(&out));
@@ -108,17 +108,17 @@ fn nested_include_and_rule_settings_override_inherited_defaults() {
     write(
         p,
         "nested/grand.yaml",
-        "symlinks: prompt\ndestination: ignored\nrules:\n  - from: ../source\n    targets: [nested]\n    to: files\n    symlinks: referece\n  - from: ../source\n    targets: [local]\n    to: files\n    symlinks: dereference\n",
+        "symlinks: prompt\ndestination: ignored\nrules:\n  - from: ../source\n    targets: [nested]\n    to: files\n    symlinks: reference\n  - from: ../source\n    targets: [local]\n    to: files\n    symlinks: dereference\n",
     );
     write(
         p,
         "nested/child.yaml",
-        "symlinks: prompt\ndestination: ignored\ninclude:\n  - file: grand.yaml\n    wrap: grand\n    symlinks: referece\nrules:\n  - from: ../source\n    targets: [inherited]\n    to: files\n",
+        "symlinks: prompt\ndestination: ignored\ninclude:\n  - file: grand.yaml\n    wrap: grand\n    symlinks: reference\nrules:\n  - from: ../source\n    targets: [inherited]\n    to: files\n",
     );
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\ninclude:\n  - file: nested/child.yaml\n    wrap: outer\n    symlinks: dereference\nrules: []\n",
+        "symlinks: reference\ndestination: backup\ninclude:\n  - file: nested/child.yaml\n    wrap: outer\n    symlinks: dereference\nrules: []\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert!(out.status.success(), "{}", text(&out));
@@ -159,12 +159,12 @@ fn include_and_rule_metadata_overrides_apply_on_backup_and_restore() {
     write(
         p,
         "child.yaml",
-        "symlinks: referece\ndestination: ignored\nrules:\n  - from: source\n    targets: [included]\n    to: files\n  - from: source\n    targets: [rule]\n    to: files\n    metadata: true\n",
+        "symlinks: reference\ndestination: ignored\nrules:\n  - from: source\n    targets: [included]\n    to: files\n  - from: source\n    targets: [rule]\n    to: files\n    metadata: true\n",
     );
     write(
         p,
         "config.yaml",
-        "symlinks: referece\nmetadata: true\ndestination: backup\ninclude:\n  - file: child.yaml\n    metadata: false\nrules:\n  - from: source\n    targets: [root]\n    to: files\n",
+        "symlinks: reference\nmetadata: true\ndestination: backup\ninclude:\n  - file: child.yaml\n    metadata: false\nrules:\n  - from: source\n    targets: [root]\n    to: files\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert!(out.status.success(), "{}", text(&out));
@@ -203,7 +203,7 @@ fn invalid_include_shapes_and_wraps_fail_before_cleaning() {
             p,
             "config.yaml",
             &format!(
-                "symlinks: referece\ndestination: backup\nclean: true\ninclude: {include}\nrules: []\n"
+                "symlinks: reference\ndestination: backup\nclean: true\ninclude: {include}\nrules: []\n"
             ),
         );
         let out = cli(p, &["backup", "config.yaml", "-q"], "");
@@ -221,9 +221,9 @@ fn invalid_configuration_fails_before_side_effects() {
     for yaml in [
         "rules: []",
         "destination: backup\nrules: []",
-        "symlinks: referece\ndestination: backup\nrules: [bad]",
-        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [{file: missing.yaml}]",
-        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [{file: config.yaml}]",
+        "symlinks: reference\ndestination: backup\nrules: [bad]",
+        "symlinks: reference\ndestination: backup\nrules: []\ninclude: [{file: missing.yaml}]",
+        "symlinks: reference\ndestination: backup\nrules: []\ninclude: [{file: config.yaml}]",
     ] {
         write(dir.path(), "config.yaml", yaml);
         let out = cli(dir.path(), &["backup", "config.yaml", "-q"], "");
@@ -260,12 +260,12 @@ fn included_hooks_prompt_once_and_quiet_suppresses_confirmation() {
     write(
         dir.path(),
         "nested/child.yaml",
-        "symlinks: referece\ndestination: ignored\nrules: []\nhooks:\n  pre-backup:\n    - name: child\n      command: [echo, hello]\n",
+        "symlinks: reference\ndestination: ignored\nrules: []\nhooks:\n  pre-backup:\n    - name: child\n      command: [echo, hello]\n",
     );
     write(
         dir.path(),
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [{file: nested/child.yaml}]\n",
+        "symlinks: reference\ndestination: backup\nrules: []\ninclude: [{file: nested/child.yaml}]\n",
     );
     let denied = cli(dir.path(), &["backup", "config.yaml"], "n\n");
     assert!(denied.status.success());
@@ -309,7 +309,7 @@ fn invalid_rule_paths_fail_before_cleaning_backup() {
             p,
             "config.yaml",
             &format!(
-                "symlinks: referece\ndestination: backup\nclean: true\nrules:\n  - from: source\n    {fields}\n"
+                "symlinks: reference\ndestination: backup\nclean: true\nrules:\n  - from: source\n    {fields}\n"
             ),
         );
         let out = cli(p, &["backup", "config.yaml", "-q"], "");
@@ -330,12 +330,12 @@ fn malformed_globs_fail_before_confirmation_hooks_or_cleanup() {
                 let p = d.path();
                 write(p, "backup/keep", "previous backup");
                 let rules = format!(
-                    "symlinks: referece\ndestination: backup\nrules:\n  - from: '{from}'\n    targets: ['{target}']\n    to: files\n"
+                    "symlinks: reference\ndestination: backup\nrules:\n  - from: '{from}'\n    targets: ['{target}']\n    to: files\n"
                 );
                 let (config, invalid_file) = if included {
                     write(p, "nested/child.yaml", &rules);
                     (
-                        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [{file: nested/child.yaml}]\n"
+                        "symlinks: reference\ndestination: backup\nrules: []\ninclude: [{file: nested/child.yaml}]\n"
                             .to_string(),
                         "child.yaml",
                     )
@@ -378,7 +378,7 @@ fn home_expansion_and_dotfile_globs_work_without_shell_expansion() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: '~/backup'\nrules:\n  - from: '~/.config'\n    targets: ['app/*', 'app/.*']\n    to: .\n",
+        "symlinks: reference\ndestination: '~/backup'\nrules:\n  - from: '~/.config'\n    targets: ['app/*', 'app/.*']\n    to: .\n",
     );
     let out = Command::new(env!("CARGO_BIN_EXE_cockup"))
         .current_dir(p)

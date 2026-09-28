@@ -14,7 +14,7 @@ fn setup(home: &Path) {
     write(
         home,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules: []\ninclude:\n  - ingredient: demo\n    wrap: app\n",
+        "symlinks: reference\ndestination: backup\nrules: []\ninclude:\n  - ingredient: demo\n    wrap: app\n",
     );
     write(
         home,
@@ -266,7 +266,7 @@ fn include_source_must_be_unique_and_ingredient_names_cannot_escape_cache() {
         write(
             home,
             "config.yaml",
-            &format!("symlinks: referece\ndestination: backup\nrules: []\ninclude: [{include}]\n"),
+            &format!("symlinks: reference\ndestination: backup\nrules: []\ninclude: [{include}]\n"),
         );
         let output = run(home, &["backup", "config.yaml", "-q"], "200");
         assert_eq!(output.status.code(), Some(1), "{}", text(&output));

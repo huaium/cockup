@@ -21,7 +21,7 @@ Include an ingredient by name to download it from this repository. You can also
 save a YAML file alongside your configuration and include it by relative path:
 
 ```yaml
-symlinks: referece
+symlinks: reference
 destination: backup
 rules: []
 include:

@@ -112,7 +112,7 @@ impl Hooks {
 #[derive(Clone, Copy, Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Symlinks {
-    Referece,
+    Reference,
     Dereference,
     Prompt,
 }

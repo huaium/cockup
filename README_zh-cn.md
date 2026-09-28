@@ -107,8 +107,8 @@ cockup hook /path/to/config.yaml --name hook_name
 # 如果你打算使用相对路径，则请务必注意是相对于该配置文件的路径
 destination: "/path/to/backup/directory"
 
-# 必填：referece、dereference 或 prompt
-symlinks: referece
+# 必填：reference、dereference 或 prompt
+symlinks: reference
 
 # 备份规则列表
 rules:
@@ -123,9 +123,9 @@ rules:
 
 | 模式 | 行为 |
 | --- | --- |
-| `referece` | 复制符号链接本身，调整相对路径以保持原始目标，也支持失效链接。 |
+| `reference` | 复制符号链接本身，调整相对路径以保持原始目标，也支持失效链接。 |
 | `dereference` | 保存链接指向的内容，并记录链接以便恢复。 |
-| `prompt` | 遇到首个链接时询问一次，选择适用于所有链接：输入 `r`/`referece` 保留链接，或 `d`/`dereference` 复制目标。 |
+| `prompt` | 遇到首个链接时询问一次，选择适用于所有链接：输入 `r`/`reference` 保留链接，或 `d`/`dereference` 复制目标。 |
 
 该策略作用于匹配到的条目及递归复制目录时遇到的链接。`--quiet` 只跳过 Hook 确认，
 不会跳过链接选择。无效输入会重新询问，输入流关闭时才会报错；无人值守运行应选择前两种模式。
@@ -135,7 +135,7 @@ rules:
 链接原位置、原始目标文本、解析后的目标、模式、目标链接链及内容的备份相对路径。
 恢复时使用清单中的模式，不受 YAML 后续修改影响：
 
-- `referece`：仅重建链接，不恢复目标内容。
+- `reference`：仅重建链接，不恢复目标内容。
 - `dereference`：先恢复目标内容，再重建原始链接及记录的目标链接链。
 - `prompt`：使用备份时记录的选择，不重复询问。
 
@@ -148,7 +148,7 @@ rules:
 匹配主目录路径前缀，不替换任意用户名文本。`--quiet` 不跳过此询问，无效或缺失输入会在写入前终止恢复。
 
 成功备份后原子替换清单。复制失败或中断会留下 `.cockup-incomplete`，再次成功备份前拒绝恢复，
-避免使用不完整的数据；这不会回滚已经完成的复制。只有旧版 `referece` 备份允许无清单恢复（不支持用户路径映射）。
+避免使用不完整的数据；这不会回滚已经完成的复制。只有旧版 `reference` 备份允许无清单恢复（不支持用户路径映射）。
 无效清单会在恢复前报错。清单及未完成标记路径为保留路径。
 
 ### 可选字段
@@ -298,7 +298,7 @@ cargo build --release --locked
 
 ## 从 Python 迁移
 
-现有配置必须添加 `symlinks: referece` 才能保留原有链接复制行为。命令和其他 YAML 字段保持兼容，但 `include` 现在必须使用带 `file` 字段的对象。相对路径以各自配置文件所在目录为准，循环导入和无效配置会在执行前报错。
+现有配置必须添加 `symlinks: reference` 才能保留原有链接复制行为。命令和其他 YAML 字段保持兼容，但 `include` 现在必须使用带 `file` 字段的对象。相对路径以各自配置文件所在目录为准，循环导入和无效配置会在执行前报错。
 Hooks 只确认一次，`--quiet` 或 `-q` 同时作用于导入的 Hooks。
 
 成功或拒绝确认返回 0；配置、复制、Hook 或 Homebrew 错误返回 1；命令行用法错误返回 2。

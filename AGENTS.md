@@ -36,7 +36,7 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
   and are snapshotted in the backup manifest for offline restore/verify.
   Prompt once for hook execution.
 - File operations: explicit source/destination paths, glob layout preservation,
-  clean/update modes, special files skipped. Required `symlinks` policy: referece
+  clean/update modes, special files skipped. Required `symlinks` policy: reference
   links, dereference targets with cycle detection, or prompt once for all links. Root policy
   applies to included rules unless overridden. Discover links/choices before cleanup;
   keep copied links pointing at their original targets. Cleanup unlinks links

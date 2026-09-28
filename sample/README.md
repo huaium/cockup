@@ -57,7 +57,6 @@ just sample-restore reference --quiet
 ```
 
 `--quiet` skips hook confirmation, not symlink choices or user-remapping questions.
-The YAML mode spelling is `referece`; the config name is `reference`.
 
 For user remapping, the recipes set `HOME` and `USER` only for Cockup, using
 `sample/src/homes/alice` and `sample/src/homes/bob`. No real user accounts or home

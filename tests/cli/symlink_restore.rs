@@ -242,7 +242,7 @@ fn backup_reserves_manifest_paths_before_cleaning() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\nclean: true\ndestination: backup\nrules:\n  - from: source\n    targets: ['.cockup-symlinks.json']\n    to: .\n",
+        "symlinks: reference\nclean: true\ndestination: backup\nrules:\n  - from: source\n    targets: ['.cockup-symlinks.json']\n    to: .\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert_eq!(out.status.code(), Some(1), "{}", text(&out));
@@ -259,7 +259,7 @@ fn home_choice_applies_to_tilde_rules_without_links_and_missing_input_aborts() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules:\n  - from: '~/config'\n    targets: [file]\n    to: files\n",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: '~/config'\n    targets: [file]\n    to: files\n",
     );
     let out = Command::new(env!("CARGO_BIN_EXE_cockup"))
         .current_dir(p)
@@ -313,7 +313,7 @@ fn clean_backup_replaces_previous_user_identity_and_link_records() {
     write(
         p,
         "config.yaml",
-        "symlinks: referece\nclean: true\ndestination: backup\nrules:\n  - from: '~/config'\n    targets: ['*']\n    to: files\n",
+        "symlinks: reference\nclean: true\ndestination: backup\nrules:\n  - from: '~/config'\n    targets: ['*']\n    to: files\n",
     );
     for user in ["alice", "bob"] {
         let home = p.join(user);
