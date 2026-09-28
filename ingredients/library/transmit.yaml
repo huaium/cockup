@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask transmit (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["com.panic.Transmit"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["com.panic.Transmit.plist"]
+    to: "Library/Preferences"

@@ -1,0 +1,6 @@
+# Checked against: brew cat --cask fantastical (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["com.flexibits.fantastical.plist"]
+    to: "Library/Preferences"

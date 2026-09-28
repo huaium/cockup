@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask docker (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["com.docker.docker.plist"]
+    to: "Library/Preferences"
+  - from: "~/Library/Preferences"
+    targets: ["com.electron.dockerdesktop.plist"]
+    to: "Library/Preferences"

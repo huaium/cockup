@@ -1,0 +1,6 @@
+# Checked against: brew cat --cask craft (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["com.lukilabs.lukiapp.plist"]
+    to: "Library/Preferences"

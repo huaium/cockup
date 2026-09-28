@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask calibre (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["calibre"]
+    to: "Library/Preferences"
+  - from: "~/Library/Preferences"
+    targets: ["net.kovidgoyal.calibre.plist"]
+    to: "Library/Preferences"

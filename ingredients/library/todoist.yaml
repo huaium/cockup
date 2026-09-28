@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask todoist (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["Todoist"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["com.todoist.mac.Todoist.plist"]
+    to: "Library/Preferences"

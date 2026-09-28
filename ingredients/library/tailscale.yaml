@@ -1,0 +1,6 @@
+# Checked against: brew cat --cask tailscale (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["io.tailscale.ipn.macsys.plist"]
+    to: "Library/Preferences"

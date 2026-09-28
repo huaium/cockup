@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask hazel (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["Hazel"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["com.noodlesoft.Hazel.plist"]
+    to: "Library/Preferences"

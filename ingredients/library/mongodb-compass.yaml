@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask mongodb-compass (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["MongoDB Compass"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["com.mongodb.compass.plist"]
+    to: "Library/Preferences"

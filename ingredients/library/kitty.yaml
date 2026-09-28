@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask kitty (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/.config"
+    targets: ["kitty"]
+    to: ".config"
+  - from: "~/Library/Preferences"
+    targets: ["net.kovidgoyal.kitty.plist"]
+    to: "Library/Preferences"

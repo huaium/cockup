@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask hammerspoon (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~"
+    targets: [".hammerspoon"]
+    to: "home"
+  - from: "~/Library/Preferences"
+    targets: ["org.hammerspoon.Hammerspoon.plist"]
+    to: "Library/Preferences"

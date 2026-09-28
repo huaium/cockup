@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask github (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["GitHub Desktop"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["com.github.GitHubClient.plist"]
+    to: "Library/Preferences"

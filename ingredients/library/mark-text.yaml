@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask mark-text (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["marktext"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["com.github.marktext.marktext.plist"]
+    to: "Library/Preferences"

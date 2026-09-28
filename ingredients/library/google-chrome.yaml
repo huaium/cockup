@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask google-chrome (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support/Google"
+    targets: ["Chrome"]
+    to: "Library/Application Support/Google"
+  - from: "~/Library/Preferences"
+    targets: ["com.google.Chrome.plist"]
+    to: "Library/Preferences"

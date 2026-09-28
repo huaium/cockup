@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask appcleaner (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["net.freemacsoft.AppCleaner.plist"]
+    to: "Library/Preferences"
+  - from: "~/Library/Preferences"
+    targets: ["net.freemacsoft.AppCleaner-SmartDelete.plist"]
+    to: "Library/Preferences"

@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask sublime-merge (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["Sublime Merge"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["com.sublimemerge.plist"]
+    to: "Library/Preferences"

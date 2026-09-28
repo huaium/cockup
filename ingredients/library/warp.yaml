@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask warp (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["dev.warp.Warp-Stable"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["dev.warp.Warp-Stable.plist"]
+    to: "Library/Preferences"

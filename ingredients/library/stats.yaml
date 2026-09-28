@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask stats (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["Stats"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["eu.exelban.Stats.plist"]
+    to: "Library/Preferences"

@@ -1,0 +1,6 @@
+# Checked against: brew cat --cask daisydisk (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["com.daisydiskapp.DaisyDiskStandAlone.plist"]
+    to: "Library/Preferences"

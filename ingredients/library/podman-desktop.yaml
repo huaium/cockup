@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask podman-desktop (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["Podman Desktop"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["io.podmandesktop.PodmanDesktop.plist"]
+    to: "Library/Preferences"

@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask sourcetree (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["SourceTree"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["com.torusknot.SourceTreeNotMAS.plist"]
+    to: "Library/Preferences"

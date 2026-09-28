@@ -1,0 +1,6 @@
+# Checked against: brew cat --cask maccy (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["org.p0deje.Maccy.plist"]
+    to: "Library/Preferences"

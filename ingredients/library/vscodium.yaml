@@ -1,0 +1,6 @@
+# Checked against: brew cat --cask vscodium (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["VSCodium"]
+    to: "Library/Application Support"

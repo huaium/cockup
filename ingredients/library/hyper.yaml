@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask hyper (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["Hyper"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["co.zeit.hyper.plist"]
+    to: "Library/Preferences"

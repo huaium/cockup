@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask mullvadvpn (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["Mullvad VPN"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["net.mullvad.vpn.plist"]
+    to: "Library/Preferences"

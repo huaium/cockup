@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask anytype (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["anytype"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["com.anytype.anytype.plist"]
+    to: "Library/Preferences"

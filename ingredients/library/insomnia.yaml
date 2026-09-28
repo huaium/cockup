@@ -1,0 +1,9 @@
+# Checked against: brew cat --cask insomnia (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["Insomnia"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["com.insomnia.app.plist"]
+    to: "Library/Preferences"

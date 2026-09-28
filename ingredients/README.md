@@ -17,6 +17,21 @@ symlink policy; an individual include can override the latter.
 | `bettertouchtool` | Application support and preferences plist. | Includes BetterTouchTool's automatic backup history. |
 | `alfred` | Local preferences package and preference plists. | A custom sync folder needs an edited rule; caches are excluded. |
 
+The library also includes these 56 cask-checked ingredients (65 total):
+
+| Area | Ingredients |
+| --- | --- |
+| Terminals | `hyper`, `kitty`, `tabby`, `warp` |
+| Editors | `sublime-merge`, `sublime-text`, `vscodium` |
+| Browsers | `arc`, `chromium`, `firefox`, `google-chrome`, `microsoft-edge`, `opera`, `tor-browser`, `vivaldi` |
+| Writing and productivity | `anytype`, `calibre`, `craft`, `fantastical`, `joplin`, `logseq`, `mark-text`, `obsidian`, `ticktick`, `todoist`, `typora`, `zotero` |
+| Development and data | `bruno`, `docker`, `fork`, `github`, `insomnia`, `mongodb-compass`, `orbstack`, `podman-desktop`, `postman`, `sequel-ace`, `sourcetree`, `tableplus` |
+| System and utilities | `alt-tab`, `appcleaner`, `bartender`, `cleanshot`, `cyberduck`, `daisydisk`, `hammerspoon`, `hazel`, `istat-menus`, `keyboard-maestro`, `launchbar`, `maccy`, `mullvadvpn`, `raycast`, `stats`, `tailscale`, `transmit` |
+
+Each YAML lists its exact paths. Some application-support directories contain
+profiles or local data as well as settings, particularly browsers and note apps;
+check their size and contents before using an ingredient.
+
 Include an ingredient by name to download it from this repository. You can also
 save a YAML file alongside your configuration and include it by relative path:
 
@@ -44,10 +59,13 @@ or `cockup ingredient status [NAME]` to inspect cached sources and dates offline
 `cockup ingredient delete NAME [NAME...]` removes one or more YAML/metadata pairs;
 `cockup ingredient clean` removes all of `~/Library/Caches/cockup/`.
 
-These paths were checked against app documentation and `brew cat --cask NAME`.
+The original nine ingredients were checked against app documentation and
+`brew cat --cask NAME`. The additional 56 were cross-checked against each
+cask's `zap` section with `brew cat --cask NAME`.
 The cask's `zap` section is an uninstall inventory, not a backup manifest.
-Caches, logs, saved application state, HTTP storage, and updater files were not
-copied automatically. WezTerm's `~/.local/share/wezterm`, Karabiner's
+Cache, log, saved-state, HTTP-storage, and updater paths were not selected as
+standalone targets. An included application-support directory may still contain
+such data. WezTerm's `~/.local/share/wezterm`, Karabiner's
 `~/.local/share/karabiner`, VS Code's `~/.vscode` extension directory, and Zed's
 `~/Library/Application Support/Zed` are outside this configuration-only library.
 

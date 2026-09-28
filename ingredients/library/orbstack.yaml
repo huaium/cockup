@@ -1,0 +1,6 @@
+# Checked against: brew cat --cask orbstack (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["dev.kdrag0n.MacVirt.plist"]
+    to: "Library/Preferences"

@@ -1,0 +1,6 @@
+# Checked against: brew cat --cask sublime-text (zap section).
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["Sublime Text"]
+    to: "Library/Application Support"
