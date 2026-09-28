@@ -375,3 +375,128 @@ fn manual_update_forces_a_check_and_preserves_cached_yaml_on_304_or_failure() {
         assert_eq!(fs::read(&yaml_path).unwrap(), original);
     }
 }
+
+#[test]
+fn ingredient_delete_removes_one_pair_and_clean_removes_the_cockup_cache_root() {
+    let dir = TempDir::new().unwrap();
+    let home = dir.path();
+    setup(home);
+    let cache = home.join("Library/Caches/cockup/ingredients/v1");
+    write(home, "Library/Caches/cockup/keep", "remove me");
+    write(home, "Library/Caches/other/keep", "untouched");
+    for name in ["demo", "zed"] {
+        let output = run(home, &["ingredient", "update", name], "200");
+        assert!(output.status.success(), "{}", text(&output));
+    }
+
+    let deleted = run(home, &["ingredient", "delete", "demo"], "offline");
+    assert!(deleted.status.success(), "{}", text(&deleted));
+    assert!(!cache.join("demo.yaml").exists());
+    assert!(!cache.join("demo.json").exists());
+    assert!(cache.join("zed.yaml").is_file());
+    assert!(cache.join("zed.json").is_file());
+    assert_eq!(
+        run(home, &["ingredient", "delete", "demo"], "offline")
+            .status
+            .code(),
+        Some(1)
+    );
+    assert_eq!(
+        run(home, &["ingredient", "delete", "../zed"], "offline")
+            .status
+            .code(),
+        Some(1)
+    );
+
+    let cleaned = run(home, &["ingredient", "clean"], "offline");
+    assert!(cleaned.status.success(), "{}", text(&cleaned));
+    assert!(!home.join("Library/Caches/cockup").exists());
+    assert_eq!(
+        fs::read_to_string(home.join("Library/Caches/other/keep")).unwrap(),
+        "untouched"
+    );
+    assert!(
+        run(home, &["ingredient", "clean"], "offline")
+            .status
+            .success()
+    );
+}
+
+#[test]
+fn ingredient_clean_unlinks_nested_cache_symlinks_without_following_them() {
+    let dir = TempDir::new().unwrap();
+    let home = dir.path();
+    setup(home);
+    write(home, "external/demo.yaml", "keep");
+    let cache = home.join("Library/Caches/cockup/ingredients/v1");
+    fs::create_dir_all(cache.parent().unwrap()).unwrap();
+    std::os::unix::fs::symlink(home.join("external"), &cache).unwrap();
+
+    let deleted = run(home, &["ingredient", "delete", "demo"], "offline");
+    assert_eq!(deleted.status.code(), Some(1), "{}", text(&deleted));
+    let cleaned = run(home, &["ingredient", "clean"], "offline");
+    assert!(cleaned.status.success(), "{}", text(&cleaned));
+    assert!(!cache.exists());
+    assert_eq!(
+        fs::read_to_string(home.join("external/demo.yaml")).unwrap(),
+        "keep"
+    );
+}
+
+#[test]
+fn ingredient_clean_refuses_a_symlinked_cockup_cache_root() {
+    let dir = TempDir::new().unwrap();
+    let home = dir.path();
+    setup(home);
+    write(home, "external/keep", "untouched");
+    let root = home.join("Library/Caches/cockup");
+    fs::create_dir_all(root.parent().unwrap()).unwrap();
+    std::os::unix::fs::symlink(home.join("external"), &root).unwrap();
+    let result = run(home, &["ingredient", "clean"], "offline");
+    assert_eq!(result.status.code(), Some(1), "{}", text(&result));
+    assert!(text(&result).contains("not a directory"));
+    assert!(fs::symlink_metadata(root).unwrap().file_type().is_symlink());
+    assert_eq!(
+        fs::read_to_string(home.join("external/keep")).unwrap(),
+        "untouched"
+    );
+}
+
+#[test]
+fn ingredient_delete_accepts_multiple_names_and_continues_after_a_missing_entry() {
+    let dir = TempDir::new().unwrap();
+    let home = dir.path();
+    setup(home);
+    let cache = home.join("Library/Caches/cockup/ingredients/v1");
+    for name in ["demo", "zed"] {
+        assert!(
+            run(home, &["ingredient", "update", name], "200")
+                .status
+                .success()
+        );
+    }
+
+    let both = run(home, &["ingredient", "delete", "demo", "zed"], "offline");
+    assert!(both.status.success(), "{}", text(&both));
+    for name in ["demo", "zed"] {
+        assert!(!cache.join(format!("{name}.yaml")).exists());
+        assert!(!cache.join(format!("{name}.json")).exists());
+    }
+
+    assert!(
+        run(home, &["ingredient", "update", "demo"], "200")
+            .status
+            .success()
+    );
+    let invalid = run(home, &["ingredient", "delete", "demo", "../zed"], "offline");
+    assert_eq!(invalid.status.code(), Some(1));
+    assert!(cache.join("demo.yaml").exists());
+
+    let partial = run(
+        home,
+        &["ingredient", "delete", "missing", "demo"],
+        "offline",
+    );
+    assert_eq!(partial.status.code(), Some(1), "{}", text(&partial));
+    assert!(!cache.join("demo.yaml").exists());
+}

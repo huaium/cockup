@@ -1,7 +1,7 @@
 use crate::{config::Symlinks, report};
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashSet},
     fs::{self, OpenOptions},
     io::{Read, Write},
     os::unix::fs::{OpenOptionsExt, PermissionsExt},
@@ -122,9 +122,13 @@ fn validate_yaml(name: &str, source: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn cache_dir() -> Result<PathBuf, String> {
+fn cache_root() -> Result<PathBuf, String> {
     let home = std::env::var_os("HOME").ok_or("HOME is not set")?;
-    Ok(PathBuf::from(home).join("Library/Caches/cockup/ingredients/v1"))
+    Ok(PathBuf::from(home).join("Library/Caches/cockup"))
+}
+
+fn cache_dir() -> Result<PathBuf, String> {
+    Ok(cache_root()?.join("ingredients/v1"))
 }
 
 fn read_cache(name: &str, dir: &Path) -> Option<(String, CacheMetadata)> {
@@ -416,5 +420,84 @@ pub fn status(name: Option<&str>) -> Result<(), String> {
         println!("  ETag: {}", metadata.etag.as_deref().unwrap_or("none"));
         println!("  Cache: {}", if fresh { "fresh" } else { "stale" });
     }
+    Ok(())
+}
+
+fn checked_cache_dir() -> Result<Option<PathBuf>, String> {
+    let dir = cache_dir()?;
+    match fs::symlink_metadata(&dir) {
+        Ok(metadata) if metadata.is_dir() => Ok(Some(dir)),
+        Ok(_) => Err(format!(
+            "Ingredient cache path is not a directory: {}",
+            dir.display()
+        )),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(format!("{}: {error}", dir.display())),
+    }
+}
+
+pub fn delete(names: &[String]) -> Result<(), String> {
+    for name in names {
+        validate_name(name)?;
+    }
+    let Some(dir) = checked_cache_dir()? else {
+        return Err("No ingredients are cached".into());
+    };
+    let mut failed = 0;
+    let mut seen = HashSet::new();
+    for name in names {
+        if !seen.insert(name) {
+            continue;
+        }
+        match delete_one(&dir, name) {
+            Ok(true) => println!("Deleted cached ingredient `{name}`."),
+            Ok(false) => {
+                report::error(&format!("Ingredient `{name}` is not cached"));
+                failed += 1;
+            }
+            Err(error) => {
+                report::error(&error);
+                failed += 1;
+            }
+        }
+    }
+    if failed > 0 {
+        Err(format!("Failed to delete {failed} ingredient(s)"))
+    } else {
+        Ok(())
+    }
+}
+
+fn delete_one(dir: &Path, name: &str) -> Result<bool, String> {
+    let mut removed = false;
+    for extension in ["json", "yaml"] {
+        let path = dir.join(format!("{name}.{extension}"));
+        match fs::remove_file(&path) {
+            Ok(()) => removed = true,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(format!("{}: {error}", path.display())),
+        }
+    }
+    Ok(removed)
+}
+
+pub fn clean() -> Result<(), String> {
+    let root = cache_root()?;
+    match fs::symlink_metadata(&root) {
+        Ok(metadata) if metadata.is_dir() => {}
+        Ok(_) => {
+            return Err(format!(
+                "Cockup cache path is not a directory: {}",
+                root.display()
+            ));
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            println!("No Cockup cache to clean.");
+            return Ok(());
+        }
+        Err(error) => return Err(format!("{}: {error}", root.display())),
+    }
+    fs::remove_dir_all(&root).map_err(|error| format!("{}: {error}", root.display()))?;
+    println!("Removed Cockup cache: {}", root.display());
     Ok(())
 }

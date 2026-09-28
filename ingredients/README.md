@@ -41,6 +41,8 @@ under `~/Library/Caches/cockup/ingredients/v1/` and checked for updates after
 30 days. Backup stores the exact YAML it used in its manifest for offline
 restore and verify. Run `cockup ingredient update NAME` to check GitHub immediately,
 or `cockup ingredient status [NAME]` to inspect cached sources and dates offline.
+`cockup ingredient delete NAME [NAME...]` removes one or more YAML/metadata pairs;
+`cockup ingredient clean` removes all of `~/Library/Caches/cockup/`.
 
 These paths were checked against app documentation and `brew cat --cask NAME`.
 The cask's `zap` section is an uninstall inventory, not a backup manifest.

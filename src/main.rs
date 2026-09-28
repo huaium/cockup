@@ -74,6 +74,8 @@ fn run() -> Result<(), String> {
         Commands::Ingredient { command } => match command {
             IngredientCommand::Update { name } => ingredients::update(&name)?,
             IngredientCommand::Status { name } => ingredients::status(name.as_deref())?,
+            IngredientCommand::Delete { names } => ingredients::delete(&names)?,
+            IngredientCommand::Clean => ingredients::clean()?,
         },
         Commands::Template => print!("{}", include_str!("template.yaml")),
         Commands::Completions { shell } => {

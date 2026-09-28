@@ -48,6 +48,13 @@ pub enum IngredientCommand {
     Update { name: String },
     /// Show cached ingredient dates and sources without network access
     Status { name: Option<String> },
+    /// Delete cached YAML and metadata for one or more ingredients
+    Delete {
+        #[arg(required = true, num_args = 1..)]
+        names: Vec<String>,
+    },
+    /// Remove the entire ingredient cache directory
+    Clean,
 }
 #[derive(Args)]
 pub struct ConfigArgs {

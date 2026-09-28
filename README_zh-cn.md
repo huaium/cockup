@@ -65,9 +65,13 @@ cockup list cask-name-1 [cask-name-n...]
 cockup ingredient update ghostty  # 即使缓存未过期，也立即检查 GitHub
 cockup ingredient status           # 显示所有缓存的配料
 cockup ingredient status ghostty   # 显示指定配料的来源和日期
+cockup ingredient delete ghostty   # 删除指定配料的 YAML 和元数据缓存
+cockup ingredient delete ghostty zed  # 一次删除多个配料缓存
+cockup ingredient clean            # 删除整个 Cockup 缓存目录
 ```
 
-`status` 离线且只读。`update` 请求失败时保留原有缓存并报告错误。收到 304 响应时仅更新上次检查日期。
+`status` 离线且只读。`update` 请求失败时保留原有缓存并报告错误。收到 304 响应时仅更新上次检查日期。`delete` 只删除 `~/Library/Caches/cockup/ingredients/v1/` 中指定的缓存；`clean` 删除 `~/Library/Caches/cockup/` 及其全部内容。
+`delete` 会先验证所有名称；如果其中一个配料未缓存，仍会删除其他配料，并返回错误。
 
 ### `cockup backup & restore`
 
