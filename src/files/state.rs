@@ -10,6 +10,8 @@ pub(super) struct CopyState {
     pub(super) manifest: Manifest,
     pub(super) restore: bool,
     pub(super) planning: bool,
+    pub(super) dry_run: bool,
+    pub(super) clean: bool,
     pub(super) planned: Vec<Link>,
     pub(super) replacing_directories: Vec<(PathBuf, PathBuf)>,
     pub(super) prompt_choice: Option<Result<Symlinks, String>>,

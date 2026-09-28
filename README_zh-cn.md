@@ -67,6 +67,15 @@ cockup backup /path/to/config.yaml
 cockup restore /path/to/config.yaml
 ```
 
+对 `backup` 或 `restore` 使用 `--dry-run` 可预览复制、替换、符号链接恢复以及
+`clean` 模式下的删除操作。它会读取配置和备份，但不会写入文件、修改清单或运行
+Hooks。为展示准确的目标路径，仍可能询问链接模式或跨用户路径映射。
+
+```sh
+cockup backup /path/to/config.yaml --dry-run
+cockup restore /path/to/config.yaml --dry-run
+```
+
 ### `cockup hook`
 
 ```bash

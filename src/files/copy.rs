@@ -81,6 +81,29 @@ pub(super) fn copy(
         if let Some(record) = record {
             state.planned.push(record);
         }
+        if state.dry_run {
+            let meta = fs::symlink_metadata(src).map_err(|e| e.to_string())?;
+            if !meta.is_file() && !meta.is_dir() && !meta.is_symlink() {
+                report::warning(&format!(
+                    "Skipping non-regular file: {}",
+                    report::display_path(src)
+                ));
+                return Ok(());
+            }
+            let action = if fs::symlink_metadata(dst).is_ok() && (state.restore || !state.clean) {
+                "Would replace"
+            } else {
+                "Would copy"
+            };
+            let kind = if link && choice == Symlinks::Referece {
+                "symlink"
+            } else if meta.is_dir() {
+                "folder"
+            } else {
+                "file"
+            };
+            println!("{action} {kind}: {} -> {}", src.display(), dst.display());
+        }
         if fs::symlink_metadata(src)
             .map_err(|e| e.to_string())?
             .is_dir()

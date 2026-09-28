@@ -82,7 +82,7 @@ pub(super) fn rule(
                 failures += 1;
             }
             Ok(paths) => {
-                if !state.planning && magic(&source) && !paths.is_empty() {
+                if (!state.planning || state.dry_run) && magic(&source) && !paths.is_empty() {
                     report::success(&format!(
                         "Target pattern matched ({} found): {}",
                         paths.len(),

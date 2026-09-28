@@ -72,6 +72,17 @@ cockup backup /path/to/config.yaml
 cockup restore /path/to/config.yaml
 ```
 
+Use `--dry-run` with `backup` or `restore` to preview copies, replacements,
+symlink restoration, and clean-mode removals. It reads the configuration and
+backup but does not write files, change the manifest, or run hooks. Symlink and
+cross-user path choices may still be requested so the preview can show their
+destinations.
+
+```sh
+cockup backup /path/to/config.yaml --dry-run
+cockup restore /path/to/config.yaml --dry-run
+```
+
 ### `cockup hook`
 
 ```bash

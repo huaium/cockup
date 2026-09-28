@@ -7,9 +7,9 @@ mod manifest;
 mod report;
 use clap::{CommandFactory, Parser};
 use cli::{Commands, ConfigArgs};
-fn configured(args: &ConfigArgs) -> Result<Option<config::Config>, String> {
+fn configured(args: &ConfigArgs, dry_run: bool) -> Result<Option<config::Config>, String> {
     let cfg = config::load(&args.config_file)?;
-    if !args.quiet && cfg.all_hooks().next().is_some() {
+    if !dry_run && !args.quiet && cfg.all_hooks().next().is_some() {
         report::warning(
             "Hooks detected in configuration. Ensure commands are safe before execution.",
         );
@@ -29,17 +29,17 @@ fn run() -> Result<(), String> {
     }
     match cli::Cli::parse().command {
         Commands::Backup(args) => {
-            if let Some(cfg) = configured(&args)? {
-                files::execute(&cfg, false)?;
+            if let Some(cfg) = configured(&args.config, args.dry_run)? {
+                files::execute(&cfg, false, args.dry_run)?;
             }
         }
         Commands::Restore(args) => {
-            if let Some(cfg) = configured(&args)? {
-                files::execute(&cfg, true)?;
+            if let Some(cfg) = configured(&args.config, args.dry_run)? {
+                files::execute(&cfg, true, args.dry_run)?;
             }
         }
         Commands::Hook { config, name } => {
-            if let Some(cfg) = configured(&config)? {
+            if let Some(cfg) = configured(&config, false)? {
                 hooks::select(&cfg, name.as_deref())?;
             }
         }

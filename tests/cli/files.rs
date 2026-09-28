@@ -1,6 +1,73 @@
 use super::*;
 
 #[test]
+fn dry_run_clean_backup_lists_changes_without_writing_or_running_hooks() {
+    let d = TempDir::new().unwrap();
+    let p = d.path();
+    write(p, "source/file", "new");
+    write(p, "backup/stale", "old");
+    write(
+        p,
+        "config.yaml",
+        "symlinks: referece\ndestination: backup\nclean: true\nrules:\n  - from: source\n    targets: [file]\n    to: files\nhooks:\n  pre-backup:\n    - name: marker\n      command: [sh, -c, 'touch hook-ran']\n",
+    );
+    let out = cli(p, &["backup", "config.yaml", "--dry-run"], "");
+    assert!(out.status.success(), "{}", text(&out));
+    assert!(text(&out).contains("Would remove:"), "{}", text(&out));
+    assert!(text(&out).contains("backup/stale"), "{}", text(&out));
+    assert!(text(&out).contains("Would copy"), "{}", text(&out));
+    assert!(text(&out).contains("source/file"), "{}", text(&out));
+    assert_eq!(fs::read_to_string(p.join("backup/stale")).unwrap(), "old");
+    assert!(!p.join("backup/files/file").exists());
+    assert!(!p.join("backup/.cockup-incomplete").exists());
+    assert!(!p.join("hook-ran").exists());
+    assert!(!text(&out).contains("Continue?"));
+}
+
+#[test]
+fn dry_run_restore_lists_changes_without_writing_or_running_hooks() {
+    let d = TempDir::new().unwrap();
+    let p = d.path();
+    write(p, "source/file", "source");
+    write(
+        p,
+        "config.yaml",
+        "symlinks: referece\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\nhooks:\n  pre-restore:\n    - name: marker\n      command: [sh, -c, 'touch hook-ran']\n",
+    );
+    let backup = cli(p, &["backup", "config.yaml", "-q"], "");
+    assert!(backup.status.success(), "{}", text(&backup));
+    write(p, "source/file", "changed");
+    let out = cli(p, &["restore", "config.yaml", "--dry-run"], "");
+    assert!(out.status.success(), "{}", text(&out));
+    assert!(text(&out).contains("Would replace"), "{}", text(&out));
+    assert_eq!(
+        fs::read_to_string(p.join("source/file")).unwrap(),
+        "changed"
+    );
+    assert!(!p.join("hook-ran").exists());
+    assert!(!text(&out).contains("Continue?"));
+}
+
+#[test]
+fn dry_run_backup_rejects_non_directory_destination() {
+    let d = TempDir::new().unwrap();
+    let p = d.path();
+    write(p, "backup", "not a directory");
+    write(p, "source/file", "contents");
+    write(
+        p,
+        "config.yaml",
+        "symlinks: referece\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n",
+    );
+    let out = cli(p, &["backup", "config.yaml", "--dry-run"], "");
+    assert_eq!(out.status.code(), Some(1), "{}", text(&out));
+    assert_eq!(
+        fs::read_to_string(p.join("backup")).unwrap(),
+        "not a directory"
+    );
+}
+
+#[test]
 fn backup_restore_preserves_nested_include_paths_and_glob_layout() {
     let d = TempDir::new().unwrap();
     let p = d.path();

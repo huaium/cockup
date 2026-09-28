@@ -1,5 +1,6 @@
 use super::{
     paths::{clean_backup, magic, resolved},
+    preview,
     rules::rule,
     state::CopyState,
 };
@@ -11,7 +12,7 @@ use crate::{
 };
 use std::{fs, path::Path};
 
-pub(crate) fn execute(cfg: &Config, restore: bool) -> Result<(), String> {
+pub(crate) fn execute(cfg: &Config, restore: bool, dry_run: bool) -> Result<(), String> {
     let destination_existed = fs::symlink_metadata(&cfg.destination).is_ok();
     let incomplete = cfg.destination.join(".cockup-incomplete");
     if restore && fs::symlink_metadata(&incomplete).is_ok() {
@@ -38,6 +39,8 @@ pub(crate) fn execute(cfg: &Config, restore: bool) -> Result<(), String> {
         },
         restore,
         planning: false,
+        dry_run,
+        clean: cfg.clean,
         planned: Vec::new(),
         replacing_directories: Vec::new(),
         prompt_choice: None,
@@ -66,6 +69,9 @@ pub(crate) fn execute(cfg: &Config, restore: bool) -> Result<(), String> {
                 return Err("Clean destination overlaps a source directory".into());
             }
         }
+    }
+    if dry_run {
+        return preview::run(cfg, &mut state);
     }
     if !restore {
         state.planning = true;

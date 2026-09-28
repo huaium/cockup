@@ -14,9 +14,9 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     /// Back up files from a YAML configuration
-    Backup(ConfigArgs),
+    Backup(FileArgs),
     /// Restore files from a backup
-    Restore(ConfigArgs),
+    Restore(FileArgs),
     /// Run configured hooks
     Hook {
         #[command(flatten)]
@@ -40,4 +40,12 @@ pub struct ConfigArgs {
     pub config_file: PathBuf,
     #[arg(short = 'q', long)]
     pub quiet: bool,
+}
+#[derive(Args)]
+pub struct FileArgs {
+    #[command(flatten)]
+    pub config: ConfigArgs,
+    /// Show planned file changes without writing files or running hooks
+    #[arg(long)]
+    pub dry_run: bool,
 }

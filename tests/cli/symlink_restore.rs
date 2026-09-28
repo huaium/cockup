@@ -1,6 +1,36 @@
 use super::*;
 
 #[test]
+fn dry_run_dereference_restore_previews_target_and_link_without_changes() {
+    let d = TempDir::new().unwrap();
+    let p = d.path();
+    write(p, "source/original", "saved");
+    std::os::unix::fs::symlink("original", p.join("source/link")).unwrap();
+    write(
+        p,
+        "config.yaml",
+        "symlinks: dereference\ndestination: backup\nrules:\n  - from: source\n    targets: [link]\n    to: files\n",
+    );
+    let backup = cli(p, &["backup", "config.yaml", "-q"], "");
+    assert!(backup.status.success(), "{}", text(&backup));
+    fs::remove_file(p.join("source/link")).unwrap();
+    write(p, "source/original", "changed");
+    let out = cli(p, &["restore", "config.yaml", "--dry-run"], "");
+    assert!(out.status.success(), "{}", text(&out));
+    assert!(text(&out).contains("Would replace file:"), "{}", text(&out));
+    assert!(
+        text(&out).contains("Would restore symlink:"),
+        "{}",
+        text(&out)
+    );
+    assert_eq!(
+        fs::read_to_string(p.join("source/original")).unwrap(),
+        "changed"
+    );
+    assert!(!p.join("source/link").exists());
+}
+
+#[test]
 fn manifest_restores_dereferenced_contents_and_recreates_original_links() {
     use std::os::unix::fs::symlink;
     let d = TempDir::new().unwrap();

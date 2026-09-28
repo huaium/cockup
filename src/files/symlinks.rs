@@ -43,16 +43,42 @@ pub(super) fn restore_link(
                     ancestors,
                     state,
                 )?;
-                for entry in link.target_chain.iter().rev() {
-                    let location = state.mapped(&entry.location);
-                    fs::create_dir_all(location.parent().unwrap()).map_err(|e| e.to_string())?;
-                    remove(&location).map_err(|e| e.to_string())?;
-                    std::os::unix::fs::symlink(
-                        state.link_target(&entry.location, &entry.target, &location),
-                        &location,
-                    )
-                    .map_err(|e| e.to_string())?;
+                if state.dry_run {
+                    for entry in link.target_chain.iter().rev() {
+                        let location = state.mapped(&entry.location);
+                        println!(
+                            "Would restore symlink: {} -> {}",
+                            location.display(),
+                            state
+                                .link_target(&entry.location, &entry.target, &location)
+                                .display()
+                        );
+                    }
                 }
+                if !state.dry_run {
+                    for entry in link.target_chain.iter().rev() {
+                        let location = state.mapped(&entry.location);
+                        fs::create_dir_all(location.parent().unwrap())
+                            .map_err(|e| e.to_string())?;
+                        remove(&location).map_err(|e| e.to_string())?;
+                        std::os::unix::fs::symlink(
+                            state.link_target(&entry.location, &entry.target, &location),
+                            &location,
+                        )
+                        .map_err(|e| e.to_string())?;
+                    }
+                }
+            }
+            if state.dry_run {
+                println!(
+                    "Would {} symlink: {} -> {}",
+                    if updating { "replace" } else { "restore" },
+                    dst.display(),
+                    state
+                        .link_target(&link.location, &link.target, dst)
+                        .display()
+                );
+                return Ok(());
             }
             if let Some(parent) = dst.parent() {
                 fs::create_dir_all(parent).map_err(|e| e.to_string())?;
@@ -66,7 +92,7 @@ pub(super) fn restore_link(
             .manifest
             .links
             .insert(index.min(state.manifest.links.len()), link);
-        if result.is_ok() {
+        if result.is_ok() && !state.dry_run {
             report::copied("Symlink", updating, dst);
         }
         return Some(result);

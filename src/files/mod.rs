@@ -1,6 +1,7 @@
 mod copy;
 mod operation;
 mod paths;
+mod preview;
 mod rules;
 mod state;
 mod symlinks;
