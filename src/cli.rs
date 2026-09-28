@@ -26,6 +26,8 @@ pub enum Commands {
     },
     /// List configuration paths from Homebrew casks
     List { casks: Vec<String> },
+    /// Print a commented YAML configuration template
+    Template,
 }
 #[derive(Args)]
 pub struct ConfigArgs {

@@ -32,6 +32,15 @@ The existing Homebrew tap requires a separate formula update.
 
 ## Usage
 
+### `cockup template`
+
+Print a valid configuration with commented examples of every YAML field, including
+optional fields and their defaults:
+
+```sh
+cockup template > config.yaml
+```
+
 ### `cockup list`
 
 You may want to use it as a reference when writing your own backup rules.

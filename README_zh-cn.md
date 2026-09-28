@@ -29,6 +29,14 @@ cargo build --release --locked
 
 ## 使用
 
+### `cockup template`
+
+输出有效的配置模板，并通过注释展示所有 YAML 字段、可选字段及默认值：
+
+```sh
+cockup template > config.yaml
+```
+
 ### `cockup list`
 
 你也许会想将它作为编写备份规则的参考。

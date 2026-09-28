@@ -44,6 +44,7 @@ fn run() -> Result<(), String> {
             }
         }
         Commands::List { casks } => brew::list(casks)?,
+        Commands::Template => print!("{}", include_str!("template.yaml")),
     }
     Ok(())
 }

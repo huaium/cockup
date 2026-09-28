@@ -19,7 +19,8 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
 
 ## Architecture
 
-- CLI: clap subcommands `backup`, `restore`, `hook`, and `list`.
+- CLI: clap subcommands `backup`, `restore`, `hook`, `list`, and `template`.
+  `template` prints a commented, valid YAML starter to stdout.
 - Configuration: serde YAML models; each include object resolves against its own file.
   Included rules/hooks precede local ones; nested `wrap` paths prefix included
   backup paths. The root controls destination and clean; symlinks and metadata

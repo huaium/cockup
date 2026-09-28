@@ -1,0 +1,75 @@
+# Cockup configuration template. Save this output as a .yaml file and edit it.
+# Required: symlinks controls links for rules without a local override.
+# Values: referece (copy the link), dereference (copy its target), prompt (ask once).
+# The spelling "referece" is part of the current configuration format.
+symlinks: referece
+
+# Required: destination is the backup directory, relative to this YAML file.
+destination: backup
+
+# Optional: clean removes existing backup contents before copying (default: false).
+# clean: false
+
+# Optional: metadata preserves file/link timestamps and supported flags (default: true).
+# metadata: true
+
+# Optional: include imports rules and hooks before the local ones (default: []).
+# Each entry must be an object; paths are relative to the YAML file declaring it.
+# include:
+#   # Required within an include entry: file names the included YAML configuration.
+#   - file: other.yaml
+#     # Optional: wrap prefixes all imported backup paths (default: no prefix).
+#     # Use a non-empty relative path without '..'; nested wrappers compose.
+#     wrap: imported
+#     # Optional: symlinks overrides the inherited mode for this include subtree.
+#     symlinks: dereference
+#     # Optional: metadata overrides the inherited value for this include subtree.
+#     metadata: false
+
+# Required: rules lists files to back up and restore; [] is a valid starting point.
+rules: []
+# Example rule (replace rules: [] above when ready):
+# rules:
+#   # Required within a rule: from is the source directory or glob.
+#   - from: ~/Library/Preferences
+#     # Required within a rule: to is a relative path inside destination.
+#     to: preferences
+#     # Optional: targets selects names or globs below from (default: []).
+#     targets: ['*.plist']
+#     # Optional: symlinks overrides the inherited mode for this rule.
+#     symlinks: referece
+#     # Optional: metadata overrides the inherited value for this rule.
+#     metadata: true
+#     # Optional: on-start hooks run before this rule (default: []).
+#     on-start:
+#       - name: Before preferences
+#         command: [echo, 'Starting preferences']
+#     # Optional: on-end hooks run after this rule (default: []).
+#     on-end:
+#       - name: After preferences
+#         command: [echo, 'Finished preferences']
+
+# Optional: hooks contains lifecycle hook lists (default: empty lists).
+# Hooks run sequentially; command and check are argument arrays, not shell text.
+# hooks:
+#   # Optional: pre-backup hooks run before backup file changes (default: []).
+#   pre-backup:
+#     # Required within a hook: name labels the hook.
+#     - name: Example check
+#       # Required within a hook: command is an executable and its arguments.
+#       command: [echo, ready]
+#       # Optional: check runs only if command succeeds (default: omitted).
+#       check: [test, -d, .]
+#       # Optional: output prints command/check output (default: false).
+#       output: true
+#       # Optional: timeout is seconds per command and per check (default: none).
+#       timeout: 5
+#       # Optional: env adds or overrides environment variables (default: {}).
+#       env:
+#         EXAMPLE: ready
+#   # Optional: post-backup hooks run after backup rules (default: []).
+#   post-backup: []
+#   # Optional: pre-restore hooks run before restore file changes (default: []).
+#   pre-restore: []
+#   # Optional: post-restore hooks run after restore rules (default: []).
+#   post-restore: []

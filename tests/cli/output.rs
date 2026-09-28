@@ -5,11 +5,53 @@ fn cli_exposes_commands_and_version() {
     let dir = TempDir::new().unwrap();
     let out = cli(dir.path(), &["--help"], "");
     assert!(out.status.success());
-    for word in ["backup", "restore", "hook", "list"] {
+    for word in ["backup", "restore", "hook", "list", "template"] {
         assert!(text(&out).contains(word), "{}", text(&out));
     }
     assert!(text(&cli(dir.path(), &["--version"], "")).contains("0.2.0"));
     assert_eq!(cli(dir.path(), &["unknown"], "").status.code(), Some(2));
+}
+
+#[test]
+fn template_prints_commented_complete_valid_yaml() {
+    let dir = TempDir::new().unwrap();
+    let out = cli(dir.path(), &["template"], "");
+    assert!(out.status.success(), "{}", text(&out));
+    assert!(out.stderr.is_empty());
+    let yaml = String::from_utf8(out.stdout).unwrap();
+    for field in [
+        "symlinks:",
+        "destination:",
+        "rules:",
+        "clean:",
+        "metadata:",
+        "include:",
+        "file:",
+        "wrap:",
+        "from:",
+        "targets:",
+        "to:",
+        "on-start:",
+        "on-end:",
+        "hooks:",
+        "pre-backup:",
+        "post-backup:",
+        "pre-restore:",
+        "post-restore:",
+        "name:",
+        "command:",
+        "check:",
+        "output:",
+        "timeout:",
+        "env:",
+    ] {
+        assert!(yaml.contains(field), "missing {field}");
+    }
+    assert!(yaml.contains("Required:"));
+    assert!(yaml.contains("Optional:"));
+    write(dir.path(), "config.yaml", &yaml);
+    let loaded = cli(dir.path(), &["backup", "config.yaml", "-q"], "");
+    assert!(loaded.status.success(), "{}", text(&loaded));
 }
 
 #[test]
