@@ -13,6 +13,7 @@ categories = ["command-line-utilities", "filesystem"]
 include = [
     "/src/**",
     "/tests/cli.rs",
+    "/tests/cli/**",
     "/Cargo.toml",
     "/Cargo.lock",
     "/LICENSE",
