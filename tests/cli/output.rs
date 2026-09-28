@@ -13,6 +13,24 @@ fn cli_exposes_commands_and_version() {
 }
 
 #[test]
+fn quiet_accepts_only_quiet_and_q_flags() {
+    let dir = TempDir::new().unwrap();
+    write(
+        dir.path(),
+        "config.yaml",
+        "symlinks: referece\ndestination: backup\nrules: []\n",
+    );
+    for flag in ["--quiet", "-q"] {
+        let out = cli(dir.path(), &["backup", "config.yaml", flag], "");
+        assert!(out.status.success(), "{}", text(&out));
+    }
+    for flag in ["--yes", "-y"] {
+        let out = cli(dir.path(), &["backup", "config.yaml", flag], "");
+        assert_eq!(out.status.code(), Some(2), "{}", text(&out));
+    }
+}
+
+#[test]
 fn no_arguments_shows_help_successfully() {
     let d = TempDir::new().unwrap();
     let out = cli(d.path(), &[], "");

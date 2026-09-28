@@ -2,8 +2,9 @@
 
 ## Compatibility
 
-The CLI and YAML field names are retained, including `check`, `env`, and the
-`-q`/`--quiet`/`-y`/`--yes` confirmation aliases. Checks run only after successful
+The YAML field names and CLI commands are retained, including `check`, `env`,
+and the `-q`/`--quiet` confirmation flags. The former `-y`/`--yes` aliases are
+no longer accepted. Checks run only after successful
 commands. Timeout is optional and applies independently to command and check;
 the direct child is killed and reaped on timeout (not its entire process tree).
 

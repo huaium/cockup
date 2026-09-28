@@ -30,6 +30,6 @@ pub enum Commands {
 #[derive(Args)]
 pub struct ConfigArgs {
     pub config_file: PathBuf,
-    #[arg(short = 'q', long, visible_alias = "yes", short_alias = 'y')]
+    #[arg(short = 'q', long)]
     pub quiet: bool,
 }

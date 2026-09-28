@@ -66,12 +66,12 @@ hooks:
     assert!(text(&out).contains("Completed 0/1 hook. Error: 1 hook failed."));
     assert!(text(&out).contains("check"));
     assert!(!p.join("marker").exists());
-    let out = cli(p, &["hook", "config.yaml", "--yes"], "1,2\n");
+    let out = cli(p, &["hook", "config.yaml", "--quiet"], "1,2\n");
     assert_eq!(out.status.code(), Some(1));
     assert_eq!(fs::read_to_string(p.join("marker")).unwrap(), "good");
     assert!(text(&out).contains("Completed 1/2 hooks"));
     assert_eq!(
-        cli(p, &["hook", "config.yaml", "-y", "-n", "missing"], "")
+        cli(p, &["hook", "config.yaml", "-q", "-n", "missing"], "")
             .status
             .code(),
         Some(1)

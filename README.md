@@ -272,7 +272,7 @@ For a real Homebrew smoke test, run `cargo run --locked -- list iterm2`.
 Existing configurations must add `symlinks: referece` to retain link-copying behavior.
 Commands and other YAML fields remain compatible. Relative paths resolve against each
 configuration file's directory. Invalid configuration and include cycles fail before
-execution. Hook confirmation happens once; `--quiet` (or `--yes`) covers included hooks.
+execution. Hook confirmation happens once; `--quiet` or `-q` covers included hooks.
 
 Exit codes are 0 for success or declined confirmation, 1 for configuration/copy/hook/
 Homebrew failures, and 2 for CLI usage errors. Recoverable failures do not stop later
