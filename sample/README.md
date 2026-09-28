@@ -1,6 +1,6 @@
 # Samples
 
-Use three commands from the project root:
+Use these commands from the project root:
 
 ```sh
 just sample-backup                 # Basic files and includes
@@ -30,8 +30,9 @@ just sample-hook 'Check failure'    # Intentionally returns exit 1
 | `symlink-chain` | Preserve `alias/../file.txt` traversal through another symlink, without selecting the decoy file. |
 | `user-remap` | Simulate Alice for backup and Bob for restore; ask once for `current` or `original` home. |
 
-Each config writes to `dst/<config-name>` relative to `sample/`: for example,
-`basic.yaml` uses `destination: dst/basic`. Input fixtures live in
+Each runnable config writes to `dst/<config-name>` relative to `sample/`: for example,
+`basic.yaml` uses `destination: dst/basic`. `basic-included.yaml` is an ingredient
+without `destination` or `symlinks` and is only imported by `basic.yaml`. Input fixtures live in
 `sample/src`, separate from backup output.
 Fixtures are provided in the repository. Commands do not reset, mutate, or verify fixtures.
 

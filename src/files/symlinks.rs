@@ -116,14 +116,19 @@ pub(super) fn choose_mode(
         planned.mode
     } else if link && symlinks == Symlinks::Prompt {
         if state.prompt_choice.is_none() {
-            let prompt = format!(
-                "Symlink {} -> {}:\n[r]eferece link or [d]ereference target? (applies to all symlinks)",
+            let warning = format!(
+                "Symlink {} -> {}:",
                 src.display(),
                 fs::read_link(src).map_err(|e| e.to_string())?.display()
             );
             loop {
-                report::warning(&prompt);
-                match report::input("")?.to_lowercase().as_str() {
+                report::warning(&warning);
+                match report::input_bold(
+                    "[r]eferece link or [d]ereference target? (applies to all symlinks): ",
+                )?
+                .to_lowercase()
+                .as_str()
+                {
                     "r" | "referece" => {
                         state.prompt_choice = Some(Ok(Symlinks::Referece));
                         break;

@@ -119,7 +119,10 @@ fn prompt_chooses_once_for_all_links_and_requires_an_explicit_answer() {
         let out = cli(p, &["backup", "config.yaml", "-q"], answer);
         assert!(out.status.success(), "{}", text(&out));
         assert_eq!(text(&out).matches("[r]eferece").count(), 1);
-        assert!(text(&out).contains("\n[r]eferece link or [d]ereference target?"));
+        assert!(
+            String::from_utf8_lossy(&out.stdout)
+                .contains("[r]eferece link or [d]ereference target?")
+        );
         for name in ["one", "two"] {
             let dest = p.join("backup/files").join(name);
             assert_eq!(
@@ -291,8 +294,10 @@ fn symlink_prompt_is_yellow_with_choices_on_the_next_line() {
     assert!(out.status.success(), "{}", text(&out));
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert!(stderr.contains("\x1b[36;1m=> \x1b[0m\x1b[33;1mSymlink "));
-    assert!(stderr.contains(
-        " -> original:\n[r]eferece link or [d]ereference target? (applies to all symlinks)\x1b[0m"
+    assert!(stderr.contains(" -> original:\x1b[0m"));
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(stdout.contains(
+        "\x1b[37;1m[r]eferece link or [d]ereference target? (applies to all symlinks): \x1b[0m"
     ));
 }
 

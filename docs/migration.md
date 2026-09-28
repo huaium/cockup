@@ -10,6 +10,9 @@ the direct child is killed and reaped on timeout (not its entire process tree).
 
 Configuration paths are resolved relative to each file. Included rules/hooks
 precede local definitions; the root configuration controls destination and clean.
+Destination and symlinks may be omitted from an included configuration to make
+it an include-only ingredient; only rules is required. Standalone commands
+require both destination and symlinks.
 Includes now require objects such as `{file: child.yaml, wrap: imported}` rather
 than strings. `wrap` prefixes the included rules' backup paths. Root symlinks and
 metadata are defaults; include objects and individual rules can override them.
@@ -27,7 +30,7 @@ warnings; unmatched patterns are errors. Clean operations refuse the filesystem
 root, home directory, and source-containing destinations. Overlapping copies fail. Rule `to` and target paths must be relative and may not
 contain `..`; invalid paths are rejected before clean mode removes anything.
 
-Every configuration, including included files, requires `symlinks`: `referece`
+Every standalone configuration requires `symlinks`: `referece`
 copies links (including dangling links), `dereference` copies their targets, and
 `prompt` asks once for links whose effective rule policy is prompt. The root policy
 is the default and can be overridden by include objects and rules. Existing

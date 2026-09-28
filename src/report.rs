@@ -49,7 +49,12 @@ pub fn success(message: &str) {
     point(message, Style::new().green().bold(), false);
 }
 pub fn error(message: &str) {
-    point(message, Style::new().red().bold(), true);
+    if let Some((first, second)) = message.split_once("\n=> ") {
+        point(first, Style::new().red().bold(), true);
+        point(second, Style::new().red().bold(), true);
+    } else {
+        point(message, Style::new().red().bold(), true);
+    }
 }
 pub fn warning(message: &str) {
     point(message, Style::new().yellow().bold(), true);
@@ -94,9 +99,20 @@ pub fn input(prompt: &str) -> Result<String, String> {
     }
     Ok(input.trim().to_string())
 }
+pub fn input_bold(prompt: &str) -> Result<String, String> {
+    if colors_enabled() {
+        input(&format!(
+            "{}",
+            prompt.if_supports_color(Stream::Stdout, |text| text
+                .style(Style::new().white().bold()))
+        ))
+    } else {
+        input(prompt)
+    }
+}
 pub fn confirm() -> Result<bool, String> {
     loop {
-        match input("Continue? [y/N]: ")?.to_lowercase().as_str() {
+        match input_bold("Continue? [y/N]: ")?.to_lowercase().as_str() {
             "y" | "yes" => return Ok(true),
             "" | "n" | "no" => return Ok(false),
             _ => warning("Please enter y or n."),

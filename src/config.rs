@@ -114,7 +114,9 @@ pub enum Symlinks {
 }
 #[derive(Deserialize)]
 pub struct Config {
-    pub symlinks: Symlinks,
+    #[serde(default)]
+    pub symlinks: Option<Symlinks>,
+    #[serde(default, deserialize_with = "null_default")]
     pub destination: PathBuf,
     pub rules: Vec<Rule>,
     #[serde(default, deserialize_with = "null_default")]
@@ -164,8 +166,23 @@ pub fn load(path: &Path) -> Result<Config> {
         let mut cfg: Config =
             serde_yaml_ng::from_str(&source).map_err(|e| format!("{}: {e}", path.display()))?;
         cfg.directory = path.parent().unwrap().to_path_buf();
-        cfg.destination = absolute(&cfg.destination, &cfg.directory)?;
-        let (symlinks, metadata) = inherited.unwrap_or((cfg.symlinks, cfg.metadata));
+        if inherited.is_none() && cfg.destination.as_os_str().is_empty() {
+            return Err(format!(
+                "{}: destination is required to run this config\n=> configs without it are include-only ingredients",
+                path.display()
+            ));
+        }
+        if !cfg.destination.as_os_str().is_empty() {
+            cfg.destination = absolute(&cfg.destination, &cfg.directory)?;
+        }
+        let (symlinks, metadata) = match inherited {
+            Some(settings) => settings,
+            None => (
+                cfg.symlinks
+                    .ok_or_else(|| format!("{}: symlinks is required", path.display()))?,
+                cfg.metadata,
+            ),
+        };
         for (index, rule) in cfg.rules.iter_mut().enumerate() {
             for (field, pattern) in std::iter::once(("from", rule.src.to_string_lossy())).chain(
                 rule.targets

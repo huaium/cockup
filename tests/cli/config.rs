@@ -1,6 +1,72 @@
 use super::*;
 
 #[test]
+fn destinationless_ingredients_can_be_included_but_not_run_directly() {
+    let d = TempDir::new().unwrap();
+    let p = d.path();
+    write(p, "source/file", "saved");
+    write(
+        p,
+        "nested/ingredient.yaml",
+        "rules:\n  - from: ../source\n    targets: [file]\n    to: files\n",
+    );
+    write(
+        p,
+        "root.yaml",
+        "symlinks: referece\ndestination: backup\ninclude: [{file: nested/ingredient.yaml}]\nrules: []\n",
+    );
+    let backup = cli(p, &["backup", "root.yaml", "-q"], "");
+    assert!(backup.status.success(), "{}", text(&backup));
+    assert_eq!(
+        fs::read_to_string(p.join("backup/files/file")).unwrap(),
+        "saved"
+    );
+
+    for args in [
+        vec!["backup", "nested/ingredient.yaml"],
+        vec!["restore", "nested/ingredient.yaml"],
+        vec!["verify", "nested/ingredient.yaml"],
+        vec!["hook", "nested/ingredient.yaml"],
+    ] {
+        let out = cli(p, &args, "");
+        assert_eq!(out.status.code(), Some(1), "{}", text(&out));
+        assert!(text(&out).contains("destination"), "{}", text(&out));
+    }
+}
+
+#[test]
+fn destinationless_ingredient_inherits_symlinks_and_still_requires_rules() {
+    let d = TempDir::new().unwrap();
+    let p = d.path();
+    write(p, "source/target", "saved");
+    std::os::unix::fs::symlink("target", p.join("source/link")).unwrap();
+    write(
+        p,
+        "ingredient.yaml",
+        "rules:\n  - from: source\n    targets: [link]\n    to: files\n",
+    );
+    for (policy, kind) in [("referece", "link"), ("dereference", "file")] {
+        write(
+            p,
+            "root.yaml",
+            &format!(
+                "symlinks: {policy}\ndestination: backup-{policy}\ninclude: [{{file: ingredient.yaml}}]\nrules: []\n"
+            ),
+        );
+        let out = cli(p, &["backup", "root.yaml", "-q"], "");
+        assert!(out.status.success(), "{}", text(&out));
+        let entry = fs::symlink_metadata(p.join(format!("backup-{policy}/files/link"))).unwrap();
+        assert_eq!(entry.is_symlink(), kind == "link");
+        assert_eq!(entry.is_file(), kind == "file");
+    }
+
+    write(p, "ingredient.yaml", "metadata: true\n");
+    let out = cli(p, &["backup", "root.yaml", "-q"], "");
+    assert_eq!(out.status.code(), Some(1));
+    assert!(text(&out).contains("rules"), "{}", text(&out));
+}
+
+#[test]
 fn included_rules_are_wrapped_under_the_root_destination() {
     let dir = TempDir::new().unwrap();
     let p = dir.path();
@@ -154,6 +220,7 @@ fn invalid_configuration_fails_before_side_effects() {
     let dir = TempDir::new().unwrap();
     for yaml in [
         "rules: []",
+        "destination: backup\nrules: []",
         "symlinks: referece\ndestination: backup\nrules: [bad]",
         "symlinks: referece\ndestination: backup\nrules: []\ninclude: [{file: missing.yaml}]",
         "symlinks: referece\ndestination: backup\nrules: []\ninclude: [{file: config.yaml}]",
@@ -210,6 +277,22 @@ fn included_hooks_prompt_once_and_quiet_suppresses_confirmation() {
     assert!(dir.path().join("backup").exists());
     let quiet = cli(dir.path(), &["backup", "config.yaml", "-q"], "");
     assert!(!text(&quiet).contains("Continue?"));
+    let mut child = Command::new(env!("CARGO_BIN_EXE_cockup"))
+        .current_dir(dir.path())
+        .args(["backup", "config.yaml"])
+        .env_remove("NO_COLOR")
+        .env("FORCE_COLOR", "1")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child.stdin.take().unwrap().write_all(b"n\n").unwrap();
+    let colored = child.wait_with_output().unwrap();
+    assert!(colored.status.success());
+    assert!(
+        String::from_utf8_lossy(&colored.stdout).contains("\x1b[37;1mContinue? [y/N]: \x1b[0m")
+    );
 }
 
 #[test]

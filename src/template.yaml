@@ -1,10 +1,12 @@
 # Cockup configuration template. Save this output as a .yaml file and edit it.
-# Required: symlinks controls links for rules without a local override.
+# Required for a standalone config; optional for an include-only ingredient.
+# Included ingredients inherit the enclosing symlink policy.
 # Values: referece (copy the link), dereference (copy its target), prompt (ask once).
 # The spelling "referece" is part of the current configuration format.
 symlinks: referece
 
-# Required: destination is the backup directory, relative to this YAML file.
+# Required for a standalone config; optional for an include-only ingredient.
+# The backup directory is relative to this YAML file.
 destination: backup
 
 # Optional: clean removes existing backup contents before copying (default: false).

@@ -1,6 +1,4 @@
-# Imported by basic.yaml; the root config supplies destination/settings.
-symlinks: referece
-destination: dst/basic-included
+# Ingredient imported by basic.yaml; destination and symlinks come from the root.
 rules:
   - from: src
     targets: [config_file.txt]
