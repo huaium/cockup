@@ -41,6 +41,15 @@ optional fields and their defaults:
 cockup template > config.yaml
 ```
 
+### `cockup completions`
+
+Generate a completion script for `bash`, `zsh`, `fish`, `powershell`, or `elvish`
+and save it in your shell's completion directory. For example:
+
+```sh
+cockup completions zsh > _cockup
+```
+
 ### `cockup list`
 
 You may want to use it as a reference when writing your own backup rules.

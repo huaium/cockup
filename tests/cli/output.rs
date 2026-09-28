@@ -5,11 +5,33 @@ fn cli_exposes_commands_and_version() {
     let dir = TempDir::new().unwrap();
     let out = cli(dir.path(), &["--help"], "");
     assert!(out.status.success());
-    for word in ["backup", "restore", "hook", "list", "template"] {
+    for word in [
+        "backup",
+        "restore",
+        "hook",
+        "list",
+        "template",
+        "completions",
+    ] {
         assert!(text(&out).contains(word), "{}", text(&out));
     }
     assert!(text(&cli(dir.path(), &["--version"], "")).contains("0.2.0"));
     assert_eq!(cli(dir.path(), &["unknown"], "").status.code(), Some(2));
+}
+
+#[test]
+fn completions_print_scripts_for_supported_shells() {
+    let dir = TempDir::new().unwrap();
+    for shell in ["bash", "zsh", "fish", "powershell", "elvish"] {
+        let out = cli(dir.path(), &["completions", shell], "");
+        assert!(out.status.success(), "{shell}: {}", text(&out));
+        assert!(out.stderr.is_empty(), "{shell}: {}", text(&out));
+        let script = String::from_utf8(out.stdout).unwrap();
+        assert!(script.contains("cockup"), "{shell}: {script}");
+        assert!(script.contains("backup"), "{shell}: {script}");
+    }
+    let unsupported = cli(dir.path(), &["completions", "unknown"], "");
+    assert_eq!(unsupported.status.code(), Some(2));
 }
 
 #[test]

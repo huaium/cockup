@@ -45,6 +45,10 @@ fn run() -> Result<(), String> {
         }
         Commands::List { casks } => brew::list(casks)?,
         Commands::Template => print!("{}", include_str!("template.yaml")),
+        Commands::Completions { shell } => {
+            let mut command = cli::Cli::command();
+            clap_complete::generate(shell, &mut command, "cockup", &mut std::io::stdout());
+        }
     }
     Ok(())
 }

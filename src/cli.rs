@@ -28,6 +28,12 @@ pub enum Commands {
     List { casks: Vec<String> },
     /// Print a commented YAML configuration template
     Template,
+    /// Generate shell completion script
+    Completions {
+        /// Shell to generate completions for
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
+    },
 }
 #[derive(Args)]
 pub struct ConfigArgs {

@@ -37,6 +37,14 @@ cargo build --release --locked
 cockup template > config.yaml
 ```
 
+### `cockup completions`
+
+为 `bash`、`zsh`、`fish`、`powershell` 或 `elvish` 生成补全脚本，并将其保存到 Shell 的补全目录。例如：
+
+```sh
+cockup completions zsh > _cockup
+```
+
 ### `cockup list`
 
 你也许会想将它作为编写备份规则的参考。
