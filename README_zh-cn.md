@@ -259,7 +259,7 @@ Hooks 允许用户自定义运行命令。
 
 ### 配置导入
 
-通过 `include` 对象导入其他配置文件的规则和 Hooks。导入的条目排在本地条目之前。`file` 相对于声明它的配置文件解析。可选的 `wrap` 将导入规则的备份文件放进根目标目录下的指定子目录；嵌套导入的路径会逐层叠加。可复制的应用配置见[配料库](ingredients/README.md)。
+通过 `include` 对象导入其他配置文件的规则和 Hooks。导入的条目排在本地条目之前。每个对象必须且只能指定 `file` 或 `ingredient`。`file` 相对于声明它的配置文件解析；`ingredient` 指定[配料库](ingredients/README.md)中的名称。可选的 `wrap` 将导入规则的备份文件放进根目标目录下的指定子目录；嵌套导入的路径会逐层叠加。
 
 根配置控制 `destination` 和 `clean`。被导入文件可以省略 `destination` 和 `symlinks`，成为不能单独运行的配料文件。根配置的 `symlinks` 和 `metadata` 是默认值：导入对象可以覆盖整个子树，单条规则可以再次覆盖。未指定的值从最近的导入对象继承，最终回退到根配置。被导入文件如有独立运行所需字段，其顶层设置仅在单独运行该文件时生效。恢复时，每条规则使用其有效的 `metadata` 值，而链接模式以备份清单为准。
 
@@ -270,7 +270,11 @@ include:
     symlinks: dereference
   - file: "path_to/config_two.yaml"
     metadata: false
+  - ingredient: ghostty
+    wrap: ghostty
 ```
+
+Cockup 首次使用时从本仓库下载具名配料，缓存在 `~/Library/Caches/cockup/ingredients/v1/`，七天后检查更新。更新失败时使用缓存；远端不存在的配料会报错。备份清单保存实际使用的配料 YAML，恢复和验证无需连接 GitHub。试运行可能下载配料，但不会写入缓存。
 
 `wrap` 必须是非空相对路径，且不能包含 `..`。不再接受字符串形式的导入项。单条规则也可以设置 `symlinks` 或 `metadata`。
 

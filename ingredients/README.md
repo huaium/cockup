@@ -17,16 +17,15 @@ symlink policy; an individual include can override the latter.
 | `bettertouchtool` | Application support and preferences plist. | Includes BetterTouchTool's automatic backup history. |
 | `alfred` | Local preferences package and preference plists. | A custom sync folder needs an edited rule; caches are excluded. |
 
-Save the ingredient files alongside your own configuration, then include them
-using paths relative to that configuration. For example, when `config.yaml` is
-beside the `ingredients` folder:
+Include an ingredient by name to download it from this repository. You can also
+save a YAML file alongside your configuration and include it by relative path:
 
 ```yaml
 symlinks: referece
 destination: backup
 rules: []
 include:
-  - file: ingredients/library/ghostty.yaml
+  - ingredient: ghostty
     wrap: ghostty
   - file: ingredients/library/zed.yaml
     wrap: zed
@@ -37,8 +36,10 @@ writing a backup. Review each YAML file first: settings and workflows can
 contain secrets or machine-specific paths, and a copied directory may contain
 more than the files named in the table. Quit an app before restoring its files;
 macOS preference caching may require logging out before a restored plist is
-read. Custom settings locations need a local edit. The proposed fetch/update
-command is not implemented yet; copy or update the YAML files manually.
+read. Custom settings locations need a local edit. Named ingredients are cached
+under `~/Library/Caches/cockup/ingredients/v1/` and checked for updates after
+seven days. Backup stores the exact YAML it used in its manifest for offline
+restore and verify. There is no separate ingredient update command yet.
 
 These paths were checked against app documentation and `brew cat --cask NAME`.
 The cask's `zap` section is an uninstall inventory, not a backup manifest.

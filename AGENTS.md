@@ -31,7 +31,10 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
   optional for include-only ingredients. Only rules is required in an ingredient.
   The root controls destination and clean; symlinks and metadata
   inherit through include objects and can be overridden per rule. Reject cycles
-  and invalid configuration before operations. Prompt once for hook execution.
+  and invalid configuration before operations. Named remote ingredients come
+  from the GitHub library, use a seven-day cache in ~/Library/Caches/cockup/ingredients/v1/,
+  and are snapshotted in the backup manifest for offline restore/verify.
+  Prompt once for hook execution.
 - File operations: explicit source/destination paths, glob layout preservation,
   clean/update modes, special files skipped. Required `symlinks` policy: referece
   links, dereference targets with cycle detection, or prompt once for all links. Root policy

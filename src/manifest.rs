@@ -1,6 +1,7 @@
 use crate::config::Symlinks;
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::BTreeMap,
     fs,
     io::Write,
     path::{Component, Path, PathBuf},
@@ -28,6 +29,8 @@ pub struct Manifest {
     pub backup_home: PathBuf,
     pub canonical_home: PathBuf,
     pub links: Vec<Link>,
+    #[serde(default)]
+    pub ingredients: BTreeMap<String, String>,
 }
 impl Manifest {
     pub fn new() -> Result<Self, String> {
@@ -38,6 +41,7 @@ impl Manifest {
             canonical_home: fs::canonicalize(&home).unwrap_or_else(|_| PathBuf::from(&home)),
             backup_home: PathBuf::from(home),
             links: Vec::new(),
+            ingredients: BTreeMap::new(),
         })
     }
     pub fn load(root: &Path) -> Result<Option<Self>, String> {

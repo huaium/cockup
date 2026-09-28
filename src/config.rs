@@ -1,3 +1,4 @@
+use crate::ingredients::{Mode, Resolver};
 use serde::{Deserialize, Deserializer};
 use std::{
     collections::{BTreeMap, HashSet},
@@ -70,7 +71,10 @@ pub struct Rule {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Include {
-    file: PathBuf,
+    #[serde(default)]
+    file: Option<PathBuf>,
+    #[serde(default)]
+    ingredient: Option<String>,
     #[serde(default)]
     wrap: Option<PathBuf>,
     #[serde(default)]
@@ -129,6 +133,8 @@ pub struct Config {
     include: Vec<Include>,
     #[serde(skip)]
     pub directory: PathBuf,
+    #[serde(skip)]
+    pub ingredients: BTreeMap<String, String>,
 }
 impl Config {
     pub fn all_hooks(&self) -> impl Iterator<Item = &Hook> {
@@ -151,18 +157,38 @@ pub fn absolute(path: &Path, base: &Path) -> Result<PathBuf> {
         base.join(path)
     })
 }
-pub fn load(path: &Path) -> Result<Config> {
+pub fn destination(path: &Path) -> Result<PathBuf> {
+    let path = fs::canonicalize(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    let source = fs::read_to_string(&path).map_err(|error| error.to_string())?;
+    let cfg: Config =
+        serde_yaml_ng::from_str(&source).map_err(|error| format!("{}: {error}", path.display()))?;
+    if cfg.destination.as_os_str().is_empty() {
+        return Err(format!("{}: destination is required", path.display()));
+    }
+    absolute(&cfg.destination, path.parent().unwrap())
+}
+
+pub fn load(path: &Path, mode: Mode) -> Result<Config> {
     fn read(
         path: &Path,
+        override_source: Option<&str>,
         stack: &mut HashSet<PathBuf>,
         inherited: Option<(Symlinks, bool)>,
         wrap: &Path,
+        resolver: &mut Resolver,
     ) -> Result<Config> {
-        let path = fs::canonicalize(path).map_err(|e| format!("{}: {e}", path.display()))?;
+        let path = if override_source.is_some() {
+            path.to_path_buf()
+        } else {
+            fs::canonicalize(path).map_err(|e| format!("{}: {e}", path.display()))?
+        };
         if !stack.insert(path.clone()) {
             return Err(format!("Include cycle at {}", path.display()));
         }
-        let source = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+        let source = match override_source {
+            Some(source) => source.to_string(),
+            None => fs::read_to_string(&path).map_err(|e| e.to_string())?,
+        };
         let mut cfg: Config =
             serde_yaml_ng::from_str(&source).map_err(|e| format!("{}: {e}", path.display()))?;
         cfg.directory = path.parent().unwrap().to_path_buf();
@@ -227,6 +253,12 @@ pub fn load(path: &Path) -> Result<Config> {
         let mut rules = Vec::new();
         let mut hooks = Hooks::default();
         for include in &cfg.include {
+            if include.file.is_some() == include.ingredient.is_some() {
+                return Err(format!(
+                    "{}: include must specify exactly one of file or ingredient",
+                    path.display()
+                ));
+            }
             let prefix = if let Some(folder) = &include.wrap {
                 if folder.as_os_str().is_empty()
                     || folder.is_absolute()
@@ -244,14 +276,22 @@ pub fn load(path: &Path) -> Result<Config> {
             } else {
                 wrap.to_path_buf()
             };
+            let (child_path, child_source) = if let Some(file) = &include.file {
+                (absolute(file, &cfg.directory)?, None)
+            } else {
+                let (path, source) = resolver.resolve(include.ingredient.as_deref().unwrap())?;
+                (path, Some(source))
+            };
             let child = read(
-                &absolute(&include.file, &cfg.directory)?,
+                &child_path,
+                child_source.as_deref(),
                 stack,
                 Some((
                     include.symlinks.unwrap_or(symlinks),
                     include.metadata.unwrap_or(metadata),
                 )),
                 &prefix,
+                resolver,
             )?;
             rules.extend(child.rules);
             hooks.append(child.hooks);
@@ -263,5 +303,15 @@ pub fn load(path: &Path) -> Result<Config> {
         stack.remove(&path);
         Ok(cfg)
     }
-    read(path, &mut HashSet::new(), None, Path::new(""))
+    let mut resolver = Resolver::new(mode);
+    let mut cfg = read(
+        path,
+        None,
+        &mut HashSet::new(),
+        None,
+        Path::new(""),
+        &mut resolver,
+    )?;
+    cfg.ingredients = resolver.used;
+    Ok(cfg)
 }

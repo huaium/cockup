@@ -286,7 +286,7 @@ copying, rule hooks, or post-hooks.
 
 ### Include
 
-Use `include` objects to import rules and hooks from other configuration files. Included entries run before local entries. `file` is resolved relative to the configuration that declares it. Optional `wrap` places all imported backup files under that path within the root destination; nested wrappers compose. The [ingredient library](ingredients/README.md) provides ready-to-copy app configurations.
+Use `include` objects to import rules and hooks from other configuration files. Included entries run before local entries. Each object specifies exactly one of `file` or `ingredient`. `file` is resolved relative to the configuration that declares it; `ingredient` names an entry in the [ingredient library](ingredients/README.md). Optional `wrap` places all imported backup files under that path within the root destination; nested wrappers compose.
 
 The root configuration controls `destination` and `clean`. An included file may omit `destination` and `symlinks` to become an ingredient that cannot run independently. Root `symlinks` and `metadata` are defaults: an include object can override them for its subtree, and an individual rule can override them again. Omitted values inherit from the nearest include, then the root. An included file's own top-level settings apply when it has both required standalone fields and is run directly, but its rules use the inherited settings when included. Restore uses each rule's effective `metadata` value and the symlink modes recorded by backup.
 
@@ -297,9 +297,11 @@ include:
     symlinks: dereference
   - file: "path_to/config_two.yaml"
     metadata: false
+  - ingredient: ghostty
+    wrap: ghostty
 ```
 
-`wrap` must be a non-empty relative path without `..`. String include entries are no longer accepted. Rules can also set `symlinks` or `metadata` directly.
+`wrap` must be a non-empty relative path without `..`. String include entries are no longer accepted. Rules can also set `symlinks` or `metadata` directly. Cockup downloads named ingredients from this repository on first use and caches them under `~/Library/Caches/cockup/ingredients/v1/`. It checks for updates after seven days, using the cached copy if a refresh fails; a missing ingredient is an error. Backup records the exact ingredient YAML in its manifest, so restore and verify use the backed-up rules without contacting GitHub. Dry-run can fetch an ingredient but does not write to the cache.
 
 Refer to [sample](sample) to view a configuration demo.
 

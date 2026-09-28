@@ -208,6 +208,7 @@ pub(crate) fn execute(cfg: &Config, restore: bool, dry_run: bool) -> Result<(), 
         return Err(format!("Operation completed with {failures} failures."));
     }
     if !restore {
+        state.manifest.ingredients = cfg.ingredients.clone();
         state.manifest.save(&cfg.destination)?;
         fs::remove_file(&incomplete).map_err(|e| e.to_string())?;
     }

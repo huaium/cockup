@@ -16,9 +16,10 @@ destination: backup
 # metadata: true
 
 # Optional: include imports rules and hooks before the local ones (default: []).
-# Each entry must be an object; paths are relative to the YAML file declaring it.
+# Each entry must specify exactly one of file or ingredient.
+# File paths are relative to the YAML file declaring them.
 # include:
-#   # Required within an include entry: file names the included YAML configuration.
+#   # file names a local YAML configuration.
 #   - file: other.yaml
 #     # Optional: wrap prefixes all imported backup paths (default: no prefix).
 #     # Use a non-empty relative path without '..'; nested wrappers compose.
@@ -27,6 +28,9 @@ destination: backup
 #     symlinks: dereference
 #     # Optional: metadata overrides the inherited value for this include subtree.
 #     metadata: false
+#   # ingredient names a YAML file from the Cockup GitHub library.
+#   - ingredient: ghostty
+#     wrap: ghostty
 
 # Required: rules lists files to back up and restore; [] is a valid starting point.
 rules: []

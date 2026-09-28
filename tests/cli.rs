@@ -52,6 +52,8 @@ mod hooks;
 mod ingredients;
 #[path = "cli/output.rs"]
 mod output;
+#[path = "cli/remote_ingredients.rs"]
+mod remote_ingredients;
 #[path = "cli/symlink_backup.rs"]
 mod symlink_backup;
 #[path = "cli/symlink_restore.rs"]

@@ -3,12 +3,25 @@ mod cli;
 mod config;
 mod files;
 mod hooks;
+mod ingredients;
 mod manifest;
 mod report;
 use clap::{CommandFactory, Parser};
 use cli::{Commands, ConfigArgs};
-fn configured(args: &ConfigArgs, dry_run: bool) -> Result<Option<config::Config>, String> {
-    let cfg = config::load(&args.config_file)?;
+use ingredients::Mode;
+fn snapshot(path: &std::path::Path) -> Result<Mode, String> {
+    let destination = config::destination(path)?;
+    let ingredients = manifest::Manifest::load(&destination)?
+        .map(|manifest| manifest.ingredients)
+        .unwrap_or_default();
+    Ok(Mode::Snapshot(ingredients))
+}
+fn configured(
+    args: &ConfigArgs,
+    dry_run: bool,
+    mode: Mode,
+) -> Result<Option<config::Config>, String> {
+    let cfg = config::load(&args.config_file, mode)?;
     if !dry_run && !args.quiet && cfg.all_hooks().next().is_some() {
         report::warning(
             "Hooks detected in configuration. Ensure commands are safe before execution.",
@@ -29,21 +42,31 @@ fn run() -> Result<(), String> {
     }
     match cli::Cli::parse().command {
         Commands::Backup(args) => {
-            if let Some(cfg) = configured(&args.config, args.dry_run)? {
+            if let Some(cfg) = configured(
+                &args.config,
+                args.dry_run,
+                if args.dry_run {
+                    Mode::ReadOnly
+                } else {
+                    Mode::Update
+                },
+            )? {
                 files::execute(&cfg, false, args.dry_run)?;
             }
         }
         Commands::Restore(args) => {
-            if let Some(cfg) = configured(&args.config, args.dry_run)? {
+            let mode = snapshot(&args.config.config_file)?;
+            if let Some(cfg) = configured(&args.config, args.dry_run, mode)? {
                 files::execute(&cfg, true, args.dry_run)?;
             }
         }
         Commands::Verify { config_file } => {
-            let cfg = config::load(&config_file)?;
+            let mode = snapshot(&config_file)?;
+            let cfg = config::load(&config_file, mode)?;
             files::verify(&cfg)?;
         }
         Commands::Hook { config, name } => {
-            if let Some(cfg) = configured(&config, false)? {
+            if let Some(cfg) = configured(&config, false, Mode::ReadOnly)? {
                 hooks::select(&cfg, name.as_deref())?;
             }
         }
