@@ -500,3 +500,57 @@ fn ingredient_delete_accepts_multiple_names_and_continues_after_a_missing_entry(
     assert_eq!(partial.status.code(), Some(1), "{}", text(&partial));
     assert!(!cache.join("demo.yaml").exists());
 }
+
+#[test]
+fn documented_ingredient_sample_backs_up_verifies_and_restores() {
+    let dir = TempDir::new().unwrap();
+    let home = dir.path();
+    let sample_config = include_str!("../../sample/ingredient.yaml");
+    let sample_source = include_str!("../../sample/src/homes/ghostty/.config/ghostty/config");
+    let app_support = include_str!(
+        "../../sample/src/homes/ghostty/Library/Application Support/com.mitchellh.ghostty/sample.txt"
+    );
+    write(home, "config.yaml", sample_config);
+    write(home, ".config/ghostty/config", sample_source);
+    write(
+        home,
+        "Library/Application Support/com.mitchellh.ghostty/sample.txt",
+        app_support,
+    );
+    write(
+        home,
+        "remote.yaml",
+        include_str!("../../ingredients/library/ghostty.yaml"),
+    );
+
+    let backup = run(home, &["backup", "config.yaml", "-q"], "200");
+    assert!(backup.status.success(), "{}", text(&backup));
+    assert_eq!(
+        fs::read_to_string(home.join("dst/ingredient/ghostty/.config/ghostty/config")).unwrap(),
+        sample_source
+    );
+    assert_eq!(
+        fs::read_to_string(home.join(
+            "dst/ingredient/ghostty/Library/Application Support/com.mitchellh.ghostty/sample.txt"
+        ))
+        .unwrap(),
+        app_support
+    );
+    let verify = run(home, &["verify", "config.yaml"], "offline");
+    assert!(verify.status.success(), "{}", text(&verify));
+
+    fs::remove_file(home.join(".config/ghostty/config")).unwrap();
+    let restore = run(home, &["restore", "config.yaml", "-q"], "offline");
+    assert!(restore.status.success(), "{}", text(&restore));
+    assert_eq!(
+        fs::read_to_string(home.join(".config/ghostty/config")).unwrap(),
+        sample_source
+    );
+    assert_eq!(
+        fs::read_to_string(home.join("curl.calls"))
+            .unwrap()
+            .lines()
+            .count(),
+        1
+    );
+}

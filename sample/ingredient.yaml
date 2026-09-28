@@ -1,0 +1,8 @@
+# Fetch the Ghostty ingredient from GitHub and back up its sample configuration.
+symlinks: reference
+destination: dst/ingredient
+clean: true
+include:
+  - ingredient: ghostty
+    wrap: ghostty
+rules: []

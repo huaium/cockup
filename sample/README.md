@@ -29,6 +29,7 @@ just sample-hook 'Check failure'    # Intentionally returns exit 1
 | `prompt` | Ask once for all links during backup; restore reuses the recorded decision. |
 | `symlink-chain` | Preserve `alias/../file.txt` traversal through another symlink, without selecting the decoy file. |
 | `user-remap` | Simulate Alice for backup and Bob for restore; ask once for `current` or `original` home. |
+| `ingredient` | Fetch the Ghostty ingredient, back up its fixture files, then verify and restore them using the saved ingredient snapshot. |
 
 Each runnable config writes to `dst/<config-name>` relative to `sample/`: for example,
 `basic.yaml` uses `destination: dst/basic`. `basic-included.yaml` is an ingredient
@@ -45,6 +46,7 @@ Every fixture under `src/` is used, either directly or as a symlink target:
 | `file-link`, `directory-link`, `originals/` and its contents | `reference.yaml`, `dereference.yaml`, `prompt.yaml` |
 | `symlink-chain/` and its contents | `symlink-chain.yaml`; `alias` points to shared `originals/dir/` |
 | `homes/alice/config/`, `homes/alice/data/` and their contents | `user-remap.yaml`, directly and through its links |
+| `homes/ghostty/.config/ghostty/config`, `homes/ghostty/Library/Application Support/com.mitchellh.ghostty/sample.txt` | `ingredient.yaml`, through the remote Ghostty ingredient |
 
 The `homes/` and `homes/alice/` folders contain the user-remapping fixtures.
 `homes/bob/`, if created by restore, is generated output rather than an input fixture.
@@ -62,6 +64,20 @@ For user remapping, the recipes set `HOME` and `USER` only for Cockup, using
 `sample/src/homes/alice` and `sample/src/homes/bob`. No real user accounts or home
 directories are changed. Restore can overwrite sample files, so save any manual
 fixture edits you want to keep.
+
+To test remote ingredients end to end:
+
+```sh
+just sample-backup ingredient
+just sample-verify ingredient
+just sample-restore ingredient
+```
+
+The first backup fetches `ghostty` from the project's GitHub ingredient library and
+stores it in `sample/src/homes/ghostty/Library/Caches/cockup/`. The backup is written
+to `sample/dst/ingredient/ghostty/`. The recipes set `HOME` only for Cockup, so they
+do not use your real Ghostty configuration or ingredient cache. Verify and restore
+use the ingredient snapshot in the backup; they also work without network access.
 
 Inspect `sample/dst/CONFIG/.cockup-symlinks.json` to see recorded link paths and modes.
 

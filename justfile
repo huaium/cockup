@@ -63,13 +63,14 @@ dtag VERSION:
     git tag -d {{ VERSION }}
     git push origin --delete {{ VERSION }}
 
-# Back up with sample/CASE.yaml; user-remap simulates Alice only for Cockup.
+# Back up with sample/CASE.yaml; special cases use fixture homes only for Cockup.
 sample-backup CASE="basic" *ARGS:
     #!/bin/sh
     set -eu
     cargo build --locked
     case {{ quote(CASE) }} in
         user-remap) env HOME="$(pwd -P)/sample/src/homes/alice" USER=alice ./target/debug/cockup backup sample/user-remap.yaml {{ ARGS }} ;;
+        ingredient) env HOME="$(pwd -P)/sample/src/homes/ghostty" USER=sample ./target/debug/cockup backup sample/ingredient.yaml {{ ARGS }} ;;
         *) ./target/debug/cockup backup "sample/"{{ quote(CASE) }}".yaml" {{ ARGS }} ;;
     esac
 
@@ -80,12 +81,19 @@ sample-restore CASE="basic" *ARGS:
     cargo build --locked
     case {{ quote(CASE) }} in
         user-remap) env HOME="$(pwd -P)/sample/src/homes/bob" USER=bob ./target/debug/cockup restore sample/user-remap.yaml {{ ARGS }} ;;
+        ingredient) env HOME="$(pwd -P)/sample/src/homes/ghostty" USER=sample ./target/debug/cockup restore sample/ingredient.yaml {{ ARGS }} ;;
         *) ./target/debug/cockup restore "sample/"{{ quote(CASE) }}".yaml" {{ ARGS }} ;;
     esac
 
 # Verify the backup for sample/CASE.yaml without running hooks or changing files.
 sample-verify CASE="basic":
-    cargo run --locked -- verify "sample/"{{ quote(CASE) }}".yaml"
+    #!/bin/sh
+    set -eu
+    cargo build --locked
+    case {{ quote(CASE) }} in
+        ingredient) env HOME="$(pwd -P)/sample/src/homes/ghostty" USER=sample ./target/debug/cockup verify sample/ingredient.yaml ;;
+        *) ./target/debug/cockup verify "sample/"{{ quote(CASE) }}".yaml" ;;
+    esac
 
 # Run a named sample hook, or select interactively when NAME is omitted.
 sample-hook NAME="":
