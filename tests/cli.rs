@@ -54,3 +54,5 @@ mod output;
 mod symlink_backup;
 #[path = "cli/symlink_restore.rs"]
 mod symlink_restore;
+#[path = "cli/verify.rs"]
+mod verify;

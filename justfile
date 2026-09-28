@@ -83,6 +83,10 @@ sample-restore CASE="basic" *ARGS:
         *) ./target/debug/cockup restore "sample/"{{ quote(CASE) }}".yaml" {{ ARGS }} ;;
     esac
 
+# Verify the backup for sample/CASE.yaml without running hooks or changing files.
+sample-verify CASE="basic":
+    cargo run --locked -- verify "sample/"{{ quote(CASE) }}".yaml"
+
 # Run a named sample hook, or select interactively when NAME is omitted.
 sample-hook NAME="":
     cargo run --locked -- hook sample/hooks.yaml --quiet {{ if NAME == "" { "" } else { "--name " + quote(NAME) } }}

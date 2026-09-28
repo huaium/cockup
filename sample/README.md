@@ -4,6 +4,7 @@ Use three commands from the project root:
 
 ```sh
 just sample-backup                 # Basic files and includes
+just sample-verify                 # Check the basic backup before restoring
 just sample-restore
 just sample-hook                   # Select a hook interactively
 ```
@@ -12,6 +13,7 @@ Choose a feature by its config name:
 
 ```sh
 just sample-backup dereference
+just sample-verify dereference
 # Optionally edit a target file or remove a source link to observe restoration.
 just sample-restore dereference
 

@@ -8,6 +8,51 @@ use std::{
     path::{Path, PathBuf},
 };
 
+pub(super) fn expand(source: &Path) -> Result<Vec<PathBuf>, String> {
+    if fs::symlink_metadata(source).is_ok() {
+        return Ok(vec![source.to_path_buf()]);
+    }
+    if !magic(source) {
+        return Ok(vec![]);
+    }
+    glob::glob_with(
+        &source.to_string_lossy(),
+        glob::MatchOptions {
+            case_sensitive: true,
+            require_literal_separator: true,
+            require_literal_leading_dot: false,
+        },
+    )
+    .map_err(|e| e.to_string())
+    .and_then(|paths| {
+        paths
+            .filter(|p| {
+                p.as_ref().map_or(true, |p| {
+                    let last = p
+                        .as_os_str()
+                        .as_encoded_bytes()
+                        .rsplit(|c| *c == b'/')
+                        .next()
+                        .unwrap_or_default();
+                    last != b"."
+                        && last != b".."
+                        && glob::Pattern::new(&source.to_string_lossy()).is_ok_and(|pattern| {
+                            pattern.matches_path_with(
+                                p,
+                                glob::MatchOptions {
+                                    case_sensitive: true,
+                                    require_literal_separator: true,
+                                    require_literal_leading_dot: true,
+                                },
+                            )
+                        })
+                })
+            })
+            .map(|p| p.map_err(|e| e.to_string()))
+            .collect()
+    })
+}
+
 pub(super) fn rule(
     rule: &Rule,
     destination: &Path,
@@ -31,51 +76,10 @@ pub(super) fn rule(
     for target in &rule.targets {
         let target = prefix.join(target);
         let source = from.join(target);
-        let paths: Result<Vec<PathBuf>, String> = if fs::symlink_metadata(&source).is_ok() {
-            Ok(vec![source.clone()])
-        } else if magic(&source) {
-            glob::glob_with(
-                &source.to_string_lossy(),
-                glob::MatchOptions {
-                    case_sensitive: true,
-                    require_literal_separator: true,
-                    require_literal_leading_dot: false,
-                },
-            )
-            .map_err(|e| e.to_string())
-            .and_then(|paths| {
-                paths
-                    .filter(|p| {
-                        p.as_ref().map_or(true, |p| {
-                            let last = p
-                                .as_os_str()
-                                .as_encoded_bytes()
-                                .rsplit(|c| *c == b'/')
-                                .next()
-                                .unwrap_or_default();
-                            last != b"."
-                                && last != b".."
-                                && glob::Pattern::new(&source.to_string_lossy()).is_ok_and(
-                                    |pattern| {
-                                        pattern.matches_path_with(
-                                            p,
-                                            glob::MatchOptions {
-                                                case_sensitive: true,
-                                                require_literal_separator: true,
-                                                require_literal_leading_dot: true,
-                                            },
-                                        )
-                                    },
-                                )
-                        })
-                    })
-                    .map(|p| p.map_err(|e| e.to_string()))
-                    .collect()
-            })
-        } else {
+        if fs::symlink_metadata(&source).is_err() && !magic(&source) {
             report::warning(&format!("Source not found, skipping: {}", source.display()));
-            Ok(vec![])
-        };
+        }
+        let paths = expand(&source);
         match paths {
             Err(e) => {
                 report::error(&e);

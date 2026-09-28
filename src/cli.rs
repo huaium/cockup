@@ -17,6 +17,8 @@ pub enum Commands {
     Backup(FileArgs),
     /// Restore files from a backup
     Restore(FileArgs),
+    /// Check backup manifest and configured backup paths
+    Verify { config_file: PathBuf },
     /// Run configured hooks
     Hook {
         #[command(flatten)]

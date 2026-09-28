@@ -76,6 +76,16 @@ cockup backup /path/to/config.yaml --dry-run
 cockup restore /path/to/config.yaml --dry-run
 ```
 
+恢复前可用 `verify` 检查备份是否完整、链接清单是否有效、记录的链接类型是否正确，
+以及当前配置选中的备份路径是否存在且可读取。验证只读，不运行 Hooks：
+
+```sh
+cockup verify /path/to/config.yaml
+```
+
+清单没有记录普通文件的完整列表或哈希值。因此，验证无法发现内容变化，也无法发现
+备份目录中未被规则单独选中的子文件丢失。
+
 ### `cockup hook`
 
 ```bash

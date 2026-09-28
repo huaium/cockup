@@ -38,6 +38,10 @@ fn run() -> Result<(), String> {
                 files::execute(&cfg, true, args.dry_run)?;
             }
         }
+        Commands::Verify { config_file } => {
+            let cfg = config::load(&config_file)?;
+            files::verify(&cfg)?;
+        }
         Commands::Hook { config, name } => {
             if let Some(cfg) = configured(&config, false)? {
                 hooks::select(&cfg, name.as_deref())?;

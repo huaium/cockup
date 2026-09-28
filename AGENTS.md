@@ -19,10 +19,12 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
 
 ## Architecture
 
-- CLI: clap subcommands `backup`, `restore`, `hook`, `list`, `template`, and `completions`.
+- CLI: clap subcommands `backup`, `restore`, `verify`, `hook`, `list`, `template`, and `completions`.
   `template` prints a commented, valid YAML starter to stdout.
   `completions` prints generated Bash, Zsh, Fish, PowerShell, or Elvish scripts.
   Backup and restore accept `--dry-run` to preview changes without writes or hooks.
+  `verify` checks the complete marker, manifest, recorded links, and paths selected
+  by the current configuration without hooks or writes. It does not hash file contents.
 - Configuration: serde YAML models; each include object resolves against its own file.
   Included rules/hooks precede local ones; nested `wrap` paths prefix included
   backup paths. The root controls destination and clean; symlinks and metadata
@@ -58,7 +60,8 @@ Agreed seams: CLI output/status/prompts and filesystem results. Use temporary
 folders and executable fixtures for Homebrew and hooks; do not mock internals.
 Never run sample backups against real user configuration directories. Shared
 fixtures live in sample/src; configs use separate sample/dst/CASE destinations.
-Use just sample-backup CASE, just sample-restore CASE, or just sample-hook NAME.
+Use just sample-backup CASE, just sample-verify CASE, just sample-restore CASE,
+or just sample-hook NAME.
 These recipes do not reset or mutate fixtures automatically. Intentional hook
 failures are isolated in sample/hooks.yaml.
 

@@ -83,6 +83,19 @@ cockup backup /path/to/config.yaml --dry-run
 cockup restore /path/to/config.yaml --dry-run
 ```
 
+Use `verify` before restore to check that the backup is complete, its symlink
+manifest is valid, recorded links have the expected type, and paths selected by
+the current configuration are present and readable. Verification is read-only
+and does not run hooks:
+
+```sh
+cockup verify /path/to/config.yaml
+```
+
+The manifest does not inventory or hash ordinary files. Verification cannot
+detect changed contents or a missing child inside a backed-up directory if that
+child is not selected separately by a rule.
+
 ### `cockup hook`
 
 ```bash
