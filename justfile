@@ -8,7 +8,9 @@ run *ARGS:
 sync:
     cargo fetch --locked
 
-sync-all: sync
+# Update workspace dependencies in Cargo.lock
+update:
+    cargo update --workspace
 
 test *ARGS:
     cargo test --locked {{ ARGS }}

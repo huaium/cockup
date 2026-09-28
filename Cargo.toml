@@ -2,12 +2,12 @@
 name = "cockup"
 version = "0.2.0"
 edition = "2024"
-description = "A configuration backup and restore tool"
+description = "Yet another backup tool for various configurations"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/huaium/cockup"
 homepage = "https://github.com/huaium/cockup"
-authors = ["huaium <huaium233@gmail.com>"]
+authors = ["huaium <adamzhangme@gmail.com>"]
 keywords = ["backup", "restore", "configuration", "macos", "cli"]
 categories = ["command-line-utilities", "filesystem"]
 include = [
@@ -32,12 +32,12 @@ name = "cockup"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4", features = ["derive"] }
-serde = { version = "1", features = ["derive"] }
+clap = { version = "4.6.7", features = ["derive"] }
+serde = { version = "1.0.229", features = ["derive"] }
 serde_yaml_ng = "0.10"
-serde_json = "1"
-glob = "0.3"
-filetime = "0.2"
+serde_json = "1.0.151"
+glob = "0.3.4"
+filetime = "0.2.29"
 
 [dev-dependencies]
-tempfile = "3"
+tempfile = "3.27.0"
