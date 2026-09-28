@@ -14,12 +14,12 @@ fn backup_restore_preserves_nested_include_paths_and_glob_layout() {
     write(
         p,
         "configs/child/child.yaml",
-        "symlinks: referece\ndestination: ignored\ninclude: [deep/grand.yaml]\nrules:\n  - from: source/*\n    targets: ['*.txt']\n    to: child\n",
+        "symlinks: referece\ndestination: ignored\ninclude: [{file: deep/grand.yaml}]\nrules:\n  - from: source/*\n    targets: ['*.txt']\n    to: child\n",
     );
     write(
         p,
         "configs/root.yaml",
-        "symlinks: referece\ndestination: ../backup\ninclude: [child/child.yaml]\nrules:\n  - from: source\n    targets: [top.txt]\n    to: top\n",
+        "symlinks: referece\ndestination: ../backup\ninclude: [{file: child/child.yaml}]\nrules:\n  - from: source\n    targets: [top.txt]\n    to: top\n",
     );
     let out = cli(p, &["backup", "configs/root.yaml", "-q"], "");
     assert!(out.status.success(), "{}", text(&out));

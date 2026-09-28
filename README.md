@@ -85,8 +85,8 @@ rules:
     to: "subdirectory"
 ```
 
-`symlinks` is required in every configuration file, including includes. The root
-configuration's value controls backup, including included rules:
+`symlinks` is required in every configuration file, including included files.
+The root value is the default; include objects and rules can override it:
 
 | Mode | Behavior |
 | --- | --- |
@@ -96,8 +96,8 @@ configuration's value controls backup, including included rules:
 
 The policy applies to matched entries and symlinks encountered while recursively
 copying directories. In `prompt` mode, `--quiet` only suppresses hook confirmation;
-it does not answer symlink questions. Blank, invalid, or unavailable input reports
-an error. Use `referece` or `dereference` for unattended runs. Dereferencing broken
+it does not answer symlink questions. Invalid answers are prompted again; closed
+input reports an error. Use `referece` or `dereference` for unattended runs. Dereferencing broken
 links, cycles, or overlapping source/destination paths reports an error. Link
 choices are collected before cleanup or directory replacement; planning failures
 abort clean/prompt backups before deleting backup data.
@@ -137,7 +137,10 @@ restoration. The manifest and incomplete-marker paths are reserved.
 ```yaml
 # Include rules and hooks from other config files
 include:
-  - "./another_config.yaml"
+  - file: "./another_config.yaml"
+    wrap: imported
+    symlinks: dereference
+    metadata: false
 
 # Clean mode, whether to remove existing backup folder (default: false)
 clean: false
@@ -239,15 +242,20 @@ copying, rule hooks, or post-hooks.
 
 ### Include
 
-You can simply include rules and hooks from other configuration files using `include`.
+Use `include` objects to import rules and hooks from other configuration files. Included entries run before local entries. `file` is resolved relative to the configuration that declares it. Optional `wrap` places all imported backup files under that path within the root destination; nested wrappers compose.
 
-Please note that only rules and hooks will be included, and they will be placed before the rules and hooks defined in the main config, using the `clean`, `metadata`, and `symlinks` fields from the main config for execution.
+The root configuration controls `destination` and `clean`. Its `symlinks` and `metadata` are defaults: an include object can override them for its subtree, and an individual rule can override them again. Omitted values inherit from the nearest include, then the root. An included file's own top-level settings apply when that file is run directly, but its rules use the inherited settings when included. Restore uses each rule's effective `metadata` value and the symlink modes recorded by backup.
 
 ```yaml
 include:
-  - "path_to/config_one.yaml"
-  - "path_to/config_two.yaml"
+  - file: "path_to/config_one.yaml"
+    wrap: config-one
+    symlinks: dereference
+  - file: "path_to/config_two.yaml"
+    metadata: false
 ```
+
+`wrap` must be a non-empty relative path without `..`. String include entries are no longer accepted. Rules can also set `symlinks` or `metadata` directly.
 
 Refer to [sample](sample) to view a configuration demo.
 
@@ -270,7 +278,8 @@ For a real Homebrew smoke test, run `cargo run --locked -- list iterm2`.
 ## Migrating from Python
 
 Existing configurations must add `symlinks: referece` to retain link-copying behavior.
-Commands and other YAML fields remain compatible. Relative paths resolve against each
+Commands and other YAML fields remain compatible except for `include`, which now
+requires objects with a `file` field. Relative paths resolve against each
 configuration file's directory. Invalid configuration and include cycles fail before
 execution. Hook confirmation happens once; `--quiet` or `-q` covers included hooks.
 

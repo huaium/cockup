@@ -56,12 +56,27 @@ pub struct Rule {
     #[serde(rename = "from")]
     pub src: PathBuf,
     pub to: PathBuf,
+    #[serde(default)]
+    pub symlinks: Option<Symlinks>,
+    #[serde(default)]
+    pub metadata: Option<bool>,
     #[serde(default, deserialize_with = "null_default")]
     pub targets: Vec<String>,
     #[serde(default, rename = "on-start", deserialize_with = "null_default")]
     pub on_start: Vec<Hook>,
     #[serde(default, rename = "on-end", deserialize_with = "null_default")]
     pub on_end: Vec<Hook>,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Include {
+    file: PathBuf,
+    #[serde(default)]
+    wrap: Option<PathBuf>,
+    #[serde(default)]
+    symlinks: Option<Symlinks>,
+    #[serde(default)]
+    metadata: Option<bool>,
 }
 #[derive(Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -109,7 +124,7 @@ pub struct Config {
     #[serde(default = "default_true")]
     pub metadata: bool,
     #[serde(default, deserialize_with = "null_default")]
-    include: Vec<PathBuf>,
+    include: Vec<Include>,
     #[serde(skip)]
     pub directory: PathBuf,
 }
@@ -135,7 +150,12 @@ pub fn absolute(path: &Path, base: &Path) -> Result<PathBuf> {
     })
 }
 pub fn load(path: &Path) -> Result<Config> {
-    fn read(path: &Path, stack: &mut HashSet<PathBuf>) -> Result<Config> {
+    fn read(
+        path: &Path,
+        stack: &mut HashSet<PathBuf>,
+        inherited: Option<(Symlinks, bool)>,
+        wrap: &Path,
+    ) -> Result<Config> {
         let path = fs::canonicalize(path).map_err(|e| format!("{}: {e}", path.display()))?;
         if !stack.insert(path.clone()) {
             return Err(format!("Include cycle at {}", path.display()));
@@ -145,6 +165,7 @@ pub fn load(path: &Path) -> Result<Config> {
             serde_yaml_ng::from_str(&source).map_err(|e| format!("{}: {e}", path.display()))?;
         cfg.directory = path.parent().unwrap().to_path_buf();
         cfg.destination = absolute(&cfg.destination, &cfg.directory)?;
+        let (symlinks, metadata) = inherited.unwrap_or((cfg.symlinks, cfg.metadata));
         for (index, rule) in cfg.rules.iter_mut().enumerate() {
             for (field, pattern) in std::iter::once(("from", rule.src.to_string_lossy())).chain(
                 rule.targets
@@ -171,6 +192,9 @@ pub fn load(path: &Path) -> Result<Config> {
                     return Err("Rule targets and to must be relative paths without '..'".into());
                 }
             }
+            rule.to = wrap.join(&rule.to);
+            rule.symlinks = Some(rule.symlinks.unwrap_or(symlinks));
+            rule.metadata = Some(rule.metadata.unwrap_or(metadata));
         }
         for h in cfg.all_hooks() {
             if h.name.is_empty()
@@ -186,7 +210,32 @@ pub fn load(path: &Path) -> Result<Config> {
         let mut rules = Vec::new();
         let mut hooks = Hooks::default();
         for include in &cfg.include {
-            let child = read(&absolute(include, &cfg.directory)?, stack)?;
+            let prefix = if let Some(folder) = &include.wrap {
+                if folder.as_os_str().is_empty()
+                    || folder.is_absolute()
+                    || folder
+                        .components()
+                        .any(|c| matches!(c, std::path::Component::ParentDir))
+                    || folder == Path::new(".")
+                {
+                    return Err(format!(
+                        "{}: include wrap must be a non-empty relative path without '..'",
+                        path.display()
+                    ));
+                }
+                wrap.join(folder)
+            } else {
+                wrap.to_path_buf()
+            };
+            let child = read(
+                &absolute(&include.file, &cfg.directory)?,
+                stack,
+                Some((
+                    include.symlinks.unwrap_or(symlinks),
+                    include.metadata.unwrap_or(metadata),
+                )),
+                &prefix,
+            )?;
             rules.extend(child.rules);
             hooks.append(child.hooks);
         }
@@ -197,5 +246,5 @@ pub fn load(path: &Path) -> Result<Config> {
         stack.remove(&path);
         Ok(cfg)
     }
-    read(path, &mut HashSet::new())
+    read(path, &mut HashSet::new(), None, Path::new(""))
 }

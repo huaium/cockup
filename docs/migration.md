@@ -9,8 +9,11 @@ commands. Timeout is optional and applies independently to command and check;
 the direct child is killed and reaped on timeout (not its entire process tree).
 
 Configuration paths are resolved relative to each file. Included rules/hooks
-precede local definitions; the root configuration controls destination, clean,
-metadata, and symlinks. Includes are validated before actions, cycles fail, and hook
+precede local definitions; the root configuration controls destination and clean.
+Includes now require objects such as `{file: child.yaml, wrap: imported}` rather
+than strings. `wrap` prefixes the included rules' backup paths. Root symlinks and
+metadata are defaults; include objects and individual rules can override them.
+Includes are validated before actions, cycles fail, and hook
 confirmation is shared across includes. A standalone hook or global pre-hook
 runs in the root configuration directory; rule hooks and global post-hooks run
 in the backup destination, matching the existing lifecycle.
@@ -24,10 +27,11 @@ warnings; unmatched patterns are errors. Clean operations refuse the filesystem
 root, home directory, and source-containing destinations. Overlapping copies fail. Rule `to` and target paths must be relative and may not
 contain `..`; invalid paths are rejected before clean mode removes anything.
 
-Every configuration, including includes, now requires `symlinks`: `referece`
+Every configuration, including included files, requires `symlinks`: `referece`
 copies links (including dangling links), `dereference` copies their targets, and
-`prompt` asks once for all encountered links. The root policy applies to all merged rules
-during backup. Existing configurations should add `symlinks: referece`.
+`prompt` asks once for links whose effective rule policy is prompt. The root policy
+is the default and can be overridden by include objects and rules. Existing
+configurations should add `symlinks: referece`.
 Backup writes a versioned `.cockup-symlinks.json` with user/home identity and
 link locations, target text, resolved targets, modes, target chains and relative
 content paths. Restore uses recorded modes: reference restores only the link;

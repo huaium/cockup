@@ -146,7 +146,7 @@ fn root_symlink_policy_controls_included_rules_and_dereference_rejects_overlap()
     write(
         p,
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [child.yaml]\n",
+        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [{file: child.yaml}]\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert!(out.status.success(), "{}", text(&out));
@@ -157,7 +157,7 @@ fn root_symlink_policy_controls_included_rules_and_dereference_rejects_overlap()
     write(
         p,
         "config.yaml",
-        "symlinks: dereference\ndestination: backup\nrules: []\ninclude: [child.yaml]\n",
+        "symlinks: dereference\ndestination: backup\nrules: []\ninclude: [{file: child.yaml}]\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-q"], "");
     assert_eq!(out.status.code(), Some(1), "{}", text(&out));

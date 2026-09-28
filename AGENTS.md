@@ -20,13 +20,15 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
 ## Architecture
 
 - CLI: clap subcommands `backup`, `restore`, `hook`, and `list`.
-- Configuration: serde YAML models; each include resolves against its own file.
-  Included rules/hooks precede local ones; top-level settings win. Reject cycles
+- Configuration: serde YAML models; each include object resolves against its own file.
+  Included rules/hooks precede local ones; nested `wrap` paths prefix included
+  backup paths. The root controls destination and clean; symlinks and metadata
+  inherit through include objects and can be overridden per rule. Reject cycles
   and invalid configuration before operations. Prompt once for hook execution.
 - File operations: explicit source/destination paths, glob layout preservation,
   clean/update modes, special files skipped. Required `symlinks` policy: referece
   links, dereference targets with cycle detection, or prompt once for all links. Root policy
-  applies to included rules for backup. Discover links/choices before cleanup;
+  applies to included rules unless overridden. Discover links/choices before cleanup;
   keep copied links pointing at their original targets. Cleanup unlinks links
   without following them; destination contents remain subject to normal cleanup. `.cockup-symlinks.json` records
   modes, locations, targets/chains and user/home identity. Restore uses recorded

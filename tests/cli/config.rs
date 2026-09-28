@@ -1,13 +1,162 @@
 use super::*;
 
 #[test]
+fn included_rules_are_wrapped_under_the_root_destination() {
+    let dir = TempDir::new().unwrap();
+    let p = dir.path();
+    write(p, "source/file", "contents");
+    write(
+        p,
+        "nested/child.yaml",
+        "symlinks: referece\ndestination: ignored\nrules:\n  - from: ../source\n    targets: [file]\n    to: config\n",
+    );
+    write(
+        p,
+        "config.yaml",
+        "symlinks: referece\ndestination: backup\ninclude:\n  - file: nested/child.yaml\n    wrap: imported\nrules: []\n",
+    );
+    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    assert!(out.status.success(), "{}", text(&out));
+    assert_eq!(
+        fs::read_to_string(p.join("backup/imported/config/file")).unwrap(),
+        "contents"
+    );
+    fs::remove_file(p.join("source/file")).unwrap();
+    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    assert!(out.status.success(), "{}", text(&out));
+    assert_eq!(
+        fs::read_to_string(p.join("source/file")).unwrap(),
+        "contents"
+    );
+}
+
+#[test]
+fn nested_include_and_rule_settings_override_inherited_defaults() {
+    use std::os::unix::fs::symlink;
+    let dir = TempDir::new().unwrap();
+    let p = dir.path();
+    write(p, "source/original", "contents");
+    for name in ["inherited", "nested", "local"] {
+        symlink("original", p.join("source").join(name)).unwrap();
+    }
+    write(
+        p,
+        "nested/grand.yaml",
+        "symlinks: prompt\ndestination: ignored\nrules:\n  - from: ../source\n    targets: [nested]\n    to: files\n    symlinks: referece\n  - from: ../source\n    targets: [local]\n    to: files\n    symlinks: dereference\n",
+    );
+    write(
+        p,
+        "nested/child.yaml",
+        "symlinks: prompt\ndestination: ignored\ninclude:\n  - file: grand.yaml\n    wrap: grand\n    symlinks: referece\nrules:\n  - from: ../source\n    targets: [inherited]\n    to: files\n",
+    );
+    write(
+        p,
+        "config.yaml",
+        "symlinks: referece\ndestination: backup\ninclude:\n  - file: nested/child.yaml\n    wrap: outer\n    symlinks: dereference\nrules: []\n",
+    );
+    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    assert!(out.status.success(), "{}", text(&out));
+    for (name, path, expected_link) in [
+        ("inherited", "backup/outer/files/inherited", false),
+        ("nested", "backup/outer/grand/files/nested", true),
+        ("local", "backup/outer/grand/files/local", false),
+    ] {
+        assert_eq!(
+            fs::symlink_metadata(p.join(path)).unwrap().is_symlink(),
+            expected_link,
+            "{name}"
+        );
+    }
+    for name in ["inherited", "nested", "local"] {
+        fs::remove_file(p.join("source").join(name)).unwrap();
+    }
+    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    assert!(out.status.success(), "{}", text(&out));
+    for name in ["inherited", "nested", "local"] {
+        assert_eq!(
+            fs::read_link(p.join("source").join(name)).unwrap(),
+            Path::new("original")
+        );
+    }
+}
+
+#[test]
+fn include_and_rule_metadata_overrides_apply_on_backup_and_restore() {
+    use filetime::{FileTime, set_file_times};
+    let dir = TempDir::new().unwrap();
+    let p = dir.path();
+    for name in ["root", "included", "rule"] {
+        write(p, &format!("source/{name}"), name);
+        let old = FileTime::from_unix_time(946684800, 0);
+        set_file_times(p.join("source").join(name), old, old).unwrap();
+    }
+    write(
+        p,
+        "child.yaml",
+        "symlinks: referece\ndestination: ignored\nrules:\n  - from: source\n    targets: [included]\n    to: files\n  - from: source\n    targets: [rule]\n    to: files\n    metadata: true\n",
+    );
+    write(
+        p,
+        "config.yaml",
+        "symlinks: referece\nmetadata: true\ndestination: backup\ninclude:\n  - file: child.yaml\n    metadata: false\nrules:\n  - from: source\n    targets: [root]\n    to: files\n",
+    );
+    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    assert!(out.status.success(), "{}", text(&out));
+    for (name, preserved) in [("root", true), ("included", false), ("rule", true)] {
+        let path = p.join("backup/files").join(name);
+        let timestamp = fs::metadata(path).unwrap().modified().unwrap();
+        let old = std::time::UNIX_EPOCH + std::time::Duration::from_secs(946684800);
+        assert_eq!(timestamp == old, preserved, "{name}");
+        fs::remove_file(p.join("source").join(name)).unwrap();
+    }
+    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    assert!(out.status.success(), "{}", text(&out));
+    for (name, preserved) in [("root", true), ("included", false), ("rule", true)] {
+        let timestamp = fs::metadata(p.join("source").join(name))
+            .unwrap()
+            .modified()
+            .unwrap();
+        let old = std::time::UNIX_EPOCH + std::time::Duration::from_secs(946684800);
+        assert_eq!(timestamp == old, preserved, "{name}");
+    }
+}
+
+#[test]
+fn invalid_include_shapes_and_wraps_fail_before_cleaning() {
+    let dir = TempDir::new().unwrap();
+    let p = dir.path();
+    write(p, "backup/keep", "unchanged");
+    for include in [
+        "[child.yaml]",
+        "[{file: child.yaml, wrap: ../outside}]",
+        "[{file: child.yaml, wrap: /outside}]",
+        "[{file: child.yaml, wrap: ''}]",
+        "[{file: child.yaml, warp: typo}]",
+    ] {
+        write(
+            p,
+            "config.yaml",
+            &format!(
+                "symlinks: referece\ndestination: backup\nclean: true\ninclude: {include}\nrules: []\n"
+            ),
+        );
+        let out = cli(p, &["backup", "config.yaml", "-q"], "");
+        assert_eq!(out.status.code(), Some(1), "{}", text(&out));
+        assert_eq!(
+            fs::read_to_string(p.join("backup/keep")).unwrap(),
+            "unchanged"
+        );
+    }
+}
+
+#[test]
 fn invalid_configuration_fails_before_side_effects() {
     let dir = TempDir::new().unwrap();
     for yaml in [
         "rules: []",
         "symlinks: referece\ndestination: backup\nrules: [bad]",
-        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [missing.yaml]",
-        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [config.yaml]",
+        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [{file: missing.yaml}]",
+        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [{file: config.yaml}]",
     ] {
         write(dir.path(), "config.yaml", yaml);
         let out = cli(dir.path(), &["backup", "config.yaml", "-q"], "");
@@ -49,7 +198,7 @@ fn included_hooks_prompt_once_and_quiet_suppresses_confirmation() {
     write(
         dir.path(),
         "config.yaml",
-        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [nested/child.yaml]\n",
+        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [{file: nested/child.yaml}]\n",
     );
     let denied = cli(dir.path(), &["backup", "config.yaml"], "n\n");
     assert!(denied.status.success());
@@ -103,7 +252,7 @@ fn malformed_globs_fail_before_confirmation_hooks_or_cleanup() {
                 let (config, invalid_file) = if included {
                     write(p, "nested/child.yaml", &rules);
                     (
-                        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [nested/child.yaml]\n"
+                        "symlinks: referece\ndestination: backup\nrules: []\ninclude: [{file: nested/child.yaml}]\n"
                             .to_string(),
                         "child.yaml",
                     )

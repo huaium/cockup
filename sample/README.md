@@ -21,7 +21,7 @@ just sample-hook 'Check failure'    # Intentionally returns exit 1
 
 | Config | What it tests |
 | --- | --- |
-| `basic` (default) | Files, globs, metadata, and rules from `basic-included.yaml`. |
+| `basic` (default) | Files, globs, metadata, and rules from `basic-included.yaml` under `dst/basic/imported/`. |
 | `reference` | Copy links while keeping their original targets; restore original link text. Target contents stay untouched. |
 | `dereference` | Save target contents, restore them, and recreate source links. |
 | `prompt` | Ask once for all links during backup; restore reuses the recorded decision. |

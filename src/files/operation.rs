@@ -18,7 +18,13 @@ pub(crate) fn execute(cfg: &Config, restore: bool) -> Result<(), String> {
         return Err("Backup is incomplete; run a successful backup before restoring".into());
     }
     let stored = Manifest::load(&cfg.destination)?;
-    if restore && stored.is_none() && cfg.symlinks != Symlinks::Referece {
+    if restore
+        && stored.is_none()
+        && cfg
+            .rules
+            .iter()
+            .any(|r| r.symlinks != Some(Symlinks::Referece))
+    {
         return Err(
             "Missing symlink manifest: cannot restore dereference/prompt backup safely".into(),
         );
@@ -69,13 +75,19 @@ pub(crate) fn execute(cfg: &Config, restore: bool) -> Result<(), String> {
                 rule_config,
                 &cfg.destination,
                 false,
-                cfg.metadata,
-                cfg.symlinks,
+                rule_config.metadata.unwrap(),
+                rule_config.symlinks.unwrap(),
                 &mut state,
             );
         }
         state.planning = false;
-        if planning_failures > 0 && (cfg.clean || cfg.symlinks == Symlinks::Prompt) {
+        if planning_failures > 0
+            && (cfg.clean
+                || cfg
+                    .rules
+                    .iter()
+                    .any(|r| r.symlinks == Some(Symlinks::Prompt)))
+        {
             return Err("Symlink planning failed; backup destination was not modified".into());
         }
     }
@@ -139,11 +151,15 @@ pub(crate) fn execute(cfg: &Config, restore: bool) -> Result<(), String> {
         }
         fs::create_dir_all(&cfg.destination).map_err(|e| e.to_string())?;
     }
-    report::success(if cfg.metadata {
-        "Metadata preservation enabled."
-    } else {
-        "Metadata preservation disabled."
-    });
+    report::success(
+        if cfg.rules.iter().any(|r| r.metadata != Some(cfg.metadata)) {
+            "Metadata preservation varies by rule."
+        } else if cfg.metadata {
+            "Metadata preservation enabled."
+        } else {
+            "Metadata preservation disabled."
+        },
+    );
     for (index, r) in cfg.rules.iter().enumerate() {
         if !r.on_start.is_empty() {
             report::success(&format!("Running pre-rule hooks for Rule {}...", index + 1));
@@ -153,11 +169,11 @@ pub(crate) fn execute(cfg: &Config, restore: bool) -> Result<(), String> {
             r,
             &cfg.destination,
             restore,
-            cfg.metadata,
+            r.metadata.unwrap(),
             if restore {
                 Symlinks::Referece
             } else {
-                cfg.symlinks
+                r.symlinks.unwrap()
             },
             &mut state,
         );

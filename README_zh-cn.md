@@ -82,8 +82,8 @@ rules:
     to: "subdirectory"
 ```
 
-每个配置文件（包括被导入的文件）都必须设置 `symlinks`。备份和恢复时，
-备份时所有规则统一使用主配置中的值，恢复时使用清单记录的模式：
+每个配置文件（包括被导入的文件）都必须设置 `symlinks`。根配置的值是默认值，
+导入对象和单条规则可以覆盖它；恢复时使用清单记录的模式：
 
 | 模式 | 行为 |
 | --- | --- |
@@ -92,7 +92,7 @@ rules:
 | `prompt` | 遇到首个链接时询问一次，选择适用于所有链接：输入 `r`/`referece` 保留链接，或 `d`/`dereference` 复制目标。 |
 
 该策略作用于匹配到的条目及递归复制目录时遇到的链接。`--quiet` 只跳过 Hook 确认，
-不会跳过链接选择。空白、无效或不可用的输入会报错；无人值守运行应选择前两种模式。
+不会跳过链接选择。无效输入会重新询问，输入流关闭时才会报错；无人值守运行应选择前两种模式。
 链接选择在清理及目录替换之前完成。规划失败时，clean/prompt 备份会在删除备份数据前停止。
 
 备份在根目录生成 `.cockup-symlinks.json`，请与备份内容一同保留。清单包含备份用户和主目录、
@@ -120,7 +120,10 @@ rules:
 ```yaml
 # 导入其他配置文件中的规则和 Hooks
 include:
-  - "./another_config.yaml"
+  - file: "./another_config.yaml"
+    wrap: imported
+    symlinks: dereference
+    metadata: false
 
 # 清洁模式，即是否先删除现有备份 (default: false)
 clean: false
@@ -220,15 +223,20 @@ Hooks 允许用户自定义运行命令。
 
 ### 配置导入
 
-你可以简单地通过 `include` 语句导入其他配置文件中的规则和 Hooks。
+通过 `include` 对象导入其他配置文件的规则和 Hooks。导入的条目排在本地条目之前。`file` 相对于声明它的配置文件解析。可选的 `wrap` 将导入规则的备份文件放进根目标目录下的指定子目录；嵌套导入的路径会逐层叠加。
 
-请注意，仅有规则和 Hooks 会被导入，且它们将被置于主配置中定义的规则和 Hooks 之前，执行时将使用主配置中的 `clean`、`metadata` 和 `symlinks` 字段。
+根配置控制 `destination` 和 `clean`。其 `symlinks` 和 `metadata` 是默认值：导入对象可以覆盖整个子树，单条规则可以再次覆盖。未指定的值从最近的导入对象继承，最终回退到根配置。被导入文件自身的顶层设置仅在单独运行该文件时生效。恢复时，每条规则使用其有效的 `metadata` 值，而链接模式以备份清单为准。
 
 ```yaml
 include:
-  - "path_to/config_one.yaml"
-  - "path_to/config_two.yaml"
+  - file: "path_to/config_one.yaml"
+    wrap: config-one
+    symlinks: dereference
+  - file: "path_to/config_two.yaml"
+    metadata: false
 ```
+
+`wrap` 必须是非空相对路径，且不能包含 `..`。不再接受字符串形式的导入项。单条规则也可以设置 `symlinks` 或 `metadata`。
 
 请访问 [sample](sample) 查看配置用例。
 
@@ -250,7 +258,7 @@ cargo build --release --locked
 
 ## 从 Python 迁移
 
-现有配置必须添加 `symlinks: referece` 才能保留原有链接复制行为。命令和其他 YAML 字段保持兼容。相对路径以各自配置文件所在目录为准，循环导入和无效配置会在执行前报错。
+现有配置必须添加 `symlinks: referece` 才能保留原有链接复制行为。命令和其他 YAML 字段保持兼容，但 `include` 现在必须使用带 `file` 字段的对象。相对路径以各自配置文件所在目录为准，循环导入和无效配置会在执行前报错。
 Hooks 只确认一次，`--quiet` 或 `-q` 同时作用于导入的 Hooks。
 
 成功或拒绝确认返回 0；配置、复制、Hook 或 Homebrew 错误返回 1；命令行用法错误返回 2。
