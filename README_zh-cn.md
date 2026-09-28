@@ -57,6 +57,18 @@ cockup list
 cockup list cask-name-1 [cask-name-n...]
 ```
 
+### `cockup ingredient`
+
+无需运行备份即可管理已下载的配料：
+
+```sh
+cockup ingredient update ghostty  # 即使缓存未过期，也立即检查 GitHub
+cockup ingredient status           # 显示所有缓存的配料
+cockup ingredient status ghostty   # 显示指定配料的来源和日期
+```
+
+`status` 离线且只读。`update` 请求失败时保留原有缓存并报告错误。收到 304 响应时仅更新上次检查日期。
+
 ### `cockup backup & restore`
 
 ```bash
@@ -274,7 +286,7 @@ include:
     wrap: ghostty
 ```
 
-Cockup 首次使用时从本仓库下载具名配料，缓存在 `~/Library/Caches/cockup/ingredients/v1/`，七天后检查更新。更新失败时使用缓存；远端不存在的配料会报错。备份清单保存实际使用的配料 YAML，恢复和验证无需连接 GitHub。试运行可能下载配料，但不会写入缓存。
+Cockup 首次使用时从本仓库下载具名配料，缓存在 `~/Library/Caches/cockup/ingredients/v1/`，30 天后检查更新。更新失败时使用缓存；远端不存在的配料会报错。备份清单保存实际使用的配料 YAML，恢复和验证无需连接 GitHub。试运行可能下载配料，但不会写入缓存。
 
 `wrap` 必须是非空相对路径，且不能包含 `..`。不再接受字符串形式的导入项。单条规则也可以设置 `symlinks` 或 `metadata`。
 

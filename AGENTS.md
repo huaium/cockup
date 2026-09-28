@@ -19,7 +19,7 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
 
 ## Architecture
 
-- CLI: clap subcommands `backup`, `restore`, `verify`, `hook`, `list`, `template`, and `completions`.
+- CLI: clap subcommands `backup`, `restore`, `verify`, `hook`, `list`, `ingredient`, `template`, and `completions`.
   `template` prints a commented, valid YAML starter to stdout.
   `completions` prints generated Bash, Zsh, Fish, PowerShell, or Elvish scripts.
   Backup and restore accept `--dry-run` to preview changes without writes or hooks.
@@ -32,8 +32,9 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
   The root controls destination and clean; symlinks and metadata
   inherit through include objects and can be overridden per rule. Reject cycles
   and invalid configuration before operations. Named remote ingredients come
-  from the GitHub library, use a seven-day cache in ~/Library/Caches/cockup/ingredients/v1/,
+  from the GitHub library, use a 30-day cache in ~/Library/Caches/cockup/ingredients/v1/,
   and are snapshotted in the backup manifest for offline restore/verify.
+  `ingredient update NAME` forces a GitHub check; `ingredient status [NAME]` is offline.
   Prompt once for hook execution.
 - File operations: explicit source/destination paths, glob layout preservation,
   clean/update modes, special files skipped. Required `symlinks` policy: reference

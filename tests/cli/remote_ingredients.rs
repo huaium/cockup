@@ -108,6 +108,12 @@ fn ingredient_fetch_is_cached_and_restore_uses_backup_snapshot() {
     let metadata: serde_json::Value =
         serde_json::from_slice(&fs::read(cache.join("demo.json")).unwrap()).unwrap();
     assert!(metadata["downloaded_at_unix"].as_u64().is_some());
+    assert!(
+        metadata["source"]
+            .as_str()
+            .unwrap()
+            .contains("/huaium/cockup/")
+    );
 
     let cached = run(home, &["backup", "config.yaml", "-q"], "404");
     assert!(cached.status.success(), "{}", text(&cached));
@@ -272,5 +278,100 @@ fn include_source_must_be_unique_and_ingredient_names_cannot_escape_cache() {
         assert_eq!(output.status.code(), Some(1), "{}", text(&output));
         assert!(!home.join("backup").exists());
         assert!(!home.join("curl.calls").exists());
+    }
+}
+
+#[test]
+fn ingredient_update_and_status_manage_the_cache_without_a_config() {
+    let dir = TempDir::new().unwrap();
+    let home = dir.path();
+    setup(home);
+
+    let empty = run(home, &["ingredient", "status"], "offline");
+    assert!(empty.status.success(), "{}", text(&empty));
+    assert!(text(&empty).contains("No cached ingredients"));
+    assert!(!home.join("curl.calls").exists());
+
+    let updated = run(home, &["ingredient", "update", "demo"], "200");
+    assert!(updated.status.success(), "{}", text(&updated));
+    let cache = home.join("Library/Caches/cockup/ingredients/v1");
+    assert!(cache.join("demo.yaml").is_file());
+
+    let status = run(home, &["ingredient", "status", "demo"], "offline");
+    assert!(status.status.success(), "{}", text(&status));
+    for expected in ["demo", "Downloaded:", "Checked:", "Source:", "ETag:"] {
+        assert!(text(&status).contains(expected), "{}", text(&status));
+    }
+    assert_eq!(
+        fs::read_to_string(home.join("curl.calls"))
+            .unwrap()
+            .lines()
+            .count(),
+        1
+    );
+    let all = run(home, &["ingredient", "status"], "offline");
+    assert!(all.status.success(), "{}", text(&all));
+    assert!(text(&all).contains("demo:"));
+    let missing = run(home, &["ingredient", "status", "missing"], "offline");
+    assert_eq!(missing.status.code(), Some(1));
+    assert_eq!(
+        fs::read_to_string(home.join("curl.calls"))
+            .unwrap()
+            .lines()
+            .count(),
+        1
+    );
+
+    let sidecar = cache.join("demo.json");
+    let mut metadata: serde_json::Value =
+        serde_json::from_slice(&fs::read(&sidecar).unwrap()).unwrap();
+    metadata["downloaded_at_unix"] = 0.into();
+    metadata["checked_at_unix"] = 0.into();
+    fs::write(sidecar, serde_json::to_vec(&metadata).unwrap()).unwrap();
+    let dated = run(home, &["ingredient", "status", "demo"], "offline");
+    assert!(dated.status.success(), "{}", text(&dated));
+    assert!(text(&dated).contains("1970-01-01 00:00:00 UTC"));
+}
+
+#[test]
+fn manual_update_forces_a_check_and_preserves_cached_yaml_on_304_or_failure() {
+    use std::os::unix::fs::MetadataExt;
+
+    let dir = TempDir::new().unwrap();
+    let home = dir.path();
+    setup(home);
+    assert!(
+        run(home, &["ingredient", "update", "demo"], "200")
+            .status
+            .success()
+    );
+    let cache = home.join("Library/Caches/cockup/ingredients/v1");
+    let yaml_path = cache.join("demo.yaml");
+    let metadata_path = cache.join("demo.json");
+    let inode = fs::metadata(&yaml_path).unwrap().ino();
+    let original = fs::read(&yaml_path).unwrap();
+    let before: serde_json::Value =
+        serde_json::from_slice(&fs::read(&metadata_path).unwrap()).unwrap();
+
+    let unchanged = run(home, &["ingredient", "update", "demo"], "304");
+    assert!(unchanged.status.success(), "{}", text(&unchanged));
+    assert_eq!(fs::metadata(&yaml_path).unwrap().ino(), inode);
+    let after: serde_json::Value =
+        serde_json::from_slice(&fs::read(&metadata_path).unwrap()).unwrap();
+    assert_eq!(after["downloaded_at_unix"], before["downloaded_at_unix"]);
+    assert_eq!(after["source"], before["source"]);
+    assert_eq!(after["etag"], before["etag"]);
+    assert_eq!(
+        fs::read_to_string(home.join("curl.calls"))
+            .unwrap()
+            .lines()
+            .count(),
+        2
+    );
+
+    for failure in ["404", "offline"] {
+        let result = run(home, &["ingredient", "update", "demo"], failure);
+        assert_eq!(result.status.code(), Some(1), "{}", text(&result));
+        assert_eq!(fs::read(&yaml_path).unwrap(), original);
     }
 }

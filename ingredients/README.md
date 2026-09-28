@@ -38,8 +38,9 @@ more than the files named in the table. Quit an app before restoring its files;
 macOS preference caching may require logging out before a restored plist is
 read. Custom settings locations need a local edit. Named ingredients are cached
 under `~/Library/Caches/cockup/ingredients/v1/` and checked for updates after
-seven days. Backup stores the exact YAML it used in its manifest for offline
-restore and verify. There is no separate ingredient update command yet.
+30 days. Backup stores the exact YAML it used in its manifest for offline
+restore and verify. Run `cockup ingredient update NAME` to check GitHub immediately,
+or `cockup ingredient status [NAME]` to inspect cached sources and dates offline.
 
 These paths were checked against app documentation and `brew cat --cask NAME`.
 The cask's `zap` section is an uninstall inventory, not a backup manifest.

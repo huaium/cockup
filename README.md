@@ -62,6 +62,19 @@ cockup list
 cockup list cask-name-1 [cask-name-n...]
 ```
 
+### `cockup ingredient`
+
+Manage downloaded ingredients without running a backup:
+
+```sh
+cockup ingredient update ghostty  # Check GitHub now, even if the cache is fresh
+cockup ingredient status           # Show all cached ingredients
+cockup ingredient status ghostty   # Show one ingredient's source and dates
+```
+
+`status` is offline and read-only. `update` preserves an existing cache on a failed
+request and reports the failure. A 304 response updates only the last-checked date.
+
 ### `cockup backup & restore`
 
 ```bash
@@ -301,7 +314,7 @@ include:
     wrap: ghostty
 ```
 
-`wrap` must be a non-empty relative path without `..`. String include entries are no longer accepted. Rules can also set `symlinks` or `metadata` directly. Cockup downloads named ingredients from this repository on first use and caches them under `~/Library/Caches/cockup/ingredients/v1/`. It checks for updates after seven days, using the cached copy if a refresh fails; a missing ingredient is an error. Backup records the exact ingredient YAML in its manifest, so restore and verify use the backed-up rules without contacting GitHub. Dry-run can fetch an ingredient but does not write to the cache.
+`wrap` must be a non-empty relative path without `..`. String include entries are no longer accepted. Rules can also set `symlinks` or `metadata` directly. Cockup downloads named ingredients from this repository on first use and caches them under `~/Library/Caches/cockup/ingredients/v1/`. It checks for updates after 30 days, using the cached copy if a refresh fails; a missing ingredient is an error. Backup records the exact ingredient YAML in its manifest, so restore and verify use the backed-up rules without contacting GitHub. Dry-run can fetch an ingredient but does not write to the cache.
 
 Refer to [sample](sample) to view a configuration demo.
 

@@ -28,6 +28,11 @@ pub enum Commands {
     },
     /// List configuration paths from Homebrew casks
     List { casks: Vec<String> },
+    /// Manage downloaded ingredients
+    Ingredient {
+        #[command(subcommand)]
+        command: IngredientCommand,
+    },
     /// Print a commented YAML configuration template
     Template,
     /// Generate shell completion script
@@ -36,6 +41,13 @@ pub enum Commands {
         #[arg(value_enum)]
         shell: clap_complete::Shell,
     },
+}
+#[derive(Subcommand)]
+pub enum IngredientCommand {
+    /// Check GitHub now and update one cached ingredient
+    Update { name: String },
+    /// Show cached ingredient dates and sources without network access
+    Status { name: Option<String> },
 }
 #[derive(Args)]
 pub struct ConfigArgs {

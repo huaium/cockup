@@ -7,7 +7,7 @@ mod ingredients;
 mod manifest;
 mod report;
 use clap::{CommandFactory, Parser};
-use cli::{Commands, ConfigArgs};
+use cli::{Commands, ConfigArgs, IngredientCommand};
 use ingredients::Mode;
 fn snapshot(path: &std::path::Path) -> Result<Mode, String> {
     let destination = config::destination(path)?;
@@ -71,6 +71,10 @@ fn run() -> Result<(), String> {
             }
         }
         Commands::List { casks } => brew::list(casks)?,
+        Commands::Ingredient { command } => match command {
+            IngredientCommand::Update { name } => ingredients::update(&name)?,
+            IngredientCommand::Status { name } => ingredients::status(name.as_deref())?,
+        },
         Commands::Template => print!("{}", include_str!("template.yaml")),
         Commands::Completions { shell } => {
             let mut command = cli::Cli::command();
