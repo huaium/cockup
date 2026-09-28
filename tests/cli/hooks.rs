@@ -82,6 +82,11 @@ hooks:
             .code(),
         Some(1)
     );
+    fs::remove_file(p.join("marker")).unwrap();
+    let retried = cli(p, &["hook", "config.yaml", "-q"], "bogus\n2\n");
+    assert!(retried.status.success(), "{}", text(&retried));
+    assert_eq!(text(&retried).matches("Select hooks").count(), 2);
+    assert_eq!(fs::read_to_string(p.join("marker")).unwrap(), "good");
 }
 
 #[test]

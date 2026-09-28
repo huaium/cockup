@@ -109,6 +109,13 @@ fn prompt_chooses_once_for_all_links_and_requires_an_explicit_answer() {
             assert_eq!(out.status.code(), Some(1));
             assert!(!p.join("backup").exists());
         }
+        let retried = cli(
+            p,
+            &["backup", "config.yaml", "-q"],
+            &format!("invalid\n{answer}"),
+        );
+        assert!(retried.status.success(), "{}", text(&retried));
+        assert_eq!(text(&retried).matches("[r]eferece").count(), 2);
         let out = cli(p, &["backup", "config.yaml", "-q"], answer);
         assert!(out.status.success(), "{}", text(&out));
         assert_eq!(text(&out).matches("[r]eferece").count(), 1);

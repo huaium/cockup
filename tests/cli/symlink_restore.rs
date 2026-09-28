@@ -240,7 +240,7 @@ fn home_choice_applies_to_tilde_rules_without_links_and_missing_input_aborts() {
         .unwrap();
     assert!(out.status.success(), "{}", text(&out));
     fs::remove_dir_all(&old).unwrap();
-    for answer in ["", "original\n"] {
+    for answer in ["", "invalid\noriginal\n"] {
         let mut child = Command::new(env!("CARGO_BIN_EXE_cockup"))
             .current_dir(p)
             .args(["restore", "config.yaml", "-q"])
@@ -258,7 +258,10 @@ fn home_choice_applies_to_tilde_rules_without_links_and_missing_input_aborts() {
             .write_all(answer.as_bytes())
             .unwrap();
         let out = child.wait_with_output().unwrap();
-        assert_eq!(text(&out).matches("Restore user paths").count(), 1);
+        assert_eq!(
+            text(&out).matches("Restore user paths").count(),
+            if answer.is_empty() { 1 } else { 2 }
+        );
         assert!(!new.exists());
         if answer.is_empty() {
             assert_eq!(out.status.code(), Some(1));

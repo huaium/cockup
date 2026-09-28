@@ -90,21 +90,25 @@ pub(super) fn choose_mode(
         planned.mode
     } else if link && symlinks == Symlinks::Prompt {
         if state.prompt_choice.is_none() {
-            report::warning(&format!(
+            let prompt = format!(
                 "Symlink {} -> {}:\n[r]eferece link or [d]ereference target? (applies to all symlinks)",
                 src.display(),
                 fs::read_link(src).map_err(|e| e.to_string())?.display()
-            ));
-            state.prompt_choice =
-                Some(
-                    report::input("").and_then(|answer| match answer.to_lowercase().as_str() {
-                        "r" | "referece" => Ok(Symlinks::Referece),
-                        "d" | "dereference" => Ok(Symlinks::Dereference),
-                        _ => Err(
-                            "Symlinks require an explicit referece or dereference choice".into(),
-                        ),
-                    }),
-                );
+            );
+            loop {
+                report::warning(&prompt);
+                match report::input("")?.to_lowercase().as_str() {
+                    "r" | "referece" => {
+                        state.prompt_choice = Some(Ok(Symlinks::Referece));
+                        break;
+                    }
+                    "d" | "dereference" => {
+                        state.prompt_choice = Some(Ok(Symlinks::Dereference));
+                        break;
+                    }
+                    _ => report::warning("Please enter r or d."),
+                }
+            }
         }
         state.prompt_choice.as_ref().unwrap().clone()?
     } else {

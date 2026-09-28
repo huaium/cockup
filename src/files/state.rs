@@ -99,19 +99,24 @@ impl CopyState {
             && (current != *old
                 || std::env::var("USER").unwrap_or_default() != self.manifest.backup_user)
         {
-            report::warning(&format!(
+            let prompt = format!(
                 "Restore user paths from {} ({}):\n[c]urrent user ({}) or [o]riginal user?",
                 self.manifest.backup_user,
                 old.display(),
                 current.display()
-            ));
-            match report::input("")?.to_lowercase().as_str() {
-                "c" | "current" => self.home_mapping = Some((old.clone(), current)),
-                "o" | "original" => self.home_mapping = Some((current, old.clone())),
-                _ => {
-                    return Err(
-                        "Restore requires an explicit current or original user choice".into(),
-                    );
+            );
+            loop {
+                report::warning(&prompt);
+                match report::input("")?.to_lowercase().as_str() {
+                    "c" | "current" => {
+                        self.home_mapping = Some((old.clone(), current));
+                        break;
+                    }
+                    "o" | "original" => {
+                        self.home_mapping = Some((current, old.clone()));
+                        break;
+                    }
+                    _ => report::warning("Please enter c or o."),
                 }
             }
         }

@@ -86,14 +86,20 @@ pub fn input(prompt: &str) -> Result<String, String> {
     print!("{prompt}");
     io::stdout().flush().map_err(|e| e.to_string())?;
     let mut input = String::new();
-    io::stdin()
+    let read = io::stdin()
         .read_line(&mut input)
         .map_err(|e| e.to_string())?;
+    if read == 0 {
+        return Err("Input ended before a valid choice was made".into());
+    }
     Ok(input.trim().to_string())
 }
 pub fn confirm() -> Result<bool, String> {
-    Ok(matches!(
-        input("Continue? [y/N]: ")?.to_lowercase().as_str(),
-        "y" | "yes"
-    ))
+    loop {
+        match input("Continue? [y/N]: ")?.to_lowercase().as_str() {
+            "y" | "yes" => return Ok(true),
+            "" | "n" | "no" => return Ok(false),
+            _ => warning("Please enter y or n."),
+        }
+    }
 }

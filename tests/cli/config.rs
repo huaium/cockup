@@ -55,6 +55,10 @@ fn included_hooks_prompt_once_and_quiet_suppresses_confirmation() {
     assert!(denied.status.success());
     assert_eq!(text(&denied).matches("Continue?").count(), 1);
     assert!(!dir.path().join("backup").exists());
+    let retried = cli(dir.path(), &["backup", "config.yaml"], "invalid\ny\n");
+    assert!(retried.status.success(), "{}", text(&retried));
+    assert_eq!(text(&retried).matches("Continue?").count(), 2);
+    assert!(dir.path().join("backup").exists());
     let quiet = cli(dir.path(), &["backup", "config.yaml", "-q"], "");
     assert!(!text(&quiet).contains("Continue?"));
 }

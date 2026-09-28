@@ -96,20 +96,24 @@ pub fn select(cfg: &crate::config::Config, name: Option<&str>) -> Result<(), Str
         for (i, h) in available.iter().enumerate() {
             println!("[{}] {}", i + 1, h.name);
         }
-        let choices = report::input("Select hooks (separate by comma): ")?;
-        let mut selected = Vec::new();
-        for choice in choices.split(',').map(str::trim).filter(|c| !c.is_empty()) {
-            let index = choice
-                .parse::<usize>()
-                .map_err(|_| "Invalid hook selection")?;
-            selected.push(
-                available
-                    .get(index.wrapping_sub(1))
-                    .ok_or("Invalid hook selection")?
-                    .clone(),
-            );
+        loop {
+            let choices = report::input("Select hooks (separate by comma): ")?;
+            let selected: Option<Vec<Hook>> = choices
+                .split(',')
+                .map(str::trim)
+                .map(|choice| {
+                    choice
+                        .parse::<usize>()
+                        .ok()
+                        .and_then(|index| available.get(index.wrapping_sub(1)))
+                        .cloned()
+                })
+                .collect();
+            if let Some(selected) = selected {
+                break selected;
+            }
+            report::warning("Invalid hook selection; enter hook numbers separated by commas.");
         }
-        selected
     };
     if run(&selected, &cfg.directory) > 0 {
         Err("Hook execution failed.".into())
