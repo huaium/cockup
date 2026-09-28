@@ -1,0 +1,11 @@
+# Alfred 4/5 default local preferences. Custom sync folders need a local edit.
+rules:
+  - from: "~/Library/Application Support/Alfred"
+    targets: [Alfred.alfredpreferences, prefs.json]
+    to: "Library/Application Support/Alfred"
+  - from: ~/Library/Preferences
+    targets:
+      - com.runningwithcrayons.Alfred-Preferences.plist
+      - com.runningwithcrayons.Alfred.plist
+      - com.alfredapp.Alfred.plist
+    to: Library/Preferences

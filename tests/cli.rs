@@ -48,6 +48,8 @@ mod config;
 mod files;
 #[path = "cli/hooks.rs"]
 mod hooks;
+#[path = "cli/ingredients.rs"]
+mod ingredients;
 #[path = "cli/output.rs"]
 mod output;
 #[path = "cli/symlink_backup.rs"]

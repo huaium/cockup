@@ -1,0 +1,6 @@
+# Stable Visual Studio Code user configuration, not Code - Insiders.
+# Include-only: the parent supplies destination and symlinks.
+rules:
+  - from: "~/Library/Application Support/Code/User"
+    targets: [settings.json, keybindings.json, snippets, profiles]
+    to: "Library/Application Support/Code/User"

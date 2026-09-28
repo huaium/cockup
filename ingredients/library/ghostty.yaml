@@ -1,0 +1,10 @@
+# Ghostty configuration. Include-only: the parent supplies destination and symlinks.
+rules:
+  # XDG configuration, including local themes and relative config-file includes.
+  - from: ~/.config
+    targets: [ghostty]
+    to: .config
+  # macOS-specific configuration is loaded after the XDG configuration.
+  - from: "~/Library/Application Support"
+    targets: [com.mitchellh.ghostty]
+    to: "Library/Application Support"

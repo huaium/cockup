@@ -1,0 +1,60 @@
+# Ingredient library
+
+The YAML files in `library/` contain Cockup rules only. They have no
+`destination` or `symlinks`, so include them from a runnable configuration.
+Missing optional paths are skipped. The parent supplies the destination and
+symlink policy; an individual include can override the latter.
+
+| Ingredient | Settings captured | Notes |
+| --- | --- | --- |
+| `ghostty` | XDG and macOS configuration directories. | Check custom `XDG_CONFIG_HOME` and external includes. |
+| `wezterm` | `~/.wezterm.lua` and `~/.config/wezterm`. | Check `WEZTERM_CONFIG_FILE` overrides. |
+| `karabiner-elements` | Main JSON file and complex modifications. | Excludes logs and app state. |
+| `visual-studio-code` | User settings, keybindings, snippets, and profiles. | Stable release only; excludes extension binaries and workspace settings. |
+| `zed` | Settings, keybindings, themes, and snippets. | Excludes app data and language-server downloads. |
+| `iterm2` | Default preferences, application support, and `~/.iterm2`. | Custom settings folders need an edited rule; private preferences and Keychain data are excluded. |
+| `rectangle` | NSUserDefaults preferences plist. | Import/export JSON uses a separate, transient path. |
+| `bettertouchtool` | Application support and preferences plist. | Includes BetterTouchTool's automatic backup history. |
+| `alfred` | Local preferences package and preference plists. | A custom sync folder needs an edited rule; caches are excluded. |
+
+Save the ingredient files alongside your own configuration, then include them
+using paths relative to that configuration. For example, when `config.yaml` is
+beside the `ingredients` folder:
+
+```yaml
+symlinks: referece
+destination: backup
+rules: []
+include:
+  - file: ingredients/library/ghostty.yaml
+    wrap: ghostty
+  - file: ingredients/library/zed.yaml
+    wrap: zed
+```
+
+Run `cockup backup config.yaml --dry-run` to inspect the selected paths before
+writing a backup. Review each YAML file first: settings and workflows can
+contain secrets or machine-specific paths, and a copied directory may contain
+more than the files named in the table. Quit an app before restoring its files;
+macOS preference caching may require logging out before a restored plist is
+read. Custom settings locations need a local edit. The proposed fetch/update
+command is not implemented yet; copy or update the YAML files manually.
+
+These paths were checked against app documentation and `brew cat --cask NAME`.
+The cask's `zap` section is an uninstall inventory, not a backup manifest.
+Caches, logs, saved application state, HTTP storage, and updater files were not
+copied automatically. WezTerm's `~/.local/share/wezterm`, Karabiner's
+`~/.local/share/karabiner`, VS Code's `~/.vscode` extension directory, and Zed's
+`~/Library/Application Support/Zed` are outside this configuration-only library.
+
+App references: [Ghostty](https://ghostty.org/docs/config),
+[WezTerm](https://wezterm.org/config/files.html),
+[Karabiner-Elements](https://karabiner-elements.pqrs.org/docs/json/location/),
+[VS Code](https://code.visualstudio.com/docs/configure/settings) and
+[profiles](https://code.visualstudio.com/docs/configure/profiles),
+[Zed](https://zed.dev/faq), [themes](https://zed.dev/docs/themes), and
+[snippets](https://zed.dev/docs/snippets),
+[iTerm2](https://iterm2.com/documentation-preferences-general.html),
+[Rectangle](https://github.com/rxhanson/Rectangle#preferences-storage),
+[BetterTouchTool](https://docs.folivora.ai/docs/getting-started/installation/), and
+[Alfred](https://www.alfredapp.com/help/advanced/sync/).

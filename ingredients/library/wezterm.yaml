@@ -1,0 +1,9 @@
+# WezTerm configuration. Include-only: the parent supplies destination and symlinks.
+rules:
+  - from: "~"
+    targets: [.wezterm.lua]
+    to: home
+  # Keep the whole config directory so Lua modules used by wezterm.lua travel with it.
+  - from: ~/.config
+    targets: [wezterm]
+    to: .config

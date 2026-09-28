@@ -1,0 +1,5 @@
+# Karabiner-Elements configuration. Include-only: the parent supplies destination and symlinks.
+rules:
+  - from: ~/.config/karabiner
+    targets: [karabiner.json, assets/complex_modifications]
+    to: .config/karabiner

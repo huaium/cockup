@@ -1,0 +1,13 @@
+# iTerm2's default settings location. Custom settings folders need a local edit.
+rules:
+  - from: ~/Library/Preferences
+    targets: [com.googlecode.iterm2.plist]
+    to: Library/Preferences
+  # Dynamic profiles, scripts, toolbelt notes, and other app-managed settings.
+  - from: "~/Library/Application Support"
+    targets: [iTerm2]
+    to: "Library/Application Support"
+  # Shell integration and other files included by iTerm2's own full export.
+  - from: "~"
+    targets: [.iterm2]
+    to: home

@@ -1,0 +1,8 @@
+# BetterTouchTool settings and its automatic backups.
+rules:
+  - from: "~/Library/Application Support"
+    targets: [BetterTouchTool]
+    to: "Library/Application Support"
+  - from: ~/Library/Preferences
+    targets: [com.hegenberg.BetterTouchTool.plist]
+    to: Library/Preferences

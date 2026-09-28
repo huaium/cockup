@@ -1,0 +1,5 @@
+# Zed user configuration. Include-only: the parent supplies destination and symlinks.
+rules:
+  - from: ~/.config/zed
+    targets: [settings.json, keymap.json, themes, snippets]
+    to: .config/zed

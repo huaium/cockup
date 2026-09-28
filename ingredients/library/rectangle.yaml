@@ -1,0 +1,5 @@
+# Rectangle's NSUserDefaults preferences. Do not include transient import JSON.
+rules:
+  - from: ~/Library/Preferences
+    targets: [com.knollsoft.Rectangle.plist]
+    to: Library/Preferences

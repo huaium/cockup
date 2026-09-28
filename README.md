@@ -286,7 +286,7 @@ copying, rule hooks, or post-hooks.
 
 ### Include
 
-Use `include` objects to import rules and hooks from other configuration files. Included entries run before local entries. `file` is resolved relative to the configuration that declares it. Optional `wrap` places all imported backup files under that path within the root destination; nested wrappers compose.
+Use `include` objects to import rules and hooks from other configuration files. Included entries run before local entries. `file` is resolved relative to the configuration that declares it. Optional `wrap` places all imported backup files under that path within the root destination; nested wrappers compose. The [ingredient library](ingredients/README.md) provides ready-to-copy app configurations.
 
 The root configuration controls `destination` and `clean`. An included file may omit `destination` and `symlinks` to become an ingredient that cannot run independently. Root `symlinks` and `metadata` are defaults: an include object can override them for its subtree, and an individual rule can override them again. Omitted values inherit from the nearest include, then the root. An included file's own top-level settings apply when it has both required standalone fields and is run directly, but its rules use the inherited settings when included. Restore uses each rule's effective `metadata` value and the symlink modes recorded by backup.
 
