@@ -1,11 +1,12 @@
 # Basic files, globs, metadata and included rules.
 symlinks: referece
 destination: dst/basic
+clean: true
 include:
   - file: basic-included.yaml
     wrap: imported
 metadata: true
 rules:
   - from: src
-    targets: [log_folder, '*log.txt']
+    targets: [log_folder, "*log.txt"]
     to: log
