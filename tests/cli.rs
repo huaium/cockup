@@ -44,6 +44,8 @@ fn executable(dir: &Path, name: &str, script: &str) {
 mod brew;
 #[path = "cli/config.rs"]
 mod config;
+#[path = "cli/diff.rs"]
+mod diff;
 #[path = "cli/files.rs"]
 mod files;
 #[path = "cli/hooks.rs"]

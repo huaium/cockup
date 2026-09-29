@@ -114,6 +114,20 @@ and does not run hooks:
 cockup verify /path/to/config.yaml
 ```
 
+Use `diff` to compare the backup with the files it would restore. It reports
+changed contents or link targets, paths missing locally, and extra files in
+directories that restore would replace. It does not write files or run hooks;
+differences return status 0, while comparison errors return status 1. Cross-user
+home mapping may still prompt once:
+
+```sh
+cockup diff /path/to/config.yaml
+```
+
+If no backup destination exists yet, `verify` and `diff` warn that the backup
+is not initialized and exit successfully. An existing non-directory destination
+is still an error.
+
 The manifest does not inventory or hash ordinary files. Verification cannot
 detect changed contents or a missing child inside a backed-up directory if that
 child is not selected separately by a rule.

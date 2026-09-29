@@ -8,6 +8,7 @@ fn cli_exposes_commands_and_version() {
     for word in [
         "backup",
         "restore",
+        "diff",
         "hook",
         "detect",
         "template",

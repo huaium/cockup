@@ -19,12 +19,16 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
 
 ## Architecture
 
-- CLI: clap subcommands `backup`, `restore`, `verify`, `hook`, `detect`, `ingredient`, `template`, and `completions`.
+- CLI: clap subcommands `backup`, `restore`, `verify`, `diff`, `hook`, `detect`, `ingredient`, `template`, and `completions`.
   `template` prints a commented, valid YAML starter to stdout.
   `completions` prints generated Bash, Zsh, Fish, PowerShell, or Elvish scripts.
   Backup and restore accept `--dry-run` to preview changes without writes or hooks.
   `verify` checks the complete marker, manifest, recorded links, and paths selected
   by the current configuration without hooks or writes. It does not hash file contents.
+  `diff` compares backed-up content and link targets with local restore paths
+  without hooks or writes. Differences exit 0; comparison errors exit 1.
+  `verify` and `diff` warn and exit 0 when the backup destination is absent;
+  an existing non-directory destination is an error.
 - Configuration: serde YAML models; each include object resolves against its own file.
   Included rules/hooks precede local ones; nested `wrap` paths prefix included
   backup paths. Destination and symlinks are required for runnable configs and

@@ -95,6 +95,17 @@ sample-verify CASE="basic":
         *) ./target/debug/cockup verify "sample/"{{ quote(CASE) }}".yaml" ;;
     esac
 
+# Compare the backup for sample/CASE.yaml with its fixture files.
+sample-diff CASE="basic":
+    #!/bin/sh
+    set -eu
+    cargo build --locked
+    case {{ quote(CASE) }} in
+        user-remap) env HOME="$(pwd -P)/sample/src/homes/bob" USER=bob ./target/debug/cockup diff sample/user-remap.yaml ;;
+        ingredient) env HOME="$(pwd -P)/sample/src/homes/ghostty" USER=sample ./target/debug/cockup diff sample/ingredient.yaml ;;
+        *) ./target/debug/cockup diff "sample/"{{ quote(CASE) }}".yaml" ;;
+    esac
+
 # Run a named sample hook, or select interactively when NAME is omitted.
 sample-hook NAME="":
     cargo run --locked -- hook sample/hooks.yaml --quiet {{ if NAME == "" { "" } else { "--name " + quote(NAME) } }}

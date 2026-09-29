@@ -47,7 +47,7 @@ pub(crate) fn execute(cfg: &Config, restore: bool, dry_run: bool) -> Result<(), 
         home_mapping: None,
     };
     if restore {
-        state.choose_home(cfg)?;
+        state.choose_home(cfg, "Restore")?;
     }
     let destination = resolved(&cfg.destination).map_err(|e| e.to_string())?;
     if !restore && cfg.clean {

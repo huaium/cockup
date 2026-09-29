@@ -19,6 +19,8 @@ pub enum Commands {
     Restore(FileArgs),
     /// Check backup manifest and configured backup paths
     Verify { config_file: PathBuf },
+    /// Compare a backup with the files it would restore
+    Diff { config_file: PathBuf },
     /// Run configured hooks
     Hook {
         #[command(flatten)]

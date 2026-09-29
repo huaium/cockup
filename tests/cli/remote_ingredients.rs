@@ -585,6 +585,8 @@ fn documented_ingredient_sample_backs_up_verifies_and_restores() {
     );
     let verify = run(home, &["verify", "config.yaml"], "offline");
     assert!(verify.status.success(), "{}", text(&verify));
+    let diff = run(home, &["diff", "config.yaml"], "offline");
+    assert!(diff.status.success(), "{}", text(&diff));
 
     fs::remove_file(home.join(".config/ghostty/config")).unwrap();
     let restore = run(home, &["restore", "config.yaml", "-q"], "offline");

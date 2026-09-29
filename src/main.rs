@@ -9,6 +9,24 @@ mod report;
 use clap::{CommandFactory, Parser};
 use cli::{Commands, ConfigArgs, IngredientCommand};
 use ingredients::Mode;
+fn backup_initialized(path: &std::path::Path) -> Result<bool, String> {
+    let destination = config::destination(path)?;
+    match std::fs::symlink_metadata(&destination) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            report::warning(&format!(
+                "Backup is not initialized: {}",
+                destination.display()
+            ));
+            Ok(false)
+        }
+        Err(error) => Err(format!("{}: {error}", destination.display())),
+        Ok(_) if destination.is_dir() => Ok(true),
+        Ok(_) => Err(format!(
+            "Backup destination is not a directory: {}",
+            destination.display()
+        )),
+    }
+}
 fn snapshot(path: &std::path::Path) -> Result<Mode, String> {
     let destination = config::destination(path)?;
     let ingredients = manifest::Manifest::load(&destination)?
@@ -61,9 +79,18 @@ fn run() -> Result<(), String> {
             }
         }
         Commands::Verify { config_file } => {
-            let mode = snapshot(&config_file)?;
-            let cfg = config::load(&config_file, mode)?;
-            files::verify(&cfg)?;
+            if backup_initialized(&config_file)? {
+                let mode = snapshot(&config_file)?;
+                let cfg = config::load(&config_file, mode)?;
+                files::verify(&cfg)?;
+            }
+        }
+        Commands::Diff { config_file } => {
+            if backup_initialized(&config_file)? {
+                let mode = snapshot(&config_file)?;
+                let cfg = config::load(&config_file, mode)?;
+                files::diff(&cfg)?;
+            }
         }
         Commands::Hook { config, name } => {
             if let Some(cfg) = configured(&config, false, Mode::ReadOnly)? {

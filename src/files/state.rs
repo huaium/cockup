@@ -85,7 +85,7 @@ impl CopyState {
         }
         relative
     }
-    pub(super) fn choose_home(&mut self, cfg: &Config) -> Result<(), String> {
+    pub(super) fn choose_home(&mut self, cfg: &Config, action: &str) -> Result<(), String> {
         let current = PathBuf::from(std::env::var_os("HOME").ok_or("HOME is not set")?);
         let old = &self.manifest.backup_home;
         let affected = cfg.rules.iter().any(|r| {
@@ -102,7 +102,7 @@ impl CopyState {
                 || std::env::var("USER").unwrap_or_default() != self.manifest.backup_user)
         {
             let prompt = format!(
-                "Restore user paths from {} ({}):\n[c]urrent user ({}) or [o]riginal user?",
+                "{action} user paths from {} ({}):\n[c]urrent user ({}) or [o]riginal user?",
                 self.manifest.backup_user,
                 old.display(),
                 current.display()

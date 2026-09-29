@@ -1,6 +1,47 @@
 use super::*;
 
 #[test]
+fn read_only_backup_checks_warn_when_backup_is_not_initialized() {
+    let dir = TempDir::new().unwrap();
+    let root = dir.path();
+    write(
+        root,
+        "config.yaml",
+        "symlinks: reference\ndestination: backup\nrules: []\n",
+    );
+    for command in ["verify", "diff"] {
+        let missing = cli(root, &[command, "config.yaml"], "");
+        assert!(missing.status.success(), "{}", text(&missing));
+        assert!(
+            text(&missing).contains("Backup is not initialized"),
+            "{}",
+            text(&missing)
+        );
+        assert!(!root.join("backup").exists());
+
+        write(root, "backup", "not a directory");
+        let invalid = cli(root, &[command, "config.yaml"], "");
+        assert_eq!(invalid.status.code(), Some(1), "{}", text(&invalid));
+        assert!(
+            text(&invalid).contains("not a directory"),
+            "{}",
+            text(&invalid)
+        );
+        fs::remove_file(root.join("backup")).unwrap();
+    }
+    write(
+        root,
+        "config.yaml",
+        "symlinks: reference\ndestination: backup\nrules: []\ninclude:\n  - ingredient: ghostty\n",
+    );
+    for command in ["verify", "diff"] {
+        let missing = cli(root, &[command, "config.yaml"], "");
+        assert!(missing.status.success(), "{}", text(&missing));
+        assert!(text(&missing).contains("Backup is not initialized"));
+    }
+}
+
+#[test]
 fn verify_accepts_complete_backup_without_running_hooks() {
     let d = TempDir::new().unwrap();
     let p = d.path();
