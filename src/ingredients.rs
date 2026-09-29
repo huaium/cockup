@@ -1,4 +1,6 @@
 use crate::{config::Symlinks, report};
+mod catalog;
+pub(crate) use catalog::search;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashSet},

@@ -67,6 +67,8 @@ cockup detect cask-name-1 [cask-name-n...]
 Manage downloaded ingredients without running a backup:
 
 ```sh
+cockup ingredient search ghost      # Find available ingredients by name
+cockup ingredient search "visual studio" --refresh  # Check GitHub now
 cockup ingredient update ghostty  # Check GitHub now, even if the cache is fresh
 cockup ingredient status           # Show all cached ingredients
 cockup ingredient status ghostty   # Show one ingredient's source and dates
@@ -74,6 +76,12 @@ cockup ingredient delete ghostty   # Remove one cached YAML and its metadata
 cockup ingredient delete ghostty zed  # Remove several cached ingredients
 cockup ingredient clean            # Remove the entire Cockup cache directory
 ```
+
+`search` lists matching names from the GitHub library without downloading their
+YAML. It matches names case-insensitively and treats spaces like hyphens; cached
+ingredients are marked `[cached]`. The catalog is cached for 24 hours, and
+`--refresh` checks GitHub immediately. On a temporary network failure, search
+uses a previously cached catalog; without one, it reports an error.
 
 `status` is offline and read-only. `update` asks before downloading an ingredient
 that is not cached; declining leaves the cache unchanged. It preserves an existing

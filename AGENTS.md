@@ -39,6 +39,8 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
   from the GitHub library, use a 30-day cache in ~/Library/Caches/cockup/ingredients/v1/,
   and are snapshotted in the backup manifest for offline restore/verify.
   `ingredient update NAME` forces a GitHub check; `ingredient status [NAME]` is offline.
+  `ingredient search QUERY` lists GitHub library names using a 24-hour catalog cache;
+  `--refresh` forces a conditional check without downloading ingredient YAML.
   `ingredient delete NAME [NAME...]` removes cache pairs; `ingredient clean` removes
   the entire ~/Library/Caches/cockup/ directory.
   Prompt once for hook execution.

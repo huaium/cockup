@@ -50,6 +50,8 @@ mod diff;
 mod files;
 #[path = "cli/hooks.rs"]
 mod hooks;
+#[path = "cli/ingredient_search.rs"]
+mod ingredient_search;
 #[path = "cli/ingredients.rs"]
 mod ingredients;
 #[path = "cli/output.rs"]
