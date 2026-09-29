@@ -11,6 +11,78 @@ use std::{
     path::Path,
 };
 
+const TEXT_LIMIT: u64 = 1024 * 1024;
+
+fn label(path: &Path) -> String {
+    std::env::current_dir()
+        .ok()
+        .and_then(|cwd| path.strip_prefix(cwd).ok().map(|p| p.display().to_string()))
+        .unwrap_or_else(|| report::display_path(path))
+}
+
+fn show_text_diff(saved: &Path, local: &Path, missing: bool) -> Result<(), String> {
+    let saved_len = fs::metadata(saved)
+        .map_err(|e| format!("{}: {e}", saved.display()))?
+        .len();
+    let local_len = if missing {
+        0
+    } else {
+        fs::metadata(local)
+            .map_err(|e| format!("{}: {e}", local.display()))?
+            .len()
+    };
+    if saved_len > TEXT_LIMIT || local_len > TEXT_LIMIT {
+        println!("  Content diff omitted (file exceeds 1 MiB).");
+        return Ok(());
+    }
+    let old = fs::read(saved).map_err(|e| format!("{}: {e}", saved.display()))?;
+    let new = if missing {
+        Vec::new()
+    } else {
+        fs::read(local).map_err(|e| format!("{}: {e}", local.display()))?
+    };
+    if old.contains(&0) || new.contains(&0) {
+        println!("  Binary files differ.");
+        return Ok(());
+    }
+    let (Ok(old), Ok(new)) = (std::str::from_utf8(&old), std::str::from_utf8(&new)) else {
+        println!("  Non-UTF-8 files differ.");
+        return Ok(());
+    };
+    let diff = similar::TextDiff::from_lines(old, new);
+    let rendered = diff
+        .unified_diff()
+        .header(&label(saved), &label(local))
+        .to_string();
+    report::diff_lines(&rendered);
+    Ok(())
+}
+
+fn show_added_file(path: &Path) -> Result<(), String> {
+    let length = fs::metadata(path)
+        .map_err(|e| format!("{}: {e}", path.display()))?
+        .len();
+    if length > TEXT_LIMIT {
+        println!("  Content diff omitted (file exceeds 1 MiB).");
+        return Ok(());
+    }
+    let bytes = fs::read(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    if bytes.contains(&0) {
+        println!("  Binary file exists only locally.");
+    } else if let Ok(content) = std::str::from_utf8(&bytes) {
+        let diff = similar::TextDiff::from_lines("", content);
+        report::diff_lines(
+            &diff
+                .unified_diff()
+                .header("/dev/null", &label(path))
+                .to_string(),
+        );
+    } else {
+        println!("  Non-UTF-8 file exists only locally.");
+    }
+    Ok(())
+}
+
 fn metadata(path: &Path) -> Result<Option<fs::Metadata>, String> {
     match fs::symlink_metadata(path) {
         Ok(value) => Ok(Some(value)),
@@ -60,33 +132,70 @@ fn same_contents(left: &Path, right: &Path) -> Result<bool, String> {
     Ok(true)
 }
 
-fn compare_link(path: &Path, target: &Path) -> Result<usize, String> {
+fn compare_link(path: &Path, target: &Path, summary: bool) -> Result<usize, String> {
     match metadata(path)? {
-        None => Ok(changed("Missing locally", path)),
+        None => {
+            let count = changed("Missing locally", path);
+            if !summary {
+                report::diff_lines(&format!("-link -> {}\n+missing\n", target.display()));
+            }
+            Ok(count)
+        }
         Some(info)
             if info.is_symlink() && fs::read_link(path).map_err(|e| e.to_string())? == target =>
         {
             Ok(0)
         }
-        Some(_) => Ok(changed("Changed", path)),
+        Some(info) => {
+            let count = changed("Changed", path);
+            if !summary {
+                let current = if info.is_symlink() {
+                    format!(
+                        "link -> {}",
+                        fs::read_link(path).map_err(|e| e.to_string())?.display()
+                    )
+                } else {
+                    "not a symlink".into()
+                };
+                report::diff_lines(&format!("-link -> {}\n+{current}\n", target.display()));
+            }
+            Ok(count)
+        }
     }
 }
 
-fn compare_plain(backup: &Path, current: &Path, state: &CopyState) -> Result<usize, String> {
+fn compare_plain(
+    backup: &Path,
+    current: &Path,
+    state: &CopyState,
+    summary: bool,
+) -> Result<usize, String> {
     let saved =
         metadata(backup)?.ok_or_else(|| format!("Backup path not found: {}", backup.display()))?;
     let Some(local) = metadata(current)? else {
-        return Ok(changed("Missing locally", current));
+        let count = changed("Missing locally", current);
+        if !summary && saved.is_file() {
+            show_text_diff(backup, current, true)?;
+        }
+        return Ok(count);
     };
     if saved.is_file() && local.is_file() {
         return if same_contents(backup, current)? {
             Ok(0)
         } else {
-            Ok(changed("Changed", current))
+            let count = changed("Changed", current);
+            if !summary {
+                show_text_diff(backup, current, false)?;
+            }
+            Ok(count)
         };
     }
     if saved.is_symlink() && local.is_symlink() {
-        return compare_link(current, &fs::read_link(backup).map_err(|e| e.to_string())?);
+        return compare_link(
+            current,
+            &fs::read_link(backup).map_err(|e| e.to_string())?,
+            summary,
+        );
     }
     if saved.is_dir() && local.is_dir() {
         let mut names = BTreeSet::new();
@@ -104,8 +213,11 @@ fn compare_plain(backup: &Path, current: &Path, state: &CopyState) -> Result<usi
             let local_child = current.join(name);
             if metadata(&saved_child)?.is_none() {
                 changes += changed("Only locally", &local_child);
+                if !summary && metadata(&local_child)?.is_some_and(|info| info.is_file()) {
+                    show_added_file(&local_child)?;
+                }
             } else {
-                changes += compare_entry(&saved_child, &local_child, state)?;
+                changes += compare_entry(&saved_child, &local_child, state, summary)?;
             }
         }
         return Ok(changes);
@@ -113,7 +225,12 @@ fn compare_plain(backup: &Path, current: &Path, state: &CopyState) -> Result<usi
     Ok(changed("Changed type", current))
 }
 
-fn compare_entry(backup: &Path, current: &Path, state: &CopyState) -> Result<usize, String> {
+fn compare_entry(
+    backup: &Path,
+    current: &Path,
+    state: &CopyState,
+    summary: bool,
+) -> Result<usize, String> {
     let key = backup
         .strip_prefix(&state.root)
         .map_err(|e| e.to_string())?;
@@ -123,7 +240,7 @@ fn compare_entry(backup: &Path, current: &Path, state: &CopyState) -> Result<usi
         .iter()
         .find(|entry| entry.backup_path == key)
     else {
-        return compare_plain(backup, current, state);
+        return compare_plain(backup, current, state, summary);
     };
     let saved =
         metadata(backup)?.ok_or_else(|| format!("Backup path not found: {}", backup.display()))?;
@@ -136,19 +253,19 @@ fn compare_entry(backup: &Path, current: &Path, state: &CopyState) -> Result<usi
         return Err(format!("Backup entry has wrong type: {}", backup.display()));
     }
     let expected = state.link_target(&link.location, &link.target, current);
-    let mut changes = compare_link(current, &expected)?;
+    let mut changes = compare_link(current, &expected, summary)?;
     if link.mode == Symlinks::Dereference {
-        changes += compare_plain(backup, &state.mapped(&link.resolved_target), state)?;
+        changes += compare_plain(backup, &state.mapped(&link.resolved_target), state, summary)?;
         for entry in &link.target_chain {
             let location = state.mapped(&entry.location);
             let target = state.link_target(&entry.location, &entry.target, &location);
-            changes += compare_link(&location, &target)?;
+            changes += compare_link(&location, &target, summary)?;
         }
     }
     Ok(changes)
 }
 
-pub(crate) fn run(cfg: &Config) -> Result<(), String> {
+pub(crate) fn run(cfg: &Config, summary: bool) -> Result<(), String> {
     if !cfg.destination.is_dir() {
         return Err(format!(
             "Backup destination is not a directory: {}",
@@ -193,7 +310,7 @@ pub(crate) fn run(cfg: &Config) -> Result<(), String> {
                     for path in paths {
                         let relative = path.strip_prefix(&backup_root).unwrap();
                         let current = state.mapped(&base.join(relative));
-                        match compare_entry(&path, &current, &state) {
+                        match compare_entry(&path, &current, &state, summary) {
                             Ok(count) => changes += count,
                             Err(error) => {
                                 report::error(&error);

@@ -42,6 +42,7 @@ filetime = "0.2.29"
 owo-colors = { version = "4.4.0", features = ["supports-colors"] }
 clap_complete = "4.6.11"
 ureq = "3.4.2"
+similar = "3.2.0"
 
 [dev-dependencies]
 tempfile = "3.27.0"

@@ -20,7 +20,12 @@ pub enum Commands {
     /// Check backup manifest and configured backup paths
     Verify { config_file: PathBuf },
     /// Compare a backup with the files it would restore
-    Diff { config_file: PathBuf },
+    Diff {
+        config_file: PathBuf,
+        /// Show changed paths without content differences
+        #[arg(long)]
+        summary: bool,
+    },
     /// Run configured hooks
     Hook {
         #[command(flatten)]

@@ -85,11 +85,14 @@ fn run() -> Result<(), String> {
                 files::verify(&cfg)?;
             }
         }
-        Commands::Diff { config_file } => {
+        Commands::Diff {
+            config_file,
+            summary,
+        } => {
             if backup_initialized(&config_file)? {
                 let mode = snapshot(&config_file)?;
                 let cfg = config::load(&config_file, mode)?;
-                files::diff(&cfg)?;
+                files::diff(&cfg, summary)?;
             }
         }
         Commands::Hook { config, name } => {

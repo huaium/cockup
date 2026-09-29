@@ -101,10 +101,13 @@ cockup verify /path/to/config.yaml
 
 `diff` 比较备份与恢复时对应的本地文件，列出内容或链接目标的变化、本地缺失的路径，
 以及恢复时会被替换的目录中多出的文件。它不会写入文件或运行 Hooks；发现差异时
-仍返回状态码 0，比较失败才返回 1。跨用户路径映射可能询问一次：
+仍返回状态码 0，比较失败才返回 1。跨用户路径映射可能询问一次。最大 1 MiB 的文本文件
+会显示统一格式的 `-`/`+` 差异；二进制、非 UTF-8 或更大的文件只显示简短提示。
+使用 `--summary` 仅列出变动路径：
 
 ```sh
 cockup diff /path/to/config.yaml
+cockup diff /path/to/config.yaml --summary
 ```
 
 如果备份目标尚不存在，`verify` 和 `diff` 会提示备份尚未初始化并正常退出。

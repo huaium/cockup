@@ -118,10 +118,13 @@ Use `diff` to compare the backup with the files it would restore. It reports
 changed contents or link targets, paths missing locally, and extra files in
 directories that restore would replace. It does not write files or run hooks;
 differences return status 0, while comparison errors return status 1. Cross-user
-home mapping may still prompt once:
+home mapping may still prompt once. Text files up to 1 MiB show unified `-`/`+`
+differences; binary, non-UTF-8, and larger files get a brief notice. Use
+`--summary` for changed paths only:
 
 ```sh
 cockup diff /path/to/config.yaml
+cockup diff /path/to/config.yaml --summary
 ```
 
 If no backup destination exists yet, `verify` and `diff` warn that the backup

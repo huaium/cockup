@@ -71,6 +71,28 @@ pub fn display_path(path: &std::path::Path) -> String {
     }
     path.display().to_string()
 }
+pub fn diff_lines(diff: &str) {
+    for line in diff.lines() {
+        if colors_enabled() {
+            let style =
+                if line.starts_with("+++") || line.starts_with("---") || line.starts_with("@@") {
+                    Style::new().cyan().bold()
+                } else if line.starts_with('+') {
+                    Style::new().green()
+                } else if line.starts_with('-') {
+                    Style::new().red()
+                } else {
+                    Style::new()
+                };
+            println!(
+                "{}",
+                line.if_supports_color(Stream::Stdout, |text| text.style(style))
+            );
+        } else {
+            println!("{line}");
+        }
+    }
+}
 pub fn copied(kind: &str, updating: bool, path: &std::path::Path) {
     let label = if updating {
         format!("{kind} existed, updating:")

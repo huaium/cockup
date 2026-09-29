@@ -1,6 +1,66 @@
 use super::*;
 
 #[test]
+fn diff_shows_unified_text_changes_and_summary_can_hide_them() {
+    let dir = TempDir::new().unwrap();
+    let root = dir.path();
+    write(root, "source/file", "first\nold\nlast\n");
+    write(
+        root,
+        "config.yaml",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n",
+    );
+    assert!(
+        cli(root, &["backup", "config.yaml", "-q"], "")
+            .status
+            .success()
+    );
+    write(root, "source/file", "first\nnew\nlast\n");
+
+    let detailed = cli(root, &["diff", "config.yaml"], "");
+    assert!(detailed.status.success(), "{}", text(&detailed));
+    let output = text(&detailed);
+    for expected in [
+        "--- backup/files/file",
+        "+++ source/file",
+        "@@ -1,3 +1,3 @@",
+        "-old",
+        "+new",
+        "1 differences",
+    ] {
+        assert!(output.contains(expected), "{output}");
+    }
+
+    let summary = cli(root, &["diff", "config.yaml", "--summary"], "");
+    assert!(summary.status.success(), "{}", text(&summary));
+    assert!(text(&summary).contains("Changed"));
+    assert!(!text(&summary).contains("@@"));
+}
+
+#[test]
+fn diff_shows_missing_file_lines_and_binary_fallback() {
+    let dir = TempDir::new().unwrap();
+    let root = dir.path();
+    write(root, "source/text", "saved\n");
+    fs::write(root.join("source/binary"), [0, 1, 2]).unwrap();
+    write(
+        root,
+        "config.yaml",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [text, binary]\n    to: files\n",
+    );
+    assert!(
+        cli(root, &["backup", "config.yaml", "-q"], "")
+            .status
+            .success()
+    );
+    fs::remove_file(root.join("source/text")).unwrap();
+    fs::write(root.join("source/binary"), [0, 1, 3]).unwrap();
+    let output = text(&cli(root, &["diff", "config.yaml"], ""));
+    assert!(output.contains("-saved"), "{output}");
+    assert!(output.contains("Binary files differ"), "{output}");
+}
+
+#[test]
 fn diff_reports_changed_missing_and_extra_files_without_writes_or_hooks() {
     let dir = TempDir::new().unwrap();
     let root = dir.path();
