@@ -70,7 +70,7 @@ cockup ingredient delete ghostty zed  # 一次删除多个配料缓存
 cockup ingredient clean            # 删除整个 Cockup 缓存目录
 ```
 
-`status` 离线且只读。`update` 请求失败时保留原有缓存并报告错误。收到 304 响应时仅更新上次检查日期。`delete` 只删除 `~/Library/Caches/cockup/ingredients/v1/` 中指定的缓存；`clean` 删除 `~/Library/Caches/cockup/` 及其全部内容。
+`status` 离线且只读。`update` 遇到未缓存的配料时会先询问是否下载；拒绝后不会修改缓存。请求失败时保留原有缓存并报告错误。收到 304 响应时仅更新上次检查日期。`delete` 只删除 `~/Library/Caches/cockup/ingredients/v1/` 中指定的缓存；`clean` 删除 `~/Library/Caches/cockup/` 及其全部内容。
 `delete` 会先验证所有名称；如果其中一个配料未缓存，仍会删除其他配料，并返回错误。
 
 ### `cockup backup & restore`

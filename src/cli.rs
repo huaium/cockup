@@ -44,7 +44,7 @@ pub enum Commands {
 }
 #[derive(Subcommand)]
 pub enum IngredientCommand {
-    /// Check GitHub now and update one cached ingredient
+    /// Check GitHub now; ask before downloading an uncached ingredient
     Update { name: String },
     /// Show cached ingredient dates and sources without network access
     Status { name: Option<String> },

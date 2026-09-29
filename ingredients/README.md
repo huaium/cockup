@@ -1,32 +1,32 @@
-# Ingredient library
+# Ingredient Library
 
 The YAML files in `library/` contain Cockup rules only. They have no
 `destination` or `symlinks`, so include them from a runnable configuration.
 Missing optional paths are skipped. The parent supplies the destination and
 symlink policy; an individual include can override the latter.
 
-| Ingredient | Settings captured | Notes |
-| --- | --- | --- |
-| `ghostty` | XDG and macOS configuration directories. | Check custom `XDG_CONFIG_HOME` and external includes. |
-| `wezterm` | `~/.wezterm.lua` and `~/.config/wezterm`. | Check `WEZTERM_CONFIG_FILE` overrides. |
-| `karabiner-elements` | Main JSON file and complex modifications. | Excludes logs and app state. |
-| `visual-studio-code` | User settings, keybindings, snippets, and profiles. | Stable release only; excludes extension binaries and workspace settings. |
-| `zed` | Settings, keybindings, themes, and snippets. | Excludes app data and language-server downloads. |
-| `iterm2` | Default preferences, application support, and `~/.iterm2`. | Custom settings folders need an edited rule; private preferences and Keychain data are excluded. |
-| `rectangle` | NSUserDefaults preferences plist. | Import/export JSON uses a separate, transient path. |
-| `bettertouchtool` | Application support and preferences plist. | Includes BetterTouchTool's automatic backup history. |
-| `alfred` | Local preferences package and preference plists. | A custom sync folder needs an edited rule; caches are excluded. |
+| Ingredient           | Settings captured                                          | Notes                                                                                            |
+| -------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `ghostty`            | XDG and macOS configuration directories.                   | Check custom `XDG_CONFIG_HOME` and external includes.                                            |
+| `wezterm`            | `~/.wezterm.lua` and `~/.config/wezterm`.                  | Check `WEZTERM_CONFIG_FILE` overrides.                                                           |
+| `karabiner-elements` | Main JSON file and complex modifications.                  | Excludes logs and app state.                                                                     |
+| `visual-studio-code` | User settings, keybindings, snippets, and profiles.        | Stable release only; excludes extension binaries and workspace settings.                         |
+| `zed`                | Settings, keybindings, themes, and snippets.               | Excludes app data and language-server downloads.                                                 |
+| `iterm2`             | Default preferences, application support, and `~/.iterm2`. | Custom settings folders need an edited rule; private preferences and Keychain data are excluded. |
+| `rectangle`          | NSUserDefaults preferences plist.                          | Import/export JSON uses a separate, transient path.                                              |
+| `bettertouchtool`    | Application support and preferences plist.                 | Includes BetterTouchTool's automatic backup history.                                             |
+| `alfred`             | Local preferences package and preference plists.           | A custom sync folder needs an edited rule; caches are excluded.                                  |
 
 The library also includes these 56 cask-checked ingredients (65 total):
 
-| Area | Ingredients |
-| --- | --- |
-| Terminals | `hyper`, `kitty`, `tabby`, `warp` |
-| Editors | `sublime-merge`, `sublime-text`, `vscodium` |
-| Browsers | `arc`, `chromium`, `firefox`, `google-chrome`, `microsoft-edge`, `opera`, `tor-browser`, `vivaldi` |
-| Writing and productivity | `anytype`, `calibre`, `craft`, `fantastical`, `joplin`, `logseq`, `mark-text`, `obsidian`, `ticktick`, `todoist`, `typora`, `zotero` |
-| Development and data | `bruno`, `docker`, `fork`, `github`, `insomnia`, `mongodb-compass`, `orbstack`, `podman-desktop`, `postman`, `sequel-ace`, `sourcetree`, `tableplus` |
-| System and utilities | `alt-tab`, `appcleaner`, `bartender`, `cleanshot`, `cyberduck`, `daisydisk`, `hammerspoon`, `hazel`, `istat-menus`, `keyboard-maestro`, `launchbar`, `maccy`, `mullvadvpn`, `raycast`, `stats`, `tailscale`, `transmit` |
+| Area                     | Ingredients                                                                                                                                                                                                             |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Terminals                | `hyper`, `kitty`, `tabby`, `warp`                                                                                                                                                                                       |
+| Editors                  | `sublime-merge`, `sublime-text`, `vscodium`                                                                                                                                                                             |
+| Browsers                 | `arc`, `chromium`, `firefox`, `google-chrome`, `microsoft-edge`, `opera`, `tor-browser`, `vivaldi`                                                                                                                      |
+| Writing and productivity | `anytype`, `calibre`, `craft`, `fantastical`, `joplin`, `logseq`, `mark-text`, `obsidian`, `ticktick`, `todoist`, `typora`, `zotero`                                                                                    |
+| Development and data     | `bruno`, `docker`, `fork`, `github`, `insomnia`, `mongodb-compass`, `orbstack`, `podman-desktop`, `postman`, `sequel-ace`, `sourcetree`, `tableplus`                                                                    |
+| System and utilities     | `alt-tab`, `appcleaner`, `bartender`, `cleanshot`, `cyberduck`, `daisydisk`, `hammerspoon`, `hazel`, `istat-menus`, `keyboard-maestro`, `launchbar`, `maccy`, `mullvadvpn`, `raycast`, `stats`, `tailscale`, `transmit` |
 
 Each YAML lists its exact paths. Some application-support directories contain
 profiles or local data as well as settings, particularly browsers and note apps;
@@ -54,8 +54,9 @@ macOS preference caching may require logging out before a restored plist is
 read. Custom settings locations need a local edit. Named ingredients are cached
 under `~/Library/Caches/cockup/ingredients/v1/` and checked for updates after
 30 days. Backup stores the exact YAML it used in its manifest for offline
-restore and verify. Run `cockup ingredient update NAME` to check GitHub immediately,
-or `cockup ingredient status [NAME]` to inspect cached sources and dates offline.
+restore and verify. Run `cockup ingredient update NAME` to check GitHub immediately;
+if the ingredient is not cached, Cockup asks before downloading it. Run
+`cockup ingredient status [NAME]` to inspect cached sources and dates offline.
 `cockup ingredient delete NAME [NAME...]` removes one or more YAML/metadata pairs;
 `cockup ingredient clean` removes all of `~/Library/Caches/cockup/`.
 

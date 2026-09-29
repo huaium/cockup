@@ -111,8 +111,11 @@ pub fn input_bold(prompt: &str) -> Result<String, String> {
     }
 }
 pub fn confirm() -> Result<bool, String> {
+    confirm_with_prompt("Continue? [y/N]: ")
+}
+pub fn confirm_with_prompt(prompt: &str) -> Result<bool, String> {
     loop {
-        match input_bold("Continue? [y/N]: ")?.to_lowercase().as_str() {
+        match input_bold(prompt)?.to_lowercase().as_str() {
             "y" | "yes" => return Ok(true),
             "" | "n" | "no" => return Ok(false),
             _ => warning("Please enter y or n."),

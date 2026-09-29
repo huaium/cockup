@@ -24,6 +24,10 @@ fn setup(home: &Path) {
 }
 
 fn run(home: &Path, action: &[&str], status: &str) -> Output {
+    run_with_input(home, action, status, "")
+}
+
+fn run_with_input(home: &Path, action: &[&str], status: &str, input: &str) -> Output {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     listener.set_nonblocking(true).unwrap();
     let url = format!("http://{}/ingredient", listener.local_addr().unwrap());
@@ -78,17 +82,60 @@ fn run(home: &Path, action: &[&str], status: &str) -> Output {
             }
         }
     });
-    let output = Command::new(env!("CARGO_BIN_EXE_cockup"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_cockup"))
         .current_dir(home)
         .env("HOME", home)
         .env("NO_COLOR", "1")
         .env("COCKUP_INGREDIENT_TEST_URL", url)
         .args(action)
-        .output()
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
         .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(input.as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
     stop.store(true, Ordering::Relaxed);
     server.join().unwrap();
     output
+}
+
+#[test]
+fn uncached_manual_update_asks_before_downloading() {
+    let dir = TempDir::new().unwrap();
+    let home = dir.path();
+    setup(home);
+    let action = &["ingredient", "update", "demo"];
+
+    let declined = run_with_input(home, action, "200", "n\n");
+    assert!(declined.status.success(), "{}", text(&declined));
+    assert!(text(&declined).contains("Download ingredient `demo` from GitHub? [y/N]: "));
+    assert!(!home.join("curl.calls").exists());
+    assert!(!home.join("Library/Caches/cockup/ingredients/v1").exists());
+
+    let retry = run_with_input(home, action, "200", "other\ny\n");
+    assert!(retry.status.success(), "{}", text(&retry));
+    assert!(text(&retry).contains("Please enter y or n"));
+    assert!(
+        home.join("Library/Caches/cockup/ingredients/v1/demo.yaml")
+            .is_file()
+    );
+    assert_eq!(
+        fs::read_to_string(home.join("curl.calls"))
+            .unwrap()
+            .lines()
+            .count(),
+        1
+    );
+
+    let cached = run(home, action, "304");
+    assert!(cached.status.success(), "{}", text(&cached));
+    assert!(!text(&cached).contains("Download ingredient"));
 }
 
 #[test]
@@ -292,7 +339,7 @@ fn ingredient_update_and_status_manage_the_cache_without_a_config() {
     assert!(text(&empty).contains("No cached ingredients"));
     assert!(!home.join("curl.calls").exists());
 
-    let updated = run(home, &["ingredient", "update", "demo"], "200");
+    let updated = run_with_input(home, &["ingredient", "update", "demo"], "200", "y\n");
     assert!(updated.status.success(), "{}", text(&updated));
     let cache = home.join("Library/Caches/cockup/ingredients/v1");
     assert!(cache.join("demo.yaml").is_file());
@@ -341,7 +388,7 @@ fn manual_update_forces_a_check_and_preserves_cached_yaml_on_304_or_failure() {
     let home = dir.path();
     setup(home);
     assert!(
-        run(home, &["ingredient", "update", "demo"], "200")
+        run_with_input(home, &["ingredient", "update", "demo"], "200", "y\n")
             .status
             .success()
     );
@@ -385,7 +432,7 @@ fn ingredient_delete_removes_one_pair_and_clean_removes_the_cockup_cache_root() 
     write(home, "Library/Caches/cockup/keep", "remove me");
     write(home, "Library/Caches/other/keep", "untouched");
     for name in ["demo", "zed"] {
-        let output = run(home, &["ingredient", "update", name], "200");
+        let output = run_with_input(home, &["ingredient", "update", name], "200", "y\n");
         assert!(output.status.success(), "{}", text(&output));
     }
 
@@ -470,7 +517,7 @@ fn ingredient_delete_accepts_multiple_names_and_continues_after_a_missing_entry(
     let cache = home.join("Library/Caches/cockup/ingredients/v1");
     for name in ["demo", "zed"] {
         assert!(
-            run(home, &["ingredient", "update", name], "200")
+            run_with_input(home, &["ingredient", "update", name], "200", "y\n")
                 .status
                 .success()
         );
@@ -484,7 +531,7 @@ fn ingredient_delete_accepts_multiple_names_and_continues_after_a_missing_entry(
     }
 
     assert!(
-        run(home, &["ingredient", "update", "demo"], "200")
+        run_with_input(home, &["ingredient", "update", "demo"], "200", "y\n")
             .status
             .success()
     );

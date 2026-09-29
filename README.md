@@ -75,8 +75,10 @@ cockup ingredient delete ghostty zed  # Remove several cached ingredients
 cockup ingredient clean            # Remove the entire Cockup cache directory
 ```
 
-`status` is offline and read-only. `update` preserves an existing cache on a failed
-request and reports the failure. A 304 response updates only the last-checked date.
+`status` is offline and read-only. `update` asks before downloading an ingredient
+that is not cached; declining leaves the cache unchanged. It preserves an existing
+cache on a failed request and reports the failure. A 304 response updates only
+the last-checked date.
 `delete` affects only named files in `~/Library/Caches/cockup/ingredients/v1/`.
 `clean` removes `~/Library/Caches/cockup/` and everything inside it.
 `delete` checks all names before removing files; if one is not cached, it still

@@ -345,6 +345,15 @@ impl Resolver {
 }
 
 pub fn update(name: &str) -> Result<(), String> {
+    validate_name(name)?;
+    if read_cache(name, &cache_dir()?).is_none() {
+        report::warning(&format!("Ingredient `{name}` is not cached."));
+        if !report::confirm_with_prompt(&format!(
+            "Download ingredient `{name}` from GitHub? [y/N]: "
+        ))? {
+            return Ok(());
+        }
+    }
     Resolver::new(Mode::ForceUpdate).resolve(name)?;
     println!("Ingredient `{name}` checked against GitHub.");
     status(Some(name))
