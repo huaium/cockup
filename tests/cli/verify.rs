@@ -51,7 +51,7 @@ fn verify_accepts_complete_backup_without_running_hooks() {
         "config.yaml",
         "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\nhooks:\n  pre-restore:\n    - name: marker\n      command: [sh, -c, 'touch hook-ran']\n",
     );
-    let backup = cli(p, &["backup", "config.yaml", "-q"], "");
+    let backup = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(backup.status.success(), "{}", text(&backup));
     let out = cli(p, &["verify", "config.yaml"], "");
     assert!(out.status.success(), "{}", text(&out));
@@ -70,7 +70,7 @@ fn verify_reports_missing_data_manifest_and_incomplete_backup() {
         "config.yaml",
         "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n",
     );
-    let backup = cli(p, &["backup", "config.yaml", "-q"], "");
+    let backup = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(backup.status.success(), "{}", text(&backup));
     fs::remove_file(p.join("backup/files/file")).unwrap();
     let missing = cli(p, &["verify", "config.yaml"], "");
@@ -100,7 +100,7 @@ fn verify_checks_recorded_links_but_accepts_dangling_references() {
         "config.yaml",
         "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [link]\n    to: files\n",
     );
-    let backup = cli(p, &["backup", "config.yaml", "-q"], "");
+    let backup = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(backup.status.success(), "{}", text(&backup));
     let valid = cli(p, &["verify", "config.yaml"], "");
     assert!(valid.status.success(), "{}", text(&valid));

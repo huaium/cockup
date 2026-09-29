@@ -5,10 +5,18 @@ use crate::{
 };
 use std::path::{Path, PathBuf};
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RestorePolicy {
+    Ask,
+    Override,
+    SkipExisting,
+}
+
 pub(super) struct CopyState {
     pub(super) root: PathBuf,
     pub(super) manifest: Manifest,
     pub(super) restore: bool,
+    pub(super) restore_policy: RestorePolicy,
     pub(super) planning: bool,
     pub(super) dry_run: bool,
     pub(super) clean: bool,

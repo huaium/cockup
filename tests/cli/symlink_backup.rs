@@ -15,7 +15,7 @@ fn preserve_symlinks_to_ancestors_and_reject_copying_onto_itself() {
         "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [root, ancestor, broken]\n    to: files\n",
     );
     for command in ["backup", "backup", "restore"] {
-        let out = cli(p, &[command, "config.yaml", "-q"], "");
+        let out = cli(p, &[command, "config.yaml", "-a"], "");
         assert!(out.status.success(), "{}", text(&out));
         assert_eq!(
             fs::read_link(p.join("backup/files/root")).unwrap(),
@@ -32,7 +32,7 @@ fn preserve_symlinks_to_ancestors_and_reject_copying_onto_itself() {
         "config.yaml",
         "symlinks: reference\ndestination: source\nrules:\n  - from: source\n    targets: [root]\n    to: .\n",
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert_eq!(out.status.code(), Some(1));
     assert_eq!(
         fs::read_link(p.join("source/root")).unwrap(),
@@ -56,7 +56,7 @@ fn dereference_copies_file_and_directory_contents_and_continues_after_bad_links(
         "config.yaml",
         "symlinks: dereference\ndestination: backup\nrules:\n  - from: source\n    targets: [broken, folder, file]\n    to: files\n",
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert_eq!(out.status.code(), Some(1), "{}", text(&out));
     for file in ["backup/files/file", "backup/files/folder/file"] {
         assert_eq!(fs::read_to_string(p.join(file)).unwrap(), "contents");
@@ -71,11 +71,11 @@ fn dereference_copies_file_and_directory_contents_and_continues_after_bad_links(
     fs::remove_file(p.join("original/folder/cycle")).unwrap();
     fs::remove_file(p.join("source/broken")).unwrap();
     assert!(
-        cli(p, &["backup", "config.yaml", "-q"], "")
+        cli(p, &["backup", "config.yaml", "-a"], "")
             .status
             .success()
     );
-    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    let out = cli(p, &["restore", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     assert!(
         fs::symlink_metadata(p.join("source/file"))
@@ -105,18 +105,18 @@ fn prompt_chooses_once_for_all_links_and_requires_an_explicit_answer() {
             "symlinks: prompt\ndestination: backup\nrules:\n  - from: source\n    targets: [one, two]\n    to: files\n",
         );
         for invalid in ["", "invalid\n"] {
-            let out = cli(p, &["backup", "config.yaml", "-q"], invalid);
+            let out = cli(p, &["backup", "config.yaml", "-a"], invalid);
             assert_eq!(out.status.code(), Some(1));
             assert!(!p.join("backup").exists());
         }
         let retried = cli(
             p,
-            &["backup", "config.yaml", "-q"],
+            &["backup", "config.yaml", "-a"],
             &format!("invalid\n{answer}"),
         );
         assert!(retried.status.success(), "{}", text(&retried));
         assert_eq!(text(&retried).matches("[r]eference").count(), 2);
-        let out = cli(p, &["backup", "config.yaml", "-q"], answer);
+        let out = cli(p, &["backup", "config.yaml", "-a"], answer);
         assert!(out.status.success(), "{}", text(&out));
         assert_eq!(text(&out).matches("[r]eference").count(), 1);
         assert!(
@@ -151,7 +151,7 @@ fn root_symlink_policy_controls_included_rules_and_dereference_rejects_overlap()
         "config.yaml",
         "symlinks: reference\ndestination: backup\nrules: []\ninclude: [{file: child.yaml}]\n",
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     assert_eq!(
         fs::read_link(p.join("backup/files/root")).unwrap(),
@@ -162,7 +162,7 @@ fn root_symlink_policy_controls_included_rules_and_dereference_rejects_overlap()
         "config.yaml",
         "symlinks: dereference\ndestination: backup\nrules: []\ninclude: [{file: child.yaml}]\n",
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert_eq!(out.status.code(), Some(1), "{}", text(&out));
     assert!(text(&out).contains("Overlapping"));
     assert_eq!(
@@ -185,7 +185,7 @@ fn reference_backup_retains_targets_and_cleanup_does_not_follow_links() {
         "symlinks: reference\nclean: true\ndestination: backup\nrules:\n  - from: source\n    targets: [link, directory-link]\n    to: files\n",
     );
     for _ in 0..2 {
-        let out = cli(p, &["backup", "config.yaml", "-q"], "");
+        let out = cli(p, &["backup", "config.yaml", "-a"], "");
         assert!(out.status.success(), "{}", text(&out));
         assert_eq!(
             fs::read_to_string(p.join("backup/files/link")).unwrap(),
@@ -201,7 +201,7 @@ fn reference_backup_retains_targets_and_cleanup_does_not_follow_links() {
         );
     }
     fs::remove_file(p.join("source/link")).unwrap();
-    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    let out = cli(p, &["restore", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     assert_eq!(
         fs::read_link(p.join("source/link")).unwrap(),
@@ -223,18 +223,18 @@ fn nested_prompt_choices_are_collected_before_replacing_directories() {
         "config.yaml",
         "symlinks: prompt\ndestination: backup\nrules:\n  - from: source\n    targets: [folder]\n    to: files\n",
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert_eq!(out.status.code(), Some(1));
     assert_eq!(
         fs::read_to_string(p.join("backup/files/folder/keep")).unwrap(),
         "old backup"
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "d\n");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "d\n");
     assert!(out.status.success(), "{}", text(&out));
     assert_eq!(text(&out).matches("Symlink ").count(), 1);
     fs::remove_dir_all(p.join("source")).unwrap();
     fs::remove_file(p.join("original/file")).unwrap();
-    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    let out = cli(p, &["restore", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     assert!(!text(&out).contains("[r]eference link or [d]ereference target?"));
     assert_eq!(
@@ -260,7 +260,7 @@ fn source_links_may_point_into_backup_destination() {
         "config.yaml",
         "symlinks: reference\ndestination: backup\nclean: false\nrules:\n  - from: source\n    targets: [link]\n    to: files\n",
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     assert_eq!(
         fs::read_to_string(p.join("backup/files/link")).unwrap(),
@@ -281,7 +281,7 @@ fn symlink_prompt_is_yellow_with_choices_on_the_next_line() {
     );
     let mut child = Command::new(env!("CARGO_BIN_EXE_cockup"))
         .current_dir(p)
-        .args(["backup", "config.yaml", "-q"])
+        .args(["backup", "config.yaml", "-a"])
         .env_remove("NO_COLOR")
         .env("FORCE_COLOR", "1")
         .stdin(Stdio::piped())
@@ -316,7 +316,7 @@ fn switching_reference_to_dereference_replaces_old_directory_links() {
             ),
         );
         for answer in ["r\n", "d\n"] {
-            let out = cli(p, &["backup", "config.yaml", "-q"], answer);
+            let out = cli(p, &["backup", "config.yaml", "-a"], answer);
             assert!(out.status.success(), "{}", text(&out));
         }
         assert!(
@@ -355,7 +355,7 @@ fn reference_links_preserve_parent_traversal_after_symlinks() {
         "config.yaml",
         "symlinks: reference\nclean: true\ndestination: backup\nrules:\n  - from: source\n    targets: [file-link, missing-link]\n    to: files\n",
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     assert_eq!(
         fs::read_to_string(p.join("backup/files/file-link")).unwrap(),
@@ -367,7 +367,7 @@ fn reference_links_preserve_parent_traversal_after_symlinks() {
         "new target"
     );
     fs::remove_file(p.join("source/file-link")).unwrap();
-    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    let out = cli(p, &["restore", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     assert_eq!(
         fs::read_link(p.join("source/file-link")).unwrap(),

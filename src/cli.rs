@@ -16,7 +16,7 @@ pub enum Commands {
     /// Back up files from a YAML configuration
     Backup(FileArgs),
     /// Restore files from a backup
-    Restore(FileArgs),
+    Restore(RestoreArgs),
     /// Check backup manifest and configured backup paths
     Verify { config_file: PathBuf },
     /// Compare a backup with the files it would restore
@@ -66,8 +66,9 @@ pub enum IngredientCommand {
 #[derive(Args)]
 pub struct ConfigArgs {
     pub config_file: PathBuf,
-    #[arg(short = 'q', long)]
-    pub quiet: bool,
+    /// Run configured hooks without asking for confirmation
+    #[arg(short = 'a', long)]
+    pub approve_hooks: bool,
 }
 #[derive(Args)]
 pub struct FileArgs {
@@ -76,4 +77,16 @@ pub struct FileArgs {
     /// Show planned file changes without writing files or running hooks
     #[arg(long)]
     pub dry_run: bool,
+}
+
+#[derive(Args)]
+pub struct RestoreArgs {
+    #[command(flatten)]
+    pub file: FileArgs,
+    /// Replace existing local files without asking
+    #[arg(short = 'o', long, conflicts_with = "skip_existing")]
+    pub r#override: bool,
+    /// Keep existing local files and restore only missing paths
+    #[arg(short = 's', long)]
+    pub skip_existing: bool,
 }

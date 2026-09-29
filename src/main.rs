@@ -40,7 +40,7 @@ fn configured(
     mode: Mode,
 ) -> Result<Option<config::Config>, String> {
     let cfg = config::load(&args.config_file, mode)?;
-    if !dry_run && !args.quiet && cfg.all_hooks().next().is_some() {
+    if !dry_run && !args.approve_hooks && cfg.all_hooks().next().is_some() {
         report::warning(
             "Hooks detected in configuration. Ensure commands are safe before execution.",
         );
@@ -69,13 +69,20 @@ fn run() -> Result<(), String> {
                     Mode::Update
                 },
             )? {
-                files::execute(&cfg, false, args.dry_run)?;
+                files::execute(&cfg, false, args.dry_run, files::RestorePolicy::Ask)?;
             }
         }
         Commands::Restore(args) => {
-            let mode = snapshot(&args.config.config_file)?;
-            if let Some(cfg) = configured(&args.config, args.dry_run, mode)? {
-                files::execute(&cfg, true, args.dry_run)?;
+            let mode = snapshot(&args.file.config.config_file)?;
+            if let Some(cfg) = configured(&args.file.config, args.file.dry_run, mode)? {
+                let policy = if args.r#override {
+                    files::RestorePolicy::Override
+                } else if args.skip_existing {
+                    files::RestorePolicy::SkipExisting
+                } else {
+                    files::RestorePolicy::Ask
+                };
+                files::execute(&cfg, true, args.file.dry_run, policy)?;
             }
         }
         Commands::Verify { config_file } => {

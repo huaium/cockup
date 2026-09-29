@@ -15,7 +15,7 @@ fn destinationless_ingredients_can_be_included_but_not_run_directly() {
         "root.yaml",
         "symlinks: reference\ndestination: backup\ninclude: [{file: nested/ingredient.yaml}]\nrules: []\n",
     );
-    let backup = cli(p, &["backup", "root.yaml", "-q"], "");
+    let backup = cli(p, &["backup", "root.yaml", "-a"], "");
     assert!(backup.status.success(), "{}", text(&backup));
     assert_eq!(
         fs::read_to_string(p.join("backup/files/file")).unwrap(),
@@ -53,7 +53,7 @@ fn destinationless_ingredient_inherits_symlinks_and_still_requires_rules() {
                 "symlinks: {policy}\ndestination: backup-{policy}\ninclude: [{{file: ingredient.yaml}}]\nrules: []\n"
             ),
         );
-        let out = cli(p, &["backup", "root.yaml", "-q"], "");
+        let out = cli(p, &["backup", "root.yaml", "-a"], "");
         assert!(out.status.success(), "{}", text(&out));
         let entry = fs::symlink_metadata(p.join(format!("backup-{policy}/files/link"))).unwrap();
         assert_eq!(entry.is_symlink(), kind == "link");
@@ -61,7 +61,7 @@ fn destinationless_ingredient_inherits_symlinks_and_still_requires_rules() {
     }
 
     write(p, "ingredient.yaml", "metadata: true\n");
-    let out = cli(p, &["backup", "root.yaml", "-q"], "");
+    let out = cli(p, &["backup", "root.yaml", "-a"], "");
     assert_eq!(out.status.code(), Some(1));
     assert!(text(&out).contains("rules"), "{}", text(&out));
 }
@@ -81,14 +81,14 @@ fn included_rules_are_wrapped_under_the_root_destination() {
         "config.yaml",
         "symlinks: reference\ndestination: backup\ninclude:\n  - file: nested/child.yaml\n    wrap: imported\nrules: []\n",
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     assert_eq!(
         fs::read_to_string(p.join("backup/imported/config/file")).unwrap(),
         "contents"
     );
     fs::remove_file(p.join("source/file")).unwrap();
-    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    let out = cli(p, &["restore", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     assert_eq!(
         fs::read_to_string(p.join("source/file")).unwrap(),
@@ -120,7 +120,7 @@ fn nested_include_and_rule_settings_override_inherited_defaults() {
         "config.yaml",
         "symlinks: reference\ndestination: backup\ninclude:\n  - file: nested/child.yaml\n    wrap: outer\n    symlinks: dereference\nrules: []\n",
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     for (name, path, expected_link) in [
         ("inherited", "backup/outer/files/inherited", false),
@@ -136,7 +136,7 @@ fn nested_include_and_rule_settings_override_inherited_defaults() {
     for name in ["inherited", "nested", "local"] {
         fs::remove_file(p.join("source").join(name)).unwrap();
     }
-    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    let out = cli(p, &["restore", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     for name in ["inherited", "nested", "local"] {
         assert_eq!(
@@ -166,7 +166,7 @@ fn include_and_rule_metadata_overrides_apply_on_backup_and_restore() {
         "config.yaml",
         "symlinks: reference\nmetadata: true\ndestination: backup\ninclude:\n  - file: child.yaml\n    metadata: false\nrules:\n  - from: source\n    targets: [root]\n    to: files\n",
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     for (name, preserved) in [("root", true), ("included", false), ("rule", true)] {
         let path = p.join("backup/files").join(name);
@@ -175,7 +175,7 @@ fn include_and_rule_metadata_overrides_apply_on_backup_and_restore() {
         assert_eq!(timestamp == old, preserved, "{name}");
         fs::remove_file(p.join("source").join(name)).unwrap();
     }
-    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    let out = cli(p, &["restore", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     for (name, preserved) in [("root", true), ("included", false), ("rule", true)] {
         let timestamp = fs::metadata(p.join("source").join(name))
@@ -206,7 +206,7 @@ fn invalid_include_shapes_and_wraps_fail_before_cleaning() {
                 "symlinks: reference\ndestination: backup\nclean: true\ninclude: {include}\nrules: []\n"
             ),
         );
-        let out = cli(p, &["backup", "config.yaml", "-q"], "");
+        let out = cli(p, &["backup", "config.yaml", "-a"], "");
         assert_eq!(out.status.code(), Some(1), "{}", text(&out));
         assert_eq!(
             fs::read_to_string(p.join("backup/keep")).unwrap(),
@@ -226,7 +226,7 @@ fn invalid_configuration_fails_before_side_effects() {
         "symlinks: reference\ndestination: backup\nrules: []\ninclude: [{file: config.yaml}]",
     ] {
         write(dir.path(), "config.yaml", yaml);
-        let out = cli(dir.path(), &["backup", "config.yaml", "-q"], "");
+        let out = cli(dir.path(), &["backup", "config.yaml", "-a"], "");
         assert_eq!(out.status.code(), Some(1), "{}", text(&out));
         assert!(!dir.path().join("backup").exists());
         assert!(!out.stderr.is_empty());
@@ -244,7 +244,7 @@ fn symlink_policy_is_required_and_validated_before_side_effects() {
             "config.yaml",
             &format!("{policy}destination: backup\nclean: true\nrules: []\n"),
         );
-        let out = cli(p, &["backup", "config.yaml", "-q"], "");
+        let out = cli(p, &["backup", "config.yaml", "-a"], "");
         assert_eq!(out.status.code(), Some(1), "{}", text(&out));
         assert!(text(&out).contains("symlinks") || text(&out).contains("unknown"));
         assert_eq!(
@@ -255,7 +255,7 @@ fn symlink_policy_is_required_and_validated_before_side_effects() {
 }
 
 #[test]
-fn included_hooks_prompt_once_and_quiet_suppresses_confirmation() {
+fn included_hooks_prompt_once_and_approve_hooks_suppresses_confirmation() {
     let dir = TempDir::new().unwrap();
     write(
         dir.path(),
@@ -275,8 +275,8 @@ fn included_hooks_prompt_once_and_quiet_suppresses_confirmation() {
     assert!(retried.status.success(), "{}", text(&retried));
     assert_eq!(text(&retried).matches("Continue?").count(), 2);
     assert!(dir.path().join("backup").exists());
-    let quiet = cli(dir.path(), &["backup", "config.yaml", "-q"], "");
-    assert!(!text(&quiet).contains("Continue?"));
+    let approved = cli(dir.path(), &["backup", "config.yaml", "-a"], "");
+    assert!(!text(&approved).contains("Continue?"));
     let mut child = Command::new(env!("CARGO_BIN_EXE_cockup"))
         .current_dir(dir.path())
         .args(["backup", "config.yaml"])
@@ -312,7 +312,7 @@ fn invalid_rule_paths_fail_before_cleaning_backup() {
                 "symlinks: reference\ndestination: backup\nclean: true\nrules:\n  - from: source\n    {fields}\n"
             ),
         );
-        let out = cli(p, &["backup", "config.yaml", "-q"], "");
+        let out = cli(p, &["backup", "config.yaml", "-a"], "");
         assert_eq!(out.status.code(), Some(1), "{}", text(&out));
         assert_eq!(
             fs::read_to_string(p.join("backup/keep")).unwrap(),
@@ -325,7 +325,7 @@ fn invalid_rule_paths_fail_before_cleaning_backup() {
 fn malformed_globs_fail_before_confirmation_hooks_or_cleanup() {
     for (from, target, pattern) in [("source", "[", "["), ("source/[", "file", "source/[")] {
         for included in [false, true] {
-            for quiet in [false, true] {
+            for approve_hooks in [false, true] {
                 let d = TempDir::new().unwrap();
                 let p = d.path();
                 write(p, "backup/keep", "previous backup");
@@ -349,8 +349,8 @@ fn malformed_globs_fail_before_confirmation_hooks_or_cleanup() {
                         + "clean: true\nhooks:\n  pre-backup:\n    - name: marker\n      command: [sh, -c, 'touch hook-ran']\n"),
                 );
                 let mut args = vec!["backup", "config.yaml"];
-                if quiet {
-                    args.push("-q");
+                if approve_hooks {
+                    args.push("-a");
                 }
                 let out = cli(p, &args, "y\n");
                 assert_eq!(out.status.code(), Some(1), "{}", text(&out));
@@ -382,7 +382,7 @@ fn home_expansion_and_dotfile_globs_work_without_shell_expansion() {
     );
     let out = Command::new(env!("CARGO_BIN_EXE_cockup"))
         .current_dir(p)
-        .args(["backup", "config.yaml", "-q"])
+        .args(["backup", "config.yaml", "-a"])
         .env("HOME", p.join("home"))
         .output()
         .unwrap();

@@ -72,7 +72,7 @@ fn every_library_ingredient_round_trips_through_the_cli() {
                 .current_dir(home)
                 .env("HOME", home)
                 .env("NO_COLOR", "1")
-                .args([action, "config.yaml", "-q"])
+                .args([action, "config.yaml", "-a"])
                 .output()
                 .unwrap()
         };

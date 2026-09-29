@@ -1,6 +1,7 @@
 use super::{
+    diff,
     paths::{entry_path, preserve_flags, remove},
-    state::CopyState,
+    state::{CopyState, RestorePolicy},
     symlinks,
 };
 use crate::{config::Symlinks, report};
@@ -8,6 +9,74 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
+
+pub(super) fn review_existing(src: &Path, dst: &Path, state: &CopyState) -> Result<bool, String> {
+    if !state.restore || state.dry_run {
+        return Ok(true);
+    }
+    let current = match fs::symlink_metadata(dst) {
+        Ok(value) => value,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(true),
+        Err(error) => return Err(format!("{}: {error}", dst.display())),
+    };
+    let saved = fs::symlink_metadata(src).map_err(|e| format!("{}: {e}", src.display()))?;
+    if saved.is_dir() && current.is_dir() {
+        return Ok(true);
+    }
+    match state.restore_policy {
+        RestorePolicy::Override => return Ok(true),
+        RestorePolicy::SkipExisting => {
+            report::warning(&format!(
+                "Keeping existing local path: {}",
+                report::display_path(dst)
+            ));
+            return Ok(false);
+        }
+        RestorePolicy::Ask => {}
+    }
+    let same = if saved.is_file() && current.is_file() {
+        diff::same_contents(src, dst)?
+    } else if saved.is_symlink() && current.is_symlink() {
+        let target = fs::read_link(src).map_err(|e| e.to_string())?;
+        fs::read_link(dst).map_err(|e| e.to_string())? == state.link_target(src, &target, dst)
+    } else {
+        false
+    };
+    if same {
+        return Ok(true);
+    }
+    report::warning(&format!(
+        "Existing local path differs: {}",
+        report::display_path(dst)
+    ));
+    if saved.is_file() && current.is_file() {
+        diff::show_text_diff(src, dst, false)?;
+    } else if saved.is_symlink() {
+        let expected = state.link_target(src, &fs::read_link(src).map_err(|e| e.to_string())?, dst);
+        let current_target = if current.is_symlink() {
+            fs::read_link(dst)
+                .map_err(|e| e.to_string())?
+                .display()
+                .to_string()
+        } else {
+            "not a symlink".into()
+        };
+        report::diff_lines(&format!(
+            "-link -> {}\n+link -> {current_target}\n",
+            expected.display()
+        ));
+    } else {
+        println!("  Local path has a different type.");
+    }
+    let overwrite = report::confirm_with_prompt("Overwrite local file? [y/N]: ")?;
+    if !overwrite {
+        report::warning(&format!(
+            "Keeping local path: {}",
+            report::display_path(dst)
+        ));
+    }
+    Ok(overwrite)
+}
 
 pub(super) fn copy(
     src: &Path,
@@ -90,7 +159,19 @@ pub(super) fn copy(
                 ));
                 return Ok(());
             }
-            let action = if fs::symlink_metadata(dst).is_ok() && (state.restore || !state.clean) {
+            let existing = fs::symlink_metadata(dst).is_ok();
+            let action = if existing
+                && state.restore
+                && meta.is_dir()
+                && fs::symlink_metadata(dst).is_ok_and(|info| info.is_dir())
+            {
+                "Would merge"
+            } else if existing
+                && state.restore
+                && state.restore_policy == RestorePolicy::SkipExisting
+            {
+                "Would keep"
+            } else if existing && (state.restore || !state.clean) {
                 "Would replace"
             } else {
                 "Would copy"
@@ -146,7 +227,12 @@ pub(super) fn copy(
         state: &mut CopyState,
     ) -> std::io::Result<()> {
         let meta = fs::symlink_metadata(src)?;
-        remove(dst)?;
+        let merging_directory = state.restore
+            && meta.is_dir()
+            && fs::symlink_metadata(dst).is_ok_and(|existing| existing.is_dir());
+        if !merging_directory {
+            remove(dst)?;
+        }
         fs::create_dir_all(
             dst.parent()
                 .ok_or_else(|| std::io::Error::other("Destination has no parent"))?,
@@ -154,7 +240,9 @@ pub(super) fn copy(
         if meta.is_symlink() {
             std::os::unix::fs::symlink(state.link_target(src, &fs::read_link(src)?, dst), dst)?;
         } else if meta.is_dir() {
-            fs::create_dir(dst)?;
+            if !merging_directory {
+                fs::create_dir(dst)?;
+            }
             let mut errors = Vec::new();
             for entry in fs::read_dir(src)? {
                 match entry {
@@ -205,6 +293,9 @@ pub(super) fn copy(
             report::display_path(src),
             source_metadata.mode()
         ));
+        return Ok(());
+    }
+    if !review_existing(src, dst, state)? {
         return Ok(());
     }
     let updating = fs::symlink_metadata(dst).is_ok();

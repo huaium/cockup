@@ -2,7 +2,7 @@ use super::{
     paths::{clean_backup, magic, resolved},
     preview,
     rules::rule,
-    state::CopyState,
+    state::{CopyState, RestorePolicy},
 };
 use crate::{
     config::{Config, Symlinks},
@@ -12,7 +12,12 @@ use crate::{
 };
 use std::{fs, path::Path};
 
-pub(crate) fn execute(cfg: &Config, restore: bool, dry_run: bool) -> Result<(), String> {
+pub(crate) fn execute(
+    cfg: &Config,
+    restore: bool,
+    dry_run: bool,
+    restore_policy: RestorePolicy,
+) -> Result<(), String> {
     let destination_existed = fs::symlink_metadata(&cfg.destination).is_ok();
     let incomplete = cfg.destination.join(".cockup-incomplete");
     if restore && fs::symlink_metadata(&incomplete).is_ok() {
@@ -38,6 +43,7 @@ pub(crate) fn execute(cfg: &Config, restore: bool, dry_run: bool) -> Result<(), 
             stored.unwrap_or(Manifest::new()?)
         },
         restore,
+        restore_policy,
         planning: false,
         dry_run,
         clean: cfg.clean,

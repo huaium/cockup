@@ -56,11 +56,11 @@ The `homes/` and `homes/alice/` folders contain the user-remapping fixtures.
 Extra CLI arguments follow the config name, for example:
 
 ```sh
-just sample-backup reference --quiet
-just sample-restore reference --quiet
+just sample-backup reference --approve-hooks
+just sample-restore reference --approve-hooks
 ```
 
-`--quiet` skips hook confirmation, not symlink choices or user-remapping questions.
+`--approve-hooks` skips hook confirmation, not symlink choices or user-remapping questions.
 
 For user remapping, the recipes set `HOME` and `USER` only for Cockup, using
 `sample/src/homes/alice` and `sample/src/homes/bob`. No real user accounts or home

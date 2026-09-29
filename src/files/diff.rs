@@ -1,4 +1,8 @@
-use super::{paths::magic, rules::expand, state::CopyState};
+use super::{
+    paths::magic,
+    rules::expand,
+    state::{CopyState, RestorePolicy},
+};
 use crate::{
     config::{Config, Symlinks},
     manifest::Manifest,
@@ -20,7 +24,7 @@ fn label(path: &Path) -> String {
         .unwrap_or_else(|| report::display_path(path))
 }
 
-fn show_text_diff(saved: &Path, local: &Path, missing: bool) -> Result<(), String> {
+pub(super) fn show_text_diff(saved: &Path, local: &Path, missing: bool) -> Result<(), String> {
     let saved_len = fs::metadata(saved)
         .map_err(|e| format!("{}: {e}", saved.display()))?
         .len();
@@ -96,7 +100,7 @@ fn changed(kind: &str, path: &Path) -> usize {
     1
 }
 
-fn same_contents(left: &Path, right: &Path) -> Result<bool, String> {
+pub(super) fn same_contents(left: &Path, right: &Path) -> Result<bool, String> {
     let length = fs::metadata(left)
         .map_err(|error| format!("{}: {error}", left.display()))?
         .len();
@@ -281,6 +285,7 @@ pub(crate) fn run(cfg: &Config, summary: bool) -> Result<(), String> {
         root: cfg.destination.clone(),
         manifest,
         restore: true,
+        restore_policy: RestorePolicy::Ask,
         planning: false,
         dry_run: true,
         clean: cfg.clean,

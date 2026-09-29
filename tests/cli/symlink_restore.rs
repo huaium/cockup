@@ -1,6 +1,97 @@
 use super::*;
 
 #[test]
+fn restore_policies_apply_to_dereferenced_target_and_link() {
+    use std::os::unix::fs::symlink;
+    let dir = TempDir::new().unwrap();
+    let root = dir.path();
+    write(root, "original/file", "saved");
+    fs::create_dir(root.join("source")).unwrap();
+    symlink("../original/file", root.join("source/link")).unwrap();
+    write(
+        root,
+        "config.yaml",
+        "symlinks: dereference\ndestination: backup\nrules:\n  - from: source\n    targets: [link]\n    to: files\n",
+    );
+    assert!(
+        cli(root, &["backup", "config.yaml", "-a"], "")
+            .status
+            .success()
+    );
+    write(root, "original/file", "local");
+    fs::remove_file(root.join("source/link")).unwrap();
+    symlink("../original/other", root.join("source/link")).unwrap();
+
+    let skipped = cli(root, &["restore", "config.yaml", "-s"], "");
+    assert!(skipped.status.success(), "{}", text(&skipped));
+    assert_eq!(
+        fs::read_to_string(root.join("original/file")).unwrap(),
+        "local"
+    );
+    assert_eq!(
+        fs::read_link(root.join("source/link")).unwrap(),
+        Path::new("../original/other")
+    );
+
+    let overridden = cli(root, &["restore", "config.yaml", "-o"], "");
+    assert!(overridden.status.success(), "{}", text(&overridden));
+    assert_eq!(
+        fs::read_to_string(root.join("original/file")).unwrap(),
+        "saved"
+    );
+    assert_eq!(
+        fs::read_link(root.join("source/link")).unwrap(),
+        Path::new("../original/file")
+    );
+}
+
+#[test]
+fn restore_reviews_existing_symlink_before_replacing_it() {
+    use std::os::unix::fs::symlink;
+    let dir = TempDir::new().unwrap();
+    let root = dir.path();
+    write(root, "source/first", "one");
+    write(root, "source/second", "two");
+    symlink("first", root.join("source/link")).unwrap();
+    write(
+        root,
+        "config.yaml",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [link]\n    to: files\n",
+    );
+    assert!(
+        cli(root, &["backup", "config.yaml", "-a"], "")
+            .status
+            .success()
+    );
+    fs::remove_file(root.join("source/link")).unwrap();
+    symlink("second", root.join("source/link")).unwrap();
+
+    let declined = cli(root, &["restore", "config.yaml", "-a"], "n\n");
+    assert!(declined.status.success(), "{}", text(&declined));
+    assert!(
+        text(&declined).contains("-link -> first"),
+        "{}",
+        text(&declined)
+    );
+    assert!(
+        text(&declined).contains("+link -> second"),
+        "{}",
+        text(&declined)
+    );
+    assert_eq!(
+        fs::read_link(root.join("source/link")).unwrap(),
+        Path::new("second")
+    );
+
+    let accepted = cli(root, &["restore", "config.yaml", "-a"], "y\n");
+    assert!(accepted.status.success(), "{}", text(&accepted));
+    assert_eq!(
+        fs::read_link(root.join("source/link")).unwrap(),
+        Path::new("first")
+    );
+}
+
+#[test]
 fn dry_run_dereference_restore_previews_target_and_link_without_changes() {
     let d = TempDir::new().unwrap();
     let p = d.path();
@@ -11,7 +102,7 @@ fn dry_run_dereference_restore_previews_target_and_link_without_changes() {
         "config.yaml",
         "symlinks: dereference\ndestination: backup\nrules:\n  - from: source\n    targets: [link]\n    to: files\n",
     );
-    let backup = cli(p, &["backup", "config.yaml", "-q"], "");
+    let backup = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(backup.status.success(), "{}", text(&backup));
     fs::remove_file(p.join("source/link")).unwrap();
     write(p, "source/original", "changed");
@@ -43,7 +134,7 @@ fn manifest_restores_dereferenced_contents_and_recreates_original_links() {
         "config.yaml",
         "symlinks: dereference\ndestination: backup\nrules:\n  - from: source\n    targets: [link]\n    to: files\n",
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     let manifest: serde_json::Value =
         serde_json::from_slice(&fs::read(p.join("backup/.cockup-symlinks.json")).unwrap()).unwrap();
@@ -52,7 +143,7 @@ fn manifest_restores_dereferenced_contents_and_recreates_original_links() {
     assert_eq!(manifest["links"][0]["mode"], "dereference");
     fs::remove_file(p.join("source/link")).unwrap();
     write(p, "original/file", "changed");
-    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    let out = cli(p, &["restore", "config.yaml", "-a"], "y\n");
     assert!(out.status.success(), "{}", text(&out));
     assert_eq!(
         fs::read_link(p.join("source/link")).unwrap(),
@@ -87,7 +178,7 @@ fn restore_asks_once_to_map_backup_home_for_contents_and_links() {
         );
         let out = Command::new(env!("CARGO_BIN_EXE_cockup"))
             .current_dir(p)
-            .args(["backup", "config.yaml", "-q"])
+            .args(["backup", "config.yaml", "-a"])
             .env("HOME", &old)
             .env("USER", "alice")
             .output()
@@ -96,7 +187,7 @@ fn restore_asks_once_to_map_backup_home_for_contents_and_links() {
         fs::remove_dir_all(&old).unwrap();
         let mut child = Command::new(env!("CARGO_BIN_EXE_cockup"))
             .current_dir(p)
-            .args(["restore", "config.yaml", "-q"])
+            .args(["restore", "config.yaml", "-a"])
             .env("HOME", &new)
             .env("USER", "bob")
             .stdin(Stdio::piped())
@@ -145,30 +236,30 @@ fn failed_backup_keeps_manifest_and_blocks_restore_until_a_successful_backup() {
         "symlinks: dereference\ndestination: backup\nrules:\n  - from: source\n    targets: [link]\n    to: files\n",
     );
     assert!(
-        cli(p, &["backup", "config.yaml", "-q"], "")
+        cli(p, &["backup", "config.yaml", "-a"], "")
             .status
             .success()
     );
     let previous = fs::read(p.join("backup/.cockup-symlinks.json")).unwrap();
     fs::remove_file(p.join("original")).unwrap();
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert_eq!(out.status.code(), Some(1));
     assert_eq!(
         fs::read(p.join("backup/.cockup-symlinks.json")).unwrap(),
         previous
     );
-    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    let out = cli(p, &["restore", "config.yaml", "-a"], "");
     assert_eq!(out.status.code(), Some(1), "{}", text(&out));
     assert!(!p.join("original").exists());
     write(p, "original", "new");
     assert!(
-        cli(p, &["backup", "config.yaml", "-q"], "")
+        cli(p, &["backup", "config.yaml", "-a"], "")
             .status
             .success()
     );
     fs::remove_file(p.join("original")).unwrap();
     assert!(
-        cli(p, &["restore", "config.yaml", "-q"], "")
+        cli(p, &["restore", "config.yaml", "-a"], "")
             .status
             .success()
     );
@@ -190,7 +281,7 @@ fn restore_rejects_missing_or_invalid_manifest_before_writing_dereferenced_files
         if let Some(manifest) = manifest {
             write(p, "backup/.cockup-symlinks.json", manifest);
         }
-        let out = cli(p, &["restore", "config.yaml", "-q"], "");
+        let out = cli(p, &["restore", "config.yaml", "-a"], "");
         assert_eq!(out.status.code(), Some(1), "{}", text(&out));
         assert_eq!(
             fs::read_to_string(p.join("source/link")).unwrap(),
@@ -214,13 +305,13 @@ fn dereference_restores_a_chain_of_relative_symlinks() {
         "symlinks: dereference\ndestination: backup\nrules:\n  - from: source\n    targets: [link]\n    to: files\n",
     );
     assert!(
-        cli(p, &["backup", "config.yaml", "-q"], "")
+        cli(p, &["backup", "config.yaml", "-a"], "")
             .status
             .success()
     );
     fs::remove_file(p.join("source/link")).unwrap();
     fs::remove_dir_all(p.join("original")).unwrap();
-    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    let out = cli(p, &["restore", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     assert_eq!(fs::read_to_string(p.join("source/link")).unwrap(), "saved");
     assert_eq!(
@@ -244,7 +335,7 @@ fn backup_reserves_manifest_paths_before_cleaning() {
         "config.yaml",
         "symlinks: reference\nclean: true\ndestination: backup\nrules:\n  - from: source\n    targets: ['.cockup-symlinks.json']\n    to: .\n",
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert_eq!(out.status.code(), Some(1), "{}", text(&out));
     assert_eq!(fs::read_to_string(p.join("backup/keep")).unwrap(), "keep");
 }
@@ -263,7 +354,7 @@ fn home_choice_applies_to_tilde_rules_without_links_and_missing_input_aborts() {
     );
     let out = Command::new(env!("CARGO_BIN_EXE_cockup"))
         .current_dir(p)
-        .args(["backup", "config.yaml", "-q"])
+        .args(["backup", "config.yaml", "-a"])
         .env("HOME", &old)
         .env("USER", "alice")
         .output()
@@ -273,7 +364,7 @@ fn home_choice_applies_to_tilde_rules_without_links_and_missing_input_aborts() {
     for answer in ["", "invalid\noriginal\n"] {
         let mut child = Command::new(env!("CARGO_BIN_EXE_cockup"))
             .current_dir(p)
-            .args(["restore", "config.yaml", "-q"])
+            .args(["restore", "config.yaml", "-a"])
             .env("HOME", &new)
             .env("USER", "bob")
             .stdin(Stdio::piped())
@@ -323,7 +414,7 @@ fn clean_backup_replaces_previous_user_identity_and_link_records() {
         }
         let out = Command::new(env!("CARGO_BIN_EXE_cockup"))
             .current_dir(p)
-            .args(["backup", "config.yaml", "-q"])
+            .args(["backup", "config.yaml", "-a"])
             .env("HOME", &home)
             .env("USER", user)
             .output()
@@ -342,7 +433,7 @@ fn clean_backup_replaces_previous_user_identity_and_link_records() {
     fs::remove_file(p.join("bob/config/file")).unwrap();
     let out = Command::new(env!("CARGO_BIN_EXE_cockup"))
         .current_dir(p)
-        .args(["restore", "config.yaml", "-q"])
+        .args(["restore", "config.yaml", "-a"])
         .env("HOME", p.join("bob"))
         .env("USER", "bob")
         .stdin(Stdio::null())

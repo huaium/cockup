@@ -74,23 +74,26 @@ fn template_prints_commented_complete_valid_yaml() {
     assert!(yaml.contains("Required:"));
     assert!(yaml.contains("Optional:"));
     write(dir.path(), "config.yaml", &yaml);
-    let loaded = cli(dir.path(), &["backup", "config.yaml", "-q"], "");
+    let loaded = cli(dir.path(), &["backup", "config.yaml", "-a"], "");
     assert!(loaded.status.success(), "{}", text(&loaded));
 }
 
 #[test]
-fn quiet_accepts_only_quiet_and_q_flags() {
+fn approve_hooks_accepts_only_approve_hooks_and_a_flags() {
     let dir = TempDir::new().unwrap();
     write(
         dir.path(),
         "config.yaml",
         "symlinks: reference\ndestination: backup\nrules: []\n",
     );
-    for flag in ["--quiet", "-q"] {
+    for flag in ["--approve-hooks", "-a"] {
         let out = cli(dir.path(), &["backup", "config.yaml", flag], "");
         assert!(out.status.success(), "{}", text(&out));
     }
-    for flag in ["--yes", "-y"] {
+    let help = cli(dir.path(), &["backup", "--help"], "");
+    assert!(text(&help).contains("--approve-hooks"));
+    assert!(text(&help).contains("Run configured hooks without asking"));
+    for flag in ["--quiet", "-q", "--yes", "-y"] {
         let out = cli(dir.path(), &["backup", "config.yaml", flag], "");
         assert_eq!(out.status.code(), Some(2), "{}", text(&out));
     }
@@ -111,7 +114,7 @@ fn documented_sample_checks_have_expected_exit_statuses() {
     write(p, "config.yaml", include_str!("../../sample/hooks.yaml"));
     let pass = cli(
         p,
-        &["hook", "config.yaml", "-q", "--name", "Check created file"],
+        &["hook", "config.yaml", "-a", "--name", "Check created file"],
         "",
     );
     assert!(pass.status.success(), "{}", text(&pass));
@@ -119,7 +122,7 @@ fn documented_sample_checks_have_expected_exit_statuses() {
     assert!(!p.join(".hook-check-result.txt").exists());
     let fail = cli(
         p,
-        &["hook", "config.yaml", "-q", "--name", "Check failure"],
+        &["hook", "config.yaml", "-a", "--name", "Check failure"],
         "",
     );
     assert_eq!(fail.status.code(), Some(1));
@@ -139,7 +142,7 @@ fn backup_and_restore_progress_use_green_with_color_enabled() {
     for command in ["backup", "restore"] {
         let out = Command::new(env!("CARGO_BIN_EXE_cockup"))
             .current_dir(p)
-            .args([command, "config.yaml", "-q"])
+            .args([command, "config.yaml", "-a"])
             .env_remove("NO_COLOR")
             .env("FORCE_COLOR", "1")
             .output()
@@ -178,7 +181,7 @@ fn backup_and_restore_report_original_operation_progress() {
         "config.yaml",
         "symlinks: reference\nclean: true\nmetadata: false\ndestination: backup\nrules:\n  - from: source\n    targets: ['*.txt', 'folder*']\n    to: files\nhooks:\n  post-backup:\n    - name: done\n      command: [sh, -c, 'true']\n",
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     let stdout = String::from_utf8_lossy(&out.stdout);
     for expected in [
@@ -201,7 +204,7 @@ fn backup_and_restore_report_original_operation_progress() {
         stdout.find("File copied:").unwrap() < stdout.find("Running post-backup hooks...").unwrap()
     );
     assert!(!p.join("backup/stale").exists());
-    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    let out = cli(p, &["restore", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     assert!(text(&out).contains("Starting restore..."));
 }

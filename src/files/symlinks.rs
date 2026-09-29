@@ -1,7 +1,7 @@
 use super::{
     copy::copy,
     paths::{check_overlap, remove, resolved},
-    state::CopyState,
+    state::{CopyState, RestorePolicy},
 };
 use crate::{
     config::Symlinks,
@@ -12,6 +12,50 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
+
+fn review_link(dst: &Path, target: &Path, state: &CopyState) -> Result<bool, String> {
+    if state.dry_run {
+        return Ok(true);
+    }
+    let existing = match fs::symlink_metadata(dst) {
+        Ok(value) => value,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(true),
+        Err(error) => return Err(format!("{}: {error}", dst.display())),
+    };
+    match state.restore_policy {
+        RestorePolicy::Override => return Ok(true),
+        RestorePolicy::SkipExisting => {
+            report::warning(&format!(
+                "Keeping existing local path: {}",
+                report::display_path(dst)
+            ));
+            return Ok(false);
+        }
+        RestorePolicy::Ask => {}
+    }
+    let current = if existing.is_symlink() {
+        let link = fs::read_link(dst).map_err(|e| e.to_string())?;
+        if link == target {
+            return Ok(true);
+        }
+        format!("link -> {}", link.display())
+    } else {
+        "not a symlink".into()
+    };
+    report::warning(&format!(
+        "Existing local path differs: {}",
+        report::display_path(dst)
+    ));
+    report::diff_lines(&format!("-link -> {}\n+{current}\n", target.display()));
+    let overwrite = report::confirm_with_prompt("Overwrite local file? [y/N]: ")?;
+    if !overwrite {
+        report::warning(&format!(
+            "Keeping local path: {}",
+            report::display_path(dst)
+        ));
+    }
+    Ok(overwrite)
+}
 
 pub(super) fn restore_link(
     src: &Path,
@@ -29,6 +73,7 @@ pub(super) fn restore_link(
     {
         let link = state.manifest.links.remove(index);
         let updating = fs::symlink_metadata(dst).is_ok();
+        let mut restored = false;
         let result = (|| -> Result<(), String> {
             check_overlap(src, dst)?;
             if link.mode == Symlinks::Dereference {
@@ -46,8 +91,15 @@ pub(super) fn restore_link(
                 if state.dry_run {
                     for entry in link.target_chain.iter().rev() {
                         let location = state.mapped(&entry.location);
+                        let action = if state.restore_policy == RestorePolicy::SkipExisting
+                            && fs::symlink_metadata(&location).is_ok()
+                        {
+                            "keep"
+                        } else {
+                            "restore"
+                        };
                         println!(
-                            "Would restore symlink: {} -> {}",
+                            "Would {action} symlink: {} -> {}",
                             location.display(),
                             state
                                 .link_target(&entry.location, &entry.target, &location)
@@ -58,21 +110,28 @@ pub(super) fn restore_link(
                 if !state.dry_run {
                     for entry in link.target_chain.iter().rev() {
                         let location = state.mapped(&entry.location);
+                        let target = state.link_target(&entry.location, &entry.target, &location);
+                        if !review_link(&location, &target, state)? {
+                            continue;
+                        }
                         fs::create_dir_all(location.parent().unwrap())
                             .map_err(|e| e.to_string())?;
                         remove(&location).map_err(|e| e.to_string())?;
-                        std::os::unix::fs::symlink(
-                            state.link_target(&entry.location, &entry.target, &location),
-                            &location,
-                        )
-                        .map_err(|e| e.to_string())?;
+                        std::os::unix::fs::symlink(&target, &location)
+                            .map_err(|e| e.to_string())?;
                     }
                 }
             }
             if state.dry_run {
+                let action = if updating && state.restore_policy == RestorePolicy::SkipExisting {
+                    "keep"
+                } else if updating {
+                    "replace"
+                } else {
+                    "restore"
+                };
                 println!(
-                    "Would {} symlink: {} -> {}",
-                    if updating { "replace" } else { "restore" },
+                    "Would {action} symlink: {} -> {}",
                     dst.display(),
                     state
                         .link_target(&link.location, &link.target, dst)
@@ -83,16 +142,20 @@ pub(super) fn restore_link(
             if let Some(parent) = dst.parent() {
                 fs::create_dir_all(parent).map_err(|e| e.to_string())?;
             }
+            let target = state.link_target(&link.location, &link.target, dst);
+            if !review_link(dst, &target, state)? {
+                return Ok(());
+            }
             remove(dst).map_err(|e| e.to_string())?;
-            std::os::unix::fs::symlink(state.link_target(&link.location, &link.target, dst), dst)
-                .map_err(|e| e.to_string())?;
+            std::os::unix::fs::symlink(&target, dst).map_err(|e| e.to_string())?;
+            restored = true;
             Ok(())
         })();
         state
             .manifest
             .links
             .insert(index.min(state.manifest.links.len()), link);
-        if result.is_ok() && !state.dry_run {
+        if result.is_ok() && restored {
             report::copied("Symlink", updating, dst);
         }
         return Some(result);

@@ -11,7 +11,7 @@ fn diff_shows_unified_text_changes_and_summary_can_hide_them() {
         "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n",
     );
     assert!(
-        cli(root, &["backup", "config.yaml", "-q"], "")
+        cli(root, &["backup", "config.yaml", "-a"], "")
             .status
             .success()
     );
@@ -49,7 +49,7 @@ fn diff_shows_missing_file_lines_and_binary_fallback() {
         "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [text, binary]\n    to: files\n",
     );
     assert!(
-        cli(root, &["backup", "config.yaml", "-q"], "")
+        cli(root, &["backup", "config.yaml", "-a"], "")
             .status
             .success()
     );
@@ -72,7 +72,7 @@ fn diff_reports_changed_missing_and_extra_files_without_writes_or_hooks() {
         "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [files]\n    to: files\nhooks:\n  pre-restore:\n    - name: should-not-run\n      command: [sh, -c, 'touch hook-ran']\n",
     );
     assert!(
-        cli(root, &["backup", "config.yaml", "-q"], "")
+        cli(root, &["backup", "config.yaml", "-a"], "")
             .status
             .success()
     );
@@ -115,7 +115,7 @@ fn diff_respects_reference_and_dereference_symlink_modes() {
             ),
         );
         assert!(
-            cli(root, &["backup", "config.yaml", "-q"], "")
+            cli(root, &["backup", "config.yaml", "-a"], "")
                 .status
                 .success()
         );
@@ -141,7 +141,7 @@ fn diff_rejects_incomplete_backup() {
         "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n",
     );
     assert!(
-        cli(root, &["backup", "config.yaml", "-q"], "")
+        cli(root, &["backup", "config.yaml", "-a"], "")
             .status
             .success()
     );
@@ -165,7 +165,7 @@ fn diff_rejects_backup_link_with_wrong_type() {
         "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [link]\n    to: files\n",
     );
     assert!(
-        cli(root, &["backup", "config.yaml", "-q"], "")
+        cli(root, &["backup", "config.yaml", "-a"], "")
             .status
             .success()
     );
@@ -193,7 +193,7 @@ fn diff_asks_once_for_cross_user_home_mapping() {
         .current_dir(root)
         .env("HOME", &alice)
         .env("USER", "alice")
-        .args(["backup", "config.yaml", "-q"])
+        .args(["backup", "config.yaml", "-a"])
         .output()
         .unwrap();
     assert!(backup.status.success(), "{}", text(&backup));

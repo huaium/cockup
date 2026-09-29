@@ -94,6 +94,14 @@ cockup backup /path/to/config.yaml
 cockup restore /path/to/config.yaml
 ```
 
+Restore shows a diff and asks before replacing each conflicting local file or
+symlink. Declining keeps that path. Existing directories are merged so choices
+for individual files are respected; local-only entries remain in place.
+Use `restore --override` (`-o`) to replace conflicting paths without prompts,
+or `restore --skip-existing` (`-s`) to keep every existing file and symlink while
+restoring missing ones. The flags cannot be combined. `--approve-hooks` only
+controls hook confirmation.
+
 Use `--dry-run` with `backup` or `restore` to preview copies, replacements,
 symlink restoration, and clean-mode removals. It reads the configuration and
 backup but does not write files, change the manifest, or run hooks. Symlink and
@@ -103,6 +111,7 @@ destinations.
 ```sh
 cockup backup /path/to/config.yaml --dry-run
 cockup restore /path/to/config.yaml --dry-run
+cockup restore /path/to/config.yaml --skip-existing --dry-run
 ```
 
 Use `verify` before restore to check that the backup is complete, its symlink
@@ -178,7 +187,7 @@ The root value is the default; include objects and rules can override it:
 | `prompt` | Ask once during backup: `r`/`reference` or `d`/`dereference`; apply the decision to all links. |
 
 The policy applies to matched entries and symlinks encountered while recursively
-copying directories. In `prompt` mode, `--quiet` only suppresses hook confirmation;
+copying directories. In `prompt` mode, `--approve-hooks` only suppresses hook confirmation;
 it does not answer symlink questions. Invalid answers are prompted again; closed
 input reports an error. Use `reference` or `dereference` for unattended runs. Dereferencing broken
 links, cycles, or overlapping source/destination paths reports an error. Link
@@ -205,7 +214,7 @@ When restoring paths belonging to a different backup user/home, Cockup asks once
 `c`/`current` maps them to the current home; `o`/`original` retains the old home.
 The choice applies to file locations, restored target contents, and link targets,
 including relative links that explicitly name the old user. It matches home-path
-prefixes, not arbitrary username text. `--quiet` does not skip this question.
+prefixes, not arbitrary username text. `--approve-hooks` does not skip this question.
 Invalid or missing input aborts before restoration writes.
 
 The manifest is replaced atomically after a successful backup. A failed or
@@ -290,7 +299,7 @@ We will finally get:
 
 Hooks support custom commands.
 
-By default, you will be prompted to confirm if your configuration file contains any hooks. Use the flag `--quiet` or `-q` to suppress it.
+By default, you will be prompted to confirm if your configuration file contains any hooks. Use the flag `--approve-hooks` or `-a` to suppress it.
 
 If you want to run them within a specified shell, use commands like `bash -c` after ensuring your commands are safe.
 
@@ -366,7 +375,7 @@ Existing configurations must add `symlinks: reference` to retain link-copying be
 Commands and other YAML fields remain compatible except for `include`, which now
 requires objects with a `file` field. Relative paths resolve against each
 configuration file's directory. Invalid configuration and include cycles fail before
-execution. Hook confirmation happens once; `--quiet` or `-q` covers included hooks.
+execution. Hook confirmation happens once; `--approve-hooks` or `-a` covers included hooks.
 
 Exit codes are 0 for success or declined confirmation, 1 for configuration/copy/hook/
 Homebrew failures, and 2 for CLI usage errors. Recoverable failures do not stop later

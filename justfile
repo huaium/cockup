@@ -108,4 +108,4 @@ sample-diff CASE="basic":
 
 # Run a named sample hook, or select interactively when NAME is omitted.
 sample-hook NAME="":
-    cargo run --locked -- hook sample/hooks.yaml --quiet {{ if NAME == "" { "" } else { "--name " + quote(NAME) } }}
+    cargo run --locked -- hook sample/hooks.yaml --approve-hooks {{ if NAME == "" { "" } else { "--name " + quote(NAME) } }}

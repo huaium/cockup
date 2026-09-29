@@ -50,8 +50,11 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
   without following them; destination contents remain subject to normal cleanup. `.cockup-symlinks.json` records
   modes, locations, targets/chains and user/home identity. Restore uses recorded
   modes: reference recreates only links; dereference restores contents then links.
-  Cross-user restore asks once for current/original home mapping. Quiet only skips
-  hook confirmation. Atomically replace manifests on success; incomplete backups
+  Cross-user restore asks once for current/original home mapping. Restore prompts
+  for conflicting local files and links; `--override` replaces without prompting,
+  while `--skip-existing` keeps all existing entries. Existing directories merge
+  and retain local-only children. `--approve-hooks` only skips hook confirmation.
+  Atomically replace manifests on success; incomplete backups
   block restore until a successful rerun. Preserve
   permissions; metadata mode also preserves file/link timestamps and macOS flags.
 - Hooks: sequential command/check argument vectors (no implicit shell), inherited

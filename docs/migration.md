@@ -2,9 +2,10 @@
 
 ## Compatibility
 
-The YAML field names and CLI commands are retained, including `check`, `env`,
-and the `-q`/`--quiet` confirmation flags. The former `-y`/`--yes` aliases are
-no longer accepted. Checks run only after successful
+The YAML field names and CLI commands are retained, including `check` and `env`.
+Use `-a`/`--approve-hooks` to approve hook execution without a confirmation prompt;
+the former `-q`/`--quiet` and `-y`/`--yes` flags are no longer accepted.
+Checks run only after successful
 commands. Timeout is optional and applies independently to command and check;
 the direct child is killed and reaped on timeout (not its entire process tree).
 
@@ -44,7 +45,7 @@ targets by adjusting relative paths; restore recreates the recorded link text.
 Links into source or destination are allowed. Cleanup never follows symlinks when
 deleting; files inside the cleaned destination are still removed normally.
 Different-home restores ask once whether to map home prefixes to the current user
-or keep the original paths, even with `--quiet`. Blank/invalid input aborts before
+or keep the original paths, even with `--approve-hooks`. Blank/invalid input aborts before
 restore writes. The JSON manifest is atomically replaced on successful backup;
 failed/interrupted operations leave `.cockup-incomplete`, blocking restore until
 backup succeeds. Completed copies are not rolled back. Missing manifests support

@@ -32,7 +32,7 @@ hooks:
       check: [sh, -c, 'test "$(cat ../order)" = prestartendpost']
 "#,
     );
-    let out = cli(p, &["backup", "config.yaml", "-q"], "");
+    let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     assert_eq!(
         fs::read_to_string(p.join("order")).unwrap(),
@@ -61,29 +61,29 @@ hooks:
       command: [sh, -c, 'printf good > marker']
 "#,
     );
-    let out = cli(p, &["hook", "config.yaml", "-q", "-n", "bad"], "");
+    let out = cli(p, &["hook", "config.yaml", "-a", "-n", "bad"], "");
     assert_eq!(out.status.code(), Some(1), "{}", text(&out));
     assert!(text(&out).contains("Completed 0/1 hook. Error: 1 hook failed."));
     assert!(text(&out).contains("check"));
     assert!(!p.join("marker").exists());
-    let out = cli(p, &["hook", "config.yaml", "--quiet"], "1,2\n");
+    let out = cli(p, &["hook", "config.yaml", "--approve-hooks"], "1,2\n");
     assert_eq!(out.status.code(), Some(1));
     assert_eq!(fs::read_to_string(p.join("marker")).unwrap(), "good");
     assert!(text(&out).contains("Completed 1/2 hooks"));
     assert_eq!(
-        cli(p, &["hook", "config.yaml", "-q", "-n", "missing"], "")
+        cli(p, &["hook", "config.yaml", "-a", "-n", "missing"], "")
             .status
             .code(),
         Some(1)
     );
     assert_eq!(
-        cli(p, &["hook", "config.yaml", "-q"], "bogus\n")
+        cli(p, &["hook", "config.yaml", "-a"], "bogus\n")
             .status
             .code(),
         Some(1)
     );
     fs::remove_file(p.join("marker")).unwrap();
-    let retried = cli(p, &["hook", "config.yaml", "-q"], "bogus\n2\n");
+    let retried = cli(p, &["hook", "config.yaml", "-a"], "bogus\n2\n");
     assert!(retried.status.success(), "{}", text(&retried));
     assert_eq!(text(&retried).matches("Select hooks").count(), 2);
     assert_eq!(fs::read_to_string(p.join("marker")).unwrap(), "good");
@@ -114,7 +114,7 @@ hooks:
         .as_str(),
     );
     for name in ["command-timeout", "check-timeout"] {
-        let out = cli(p, &["hook", "config.yaml", "-q", "-n", name], "");
+        let out = cli(p, &["hook", "config.yaml", "-a", "-n", name], "");
         assert_eq!(out.status.code(), Some(1), "{}", text(&out));
         assert!(text(&out).contains("timed out"));
     }
@@ -158,7 +158,7 @@ hooks:
     );
     let out = Command::new(env!("CARGO_BIN_EXE_cockup"))
         .current_dir(p)
-        .args(["backup", "config.yaml", "-q"])
+        .args(["backup", "config.yaml", "-a"])
         .env_remove("NO_COLOR")
         .env("FORCE_COLOR", "1")
         .output()
@@ -199,7 +199,7 @@ hooks:
       output: true
 "#,
     );
-    let out = cli(p, &["restore", "config.yaml", "-q"], "");
+    let out = cli(p, &["restore", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     assert!(!text(&out).contains("hidden"));
     assert!(text(&out).contains("visible") && text(&out).contains("checked"));
@@ -226,7 +226,7 @@ fn empty_null_and_invalid_hook_configuration_are_handled() {
             ),
         );
         assert_eq!(
-            cli(p, &["backup", "config.yaml", "-q"], "").status.code(),
+            cli(p, &["backup", "config.yaml", "-a"], "").status.code(),
             Some(1)
         );
         assert!(!p.join("backup").exists());
@@ -237,12 +237,12 @@ fn empty_null_and_invalid_hook_configuration_are_handled() {
         "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    to: .\n    targets: null\n    on-start: null\nhooks: null\n",
     );
     assert!(
-        cli(p, &["backup", "config.yaml", "-q"], "")
+        cli(p, &["backup", "config.yaml", "-a"], "")
             .status
             .success()
     );
     assert_eq!(
-        cli(p, &["hook", "config.yaml", "-q"], "").status.code(),
+        cli(p, &["hook", "config.yaml", "-a"], "").status.code(),
         Some(1)
     );
 }
@@ -260,7 +260,7 @@ fn failing_pre_hooks_stop_backup_and_restore_before_file_changes() {
             "config.yaml",
             "symlinks: reference\nclean: true\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n    on-start:\n      - name: rule\n        command: [sh, -c, 'touch ../rule-ran']\nhooks:\n  pre-backup:\n    - name: fail\n      command: [sh, -c, 'exit 1']\n    - name: later\n      command: [sh, -c, 'touch later-pre-ran']\n  pre-restore:\n    - name: fail\n      command: [sh, -c, 'exit 1']\n    - name: later\n      command: [sh, -c, 'touch later-pre-ran']\n  post-backup:\n    - name: post\n      command: [sh, -c, 'touch ../post-ran']\n  post-restore:\n    - name: post\n      command: [sh, -c, 'touch ../post-ran']\n",
         );
-        let out = cli(p, &[command, "config.yaml", "-q"], "");
+        let out = cli(p, &[command, "config.yaml", "-a"], "");
         assert_eq!(out.status.code(), Some(1), "{}", text(&out));
         assert!(
             text(&out).contains("Completed 1/2 hooks."),

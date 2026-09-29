@@ -144,7 +144,7 @@ fn ingredient_fetch_is_cached_and_restore_uses_backup_snapshot() {
     let home = dir.path();
     setup(home);
 
-    let backup = run(home, &["backup", "config.yaml", "-q"], "200");
+    let backup = run(home, &["backup", "config.yaml", "-a"], "200");
     assert!(backup.status.success(), "{}", text(&backup));
     assert_eq!(
         fs::read_to_string(home.join("backup/app/files/file")).unwrap(),
@@ -162,7 +162,7 @@ fn ingredient_fetch_is_cached_and_restore_uses_backup_snapshot() {
             .contains("/huaium/cockup/")
     );
 
-    let cached = run(home, &["backup", "config.yaml", "-q"], "404");
+    let cached = run(home, &["backup", "config.yaml", "-a"], "404");
     assert!(cached.status.success(), "{}", text(&cached));
     assert_eq!(
         fs::read_to_string(home.join("curl.calls"))
@@ -174,7 +174,7 @@ fn ingredient_fetch_is_cached_and_restore_uses_backup_snapshot() {
 
     fs::remove_file(home.join("source/file")).unwrap();
     fs::remove_file(cache.join("demo.yaml")).unwrap();
-    let restore = run(home, &["restore", "config.yaml", "-q"], "404");
+    let restore = run(home, &["restore", "config.yaml", "-a"], "404");
     assert!(restore.status.success(), "{}", text(&restore));
     assert_eq!(
         fs::read_to_string(home.join("source/file")).unwrap(),
@@ -204,7 +204,7 @@ fn stale_ingredient_uses_conditional_refresh_and_preserves_download_date_on_304(
     let home = dir.path();
     setup(home);
     assert!(
-        run(home, &["backup", "config.yaml", "-q"], "200")
+        run(home, &["backup", "config.yaml", "-a"], "200")
             .status
             .success()
     );
@@ -215,7 +215,7 @@ fn stale_ingredient_uses_conditional_refresh_and_preserves_download_date_on_304(
     metadata["checked_at_unix"] = 0.into();
     fs::write(&metadata_path, serde_json::to_vec(&metadata).unwrap()).unwrap();
 
-    let refreshed = run(home, &["backup", "config.yaml", "-q"], "304");
+    let refreshed = run(home, &["backup", "config.yaml", "-a"], "304");
     assert!(refreshed.status.success(), "{}", text(&refreshed));
     let checked: serde_json::Value =
         serde_json::from_slice(&fs::read(metadata_path).unwrap()).unwrap();
@@ -248,7 +248,7 @@ fn missing_or_invalid_remote_ingredient_fails_before_backup_changes() {
         let home = dir.path();
         setup(home);
         write(home, "remote.yaml", yaml);
-        let backup = run(home, &["backup", "config.yaml", "-q"], status);
+        let backup = run(home, &["backup", "config.yaml", "-a"], status);
         assert_eq!(backup.status.code(), Some(1), "{}", text(&backup));
         assert!(!home.join("backup").exists());
         assert!(
@@ -264,12 +264,12 @@ fn dry_run_fetches_without_writing_cache() {
     let dir = TempDir::new().unwrap();
     let home = dir.path();
     setup(home);
-    let preview = run(home, &["backup", "config.yaml", "-q", "--dry-run"], "200");
+    let preview = run(home, &["backup", "config.yaml", "-a", "--dry-run"], "200");
     assert!(preview.status.success(), "{}", text(&preview));
     assert!(!home.join("backup").exists());
     assert!(!home.join("Library/Caches/cockup/ingredients/v1").exists());
     assert!(
-        run(home, &["backup", "config.yaml", "-q"], "200")
+        run(home, &["backup", "config.yaml", "-a"], "200")
             .status
             .success()
     );
@@ -288,7 +288,7 @@ fn stale_cache_survives_network_failure_but_not_a_missing_remote_file() {
     let home = dir.path();
     setup(home);
     assert!(
-        run(home, &["backup", "config.yaml", "-q"], "200")
+        run(home, &["backup", "config.yaml", "-a"], "200")
             .status
             .success()
     );
@@ -298,10 +298,10 @@ fn stale_cache_survives_network_failure_but_not_a_missing_remote_file() {
     metadata["checked_at_unix"] = 0.into();
     fs::write(&metadata_path, serde_json::to_vec(&metadata).unwrap()).unwrap();
 
-    let offline = run(home, &["backup", "config.yaml", "-q"], "offline");
+    let offline = run(home, &["backup", "config.yaml", "-a"], "offline");
     assert!(offline.status.success(), "{}", text(&offline));
     assert!(text(&offline).contains("using cached copy"));
-    let missing = run(home, &["backup", "config.yaml", "-q"], "404");
+    let missing = run(home, &["backup", "config.yaml", "-a"], "404");
     assert_eq!(missing.status.code(), Some(1), "{}", text(&missing));
     assert!(text(&missing).contains("not found"));
 }
@@ -321,7 +321,7 @@ fn include_source_must_be_unique_and_ingredient_names_cannot_escape_cache() {
             "config.yaml",
             &format!("symlinks: reference\ndestination: backup\nrules: []\ninclude: [{include}]\n"),
         );
-        let output = run(home, &["backup", "config.yaml", "-q"], "200");
+        let output = run(home, &["backup", "config.yaml", "-a"], "200");
         assert_eq!(output.status.code(), Some(1), "{}", text(&output));
         assert!(!home.join("backup").exists());
         assert!(!home.join("curl.calls").exists());
@@ -570,7 +570,7 @@ fn documented_ingredient_sample_backs_up_verifies_and_restores() {
         include_str!("../../ingredients/library/ghostty.yaml"),
     );
 
-    let backup = run(home, &["backup", "config.yaml", "-q"], "200");
+    let backup = run(home, &["backup", "config.yaml", "-a"], "200");
     assert!(backup.status.success(), "{}", text(&backup));
     assert_eq!(
         fs::read_to_string(home.join("dst/ingredient/ghostty/.config/ghostty/config")).unwrap(),
@@ -589,7 +589,7 @@ fn documented_ingredient_sample_backs_up_verifies_and_restores() {
     assert!(diff.status.success(), "{}", text(&diff));
 
     fs::remove_file(home.join(".config/ghostty/config")).unwrap();
-    let restore = run(home, &["restore", "config.yaml", "-q"], "offline");
+    let restore = run(home, &["restore", "config.yaml", "-a"], "offline");
     assert!(restore.status.success(), "{}", text(&restore));
     assert_eq!(
         fs::read_to_string(home.join(".config/ghostty/config")).unwrap(),
