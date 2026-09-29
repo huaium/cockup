@@ -50,16 +50,16 @@ and save it in your shell's completion directory. For example:
 cockup completions zsh > _cockup
 ```
 
-### `cockup list`
+### `cockup detect`
 
 You may want to use it as a reference when writing your own backup rules.
 
 ```bash
-# List potential config paths for all installed Homebrew casks
-cockup list
+# Detect potential config paths for all installed Homebrew casks
+cockup detect
 
-# List potential config paths for specified cask
-cockup list cask-name-1 [cask-name-n...]
+# Detect potential config paths for specified casks
+cockup detect cask-name-1 [cask-name-n...]
 ```
 
 ### `cockup ingredient`
@@ -330,7 +330,7 @@ Refer to [sample](sample) to view a configuration demo.
 Use native macOS and a Rust toolchain supporting Rust 2024. No virtual environment is needed.
 
 ```sh
-cargo run --locked -- list
+cargo run --locked -- detect
 cargo test --locked
 cargo fmt --check
 cargo clippy --locked --all-targets -- -D warnings
@@ -339,7 +339,7 @@ cargo build --release --locked
 
 `just` lists recipes; `just run`, `just test`, `just build`, and sample recipes wrap Cargo.
 Tests exercise the CLI using temporary files and executable Homebrew/hook fixtures.
-For a real Homebrew smoke test, run `cargo run --locked -- list iterm2`.
+For a real Homebrew smoke test, run `cargo run --locked -- detect iterm2`.
 
 ## Migrating from Python
 

@@ -9,13 +9,14 @@ fn cli_exposes_commands_and_version() {
         "backup",
         "restore",
         "hook",
-        "list",
+        "detect",
         "template",
         "completions",
     ] {
         assert!(text(&out).contains(word), "{}", text(&out));
     }
     assert!(text(&cli(dir.path(), &["--version"], "")).contains("0.2.0"));
+    assert_eq!(cli(dir.path(), &["list"], "").status.code(), Some(2));
     assert_eq!(cli(dir.path(), &["unknown"], "").status.code(), Some(2));
 }
 

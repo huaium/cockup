@@ -55,7 +55,7 @@ fn cask(name: &str) -> Result<Vec<String>, String> {
     }
     Ok(paths)
 }
-pub fn list(mut names: Vec<String>) -> Result<(), String> {
+pub fn detect(mut names: Vec<String>) -> Result<(), String> {
     brew(&["--version"])?;
     if names.is_empty() {
         names = brew(&["list", "--casks"])?

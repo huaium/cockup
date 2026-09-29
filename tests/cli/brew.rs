@@ -30,7 +30,7 @@ esac
             .output()
             .unwrap()
     };
-    let out = run(&["list"]);
+    let out = run(&["detect"]);
     assert_eq!(out.status.code(), Some(1), "{}", text(&out));
     let output = String::from_utf8_lossy(&out.stdout);
     assert!(output.find("alpha:").unwrap() < output.find("zeta:").unwrap());
@@ -38,7 +38,7 @@ esac
     assert!(String::from_utf8_lossy(&out.stderr).contains("missing"));
     let colored = Command::new(env!("CARGO_BIN_EXE_cockup"))
         .current_dir(p)
-        .args(["list", "alpha"])
+        .args(["detect", "alpha"])
         .env("PATH", p)
         .env_remove("NO_COLOR")
         .env("FORCE_COLOR", "1")
@@ -51,9 +51,9 @@ esac
         "{}",
         text(&colored)
     );
-    assert!(run(&["list", "zeta"]).status.success());
+    assert!(run(&["detect", "zeta"]).status.success());
     fs::remove_file(p.join("brew")).unwrap();
-    let out = run(&["list"]);
+    let out = run(&["detect"]);
     assert_eq!(out.status.code(), Some(1));
     assert!(text(&out).contains("Homebrew"));
 }

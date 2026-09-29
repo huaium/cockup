@@ -26,8 +26,8 @@ pub enum Commands {
         #[arg(short, long)]
         name: Option<String>,
     },
-    /// List configuration paths from Homebrew casks
-    List { casks: Vec<String> },
+    /// Detect configuration paths from Homebrew casks
+    Detect { casks: Vec<String> },
     /// Manage downloaded ingredients
     Ingredient {
         #[command(subcommand)]

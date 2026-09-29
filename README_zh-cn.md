@@ -45,16 +45,16 @@ cockup template > config.yaml
 cockup completions zsh > _cockup
 ```
 
-### `cockup list`
+### `cockup detect`
 
 你也许会想将它作为编写备份规则的参考。
 
 ```bash
 # 列出所有已安装的 Homebrew casks 可能存在的配置路径
-cockup list
+cockup detect
 
 # 列出指定 cask 可能存在的配置路径
-cockup list cask-name-1 [cask-name-n...]
+cockup detect cask-name-1 [cask-name-n...]
 ```
 
 ### `cockup ingredient`
@@ -301,7 +301,7 @@ Cockup 首次使用时从本仓库下载具名配料，缓存在 `~/Library/Cach
 使用原生 macOS 和支持 Rust 2024 的 Rust 工具链，无需虚拟环境。
 
 ```sh
-cargo run --locked -- list
+cargo run --locked -- detect
 cargo test --locked
 cargo fmt --check
 cargo clippy --locked --all-targets -- -D warnings
@@ -310,7 +310,7 @@ cargo build --release --locked
 
 `just` 显示所有命令；`just run`、`just test`、`just build` 和样例命令调用 Cargo。
 测试通过 CLI 和临时文件验证行为，使用可执行脚本模拟 Homebrew 和 Hooks。
-真实的 Homebrew 验证可运行 `cargo run --locked -- list iterm2`。
+真实的 Homebrew 验证可运行 `cargo run --locked -- detect iterm2`。
 
 ## 从 Python 迁移
 

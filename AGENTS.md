@@ -19,7 +19,7 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
 
 ## Architecture
 
-- CLI: clap subcommands `backup`, `restore`, `verify`, `hook`, `list`, `ingredient`, `template`, and `completions`.
+- CLI: clap subcommands `backup`, `restore`, `verify`, `hook`, `detect`, `ingredient`, `template`, and `completions`.
   `template` prints a commented, valid YAML starter to stdout.
   `completions` prints generated Bash, Zsh, Fish, PowerShell, or Elvish scripts.
   Backup and restore accept `--dry-run` to preview changes without writes or hooks.

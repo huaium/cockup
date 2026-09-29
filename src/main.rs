@@ -70,7 +70,7 @@ fn run() -> Result<(), String> {
                 hooks::select(&cfg, name.as_deref())?;
             }
         }
-        Commands::List { casks } => brew::list(casks)?,
+        Commands::Detect { casks } => brew::detect(casks)?,
         Commands::Ingredient { command } => match command {
             IngredientCommand::Update { name } => ingredients::update(&name)?,
             IngredientCommand::Status { name } => ingredients::status(name.as_deref())?,

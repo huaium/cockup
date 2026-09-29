@@ -64,7 +64,7 @@ help each went through observed failing tests before implementation. Additional
 regression cases cover restore lifecycle, output controls, null values and dotfiles.
 The Python reference suite passed all 165 tests before cutover.
 
-A native `cockup list iterm2` smoke test succeeded. The local Apple Silicon release
+A native Homebrew discovery smoke test succeeded. The local Apple Silicon release
 build succeeds. Intel compilation requires the missing `x86_64-apple-darwin`
 standard library; the workflow tests/builds on a native Intel runner. CI has not
 been run from this local session.
