@@ -358,7 +358,7 @@ pub fn update(name: &str) -> Result<(), String> {
     }
     Resolver::new(Mode::ForceUpdate).resolve(name)?;
     println!("Ingredient `{name}` checked against GitHub.");
-    status(Some(name))
+    status(name)
 }
 
 fn utc_time(seconds: u64) -> String {
@@ -385,13 +385,9 @@ fn utc_time(seconds: u64) -> String {
     format!("{year:04}-{month:02}-{day:02} {hour:02}:{minute:02}:{second:02} UTC")
 }
 
-pub fn status(name: Option<&str>) -> Result<(), String> {
-    let dir = cache_dir()?;
-    let names = if let Some(name) = name {
-        validate_name(name)?;
-        vec![name.to_string()]
-    } else if dir.exists() {
-        let mut names = Vec::new();
+fn cached_names() -> Result<Vec<String>, String> {
+    let mut names = Vec::new();
+    if let Some(dir) = checked_cache_dir()? {
         for entry in fs::read_dir(&dir).map_err(|error| error.to_string())? {
             let entry = entry.map_err(|error| error.to_string())?;
             let path = entry.path();
@@ -400,37 +396,105 @@ pub fn status(name: Option<&str>) -> Result<(), String> {
                 .is_some_and(|extension| extension == "json")
                 && let Some(stem) = path.file_stem().and_then(|stem| stem.to_str())
                 && validate_name(stem).is_ok()
+                && read_cache(stem, &dir).is_some()
             {
                 names.push(stem.to_string());
             }
         }
         names.sort();
-        names
-    } else {
-        Vec::new()
-    };
+    }
+    Ok(names)
+}
+
+pub fn cache_list() -> Result<(), String> {
+    let names = cached_names()?;
     if names.is_empty() {
         println!("No cached ingredients.");
-        return Ok(());
-    }
-    for name in names {
-        let (_, metadata) = read_cache(&name, &dir)
-            .ok_or_else(|| format!("Ingredient `{name}` has no valid cached YAML and metadata"))?;
-        let source = if metadata.source.is_empty() {
-            source_url(&name)
-        } else {
-            metadata.source
-        };
+    } else {
+        let dir = cache_dir()?;
         let time = now();
-        let fresh = metadata.checked_at_unix <= time
-            && time - metadata.checked_at_unix < REFRESH_AFTER.as_secs();
-        println!("{name}:");
-        println!("  Source: {source}");
-        println!("  Downloaded: {}", utc_time(metadata.downloaded_at_unix));
-        println!("  Checked: {}", utc_time(metadata.checked_at_unix));
-        println!("  ETag: {}", metadata.etag.as_deref().unwrap_or("none"));
-        println!("  Cache: {}", if fresh { "fresh" } else { "stale" });
+        for name in names {
+            let (_, metadata) = read_cache(&name, &dir).ok_or_else(|| {
+                format!("Ingredient `{name}` has no valid cached YAML and metadata")
+            })?;
+            let fresh = metadata.checked_at_unix <= time
+                && time - metadata.checked_at_unix < REFRESH_AFTER.as_secs();
+            println!(
+                "{name}: {} (checked {})",
+                if fresh { "fresh" } else { "stale" },
+                utc_time(metadata.checked_at_unix)
+            );
+        }
     }
+    Ok(())
+}
+
+pub fn cache_status() -> Result<(), String> {
+    println!("Cache: {}", cache_root()?.display());
+    println!("Downloaded ingredients: {}", cached_names()?.len());
+    catalog::status(&cache_dir()?)
+}
+
+pub fn refresh(
+    name: Option<&str>,
+    all_ingredients: bool,
+    catalog_only: bool,
+) -> Result<(), String> {
+    if let Some(name) = name {
+        return update(name);
+    }
+    let mut failures = 0;
+    if !catalog_only {
+        let names = cached_names()?;
+        if names.is_empty() {
+            println!("No downloaded ingredients to refresh.");
+        }
+        for name in names {
+            if let Err(error) = update(&name) {
+                report::error(&error);
+                failures += 1;
+            }
+        }
+    }
+    if !all_ingredients && let Err(error) = catalog::refresh(&cache_dir()?) {
+        report::error(&error);
+        failures += 1;
+    }
+    if failures > 0 {
+        Err(format!("Failed to refresh {failures} cache item(s)"))
+    } else {
+        Ok(())
+    }
+}
+
+pub fn delete_catalog() -> Result<(), String> {
+    if let Some(dir) = checked_cache_dir()? {
+        catalog::delete(&dir)
+    } else {
+        println!("Ingredient catalog is not cached.");
+        Ok(())
+    }
+}
+
+pub fn status(name: &str) -> Result<(), String> {
+    let dir = cache_dir()?;
+    validate_name(name)?;
+    let (_, metadata) = read_cache(name, &dir)
+        .ok_or_else(|| format!("Ingredient `{name}` has no valid cached YAML and metadata"))?;
+    let source = if metadata.source.is_empty() {
+        source_url(name)
+    } else {
+        metadata.source
+    };
+    let time = now();
+    let fresh = metadata.checked_at_unix <= time
+        && time - metadata.checked_at_unix < REFRESH_AFTER.as_secs();
+    println!("{name}:");
+    println!("  Source: {source}");
+    println!("  Downloaded: {}", utc_time(metadata.downloaded_at_unix));
+    println!("  Checked: {}", utc_time(metadata.checked_at_unix));
+    println!("  ETag: {}", metadata.etag.as_deref().unwrap_or("none"));
+    println!("  Cache: {}", if fresh { "fresh" } else { "stale" });
     Ok(())
 }
 
@@ -476,6 +540,31 @@ pub fn delete(names: &[String]) -> Result<(), String> {
         Err(format!("Failed to delete {failed} ingredient(s)"))
     } else {
         Ok(())
+    }
+}
+
+pub fn delete_all() -> Result<(), String> {
+    let mut names = Vec::new();
+    if let Some(dir) = checked_cache_dir()? {
+        for entry in fs::read_dir(&dir).map_err(|error| error.to_string())? {
+            let path = entry.map_err(|error| error.to_string())?.path();
+            if path
+                .extension()
+                .is_some_and(|extension| extension == "yaml" || extension == "json")
+                && let Some(name) = path.file_stem().and_then(|name| name.to_str())
+                && validate_name(name).is_ok()
+            {
+                names.push(name.to_owned());
+            }
+        }
+    }
+    names.sort();
+    names.dedup();
+    if names.is_empty() {
+        println!("No cached ingredients to delete.");
+        Ok(())
+    } else {
+        delete(&names)
     }
 }
 

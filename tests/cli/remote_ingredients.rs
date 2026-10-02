@@ -110,7 +110,7 @@ fn uncached_manual_update_asks_before_downloading() {
     let dir = TempDir::new().unwrap();
     let home = dir.path();
     setup(home);
-    let action = &["ingredient", "update", "demo"];
+    let action = &["cache", "refresh", "demo"];
 
     let declined = run_with_input(home, action, "200", "n\n");
     assert!(declined.status.success(), "{}", text(&declined));
@@ -334,17 +334,17 @@ fn ingredient_update_and_status_manage_the_cache_without_a_config() {
     let home = dir.path();
     setup(home);
 
-    let empty = run(home, &["ingredient", "status"], "offline");
+    let empty = run(home, &["cache", "list"], "offline");
     assert!(empty.status.success(), "{}", text(&empty));
     assert!(text(&empty).contains("No cached ingredients"));
     assert!(!home.join("curl.calls").exists());
 
-    let updated = run_with_input(home, &["ingredient", "update", "demo"], "200", "y\n");
+    let updated = run_with_input(home, &["cache", "refresh", "demo"], "200", "y\n");
     assert!(updated.status.success(), "{}", text(&updated));
     let cache = home.join("Library/Caches/cockup/ingredients/v1");
     assert!(cache.join("demo.yaml").is_file());
 
-    let status = run(home, &["ingredient", "status", "demo"], "offline");
+    let status = run(home, &["cache", "show", "demo"], "offline");
     assert!(status.status.success(), "{}", text(&status));
     for expected in ["demo", "Downloaded:", "Checked:", "Source:", "ETag:"] {
         assert!(text(&status).contains(expected), "{}", text(&status));
@@ -356,10 +356,10 @@ fn ingredient_update_and_status_manage_the_cache_without_a_config() {
             .count(),
         1
     );
-    let all = run(home, &["ingredient", "status"], "offline");
+    let all = run(home, &["cache", "list"], "offline");
     assert!(all.status.success(), "{}", text(&all));
-    assert!(text(&all).contains("demo:"));
-    let missing = run(home, &["ingredient", "status", "missing"], "offline");
+    assert!(text(&all).contains("demo"));
+    let missing = run(home, &["cache", "show", "missing"], "offline");
     assert_eq!(missing.status.code(), Some(1));
     assert_eq!(
         fs::read_to_string(home.join("curl.calls"))
@@ -375,7 +375,7 @@ fn ingredient_update_and_status_manage_the_cache_without_a_config() {
     metadata["downloaded_at_unix"] = 0.into();
     metadata["checked_at_unix"] = 0.into();
     fs::write(sidecar, serde_json::to_vec(&metadata).unwrap()).unwrap();
-    let dated = run(home, &["ingredient", "status", "demo"], "offline");
+    let dated = run(home, &["cache", "show", "demo"], "offline");
     assert!(dated.status.success(), "{}", text(&dated));
     assert!(text(&dated).contains("1970-01-01 00:00:00 UTC"));
 }
@@ -388,7 +388,7 @@ fn manual_update_forces_a_check_and_preserves_cached_yaml_on_304_or_failure() {
     let home = dir.path();
     setup(home);
     assert!(
-        run_with_input(home, &["ingredient", "update", "demo"], "200", "y\n")
+        run_with_input(home, &["cache", "refresh", "demo"], "200", "y\n")
             .status
             .success()
     );
@@ -400,7 +400,7 @@ fn manual_update_forces_a_check_and_preserves_cached_yaml_on_304_or_failure() {
     let before: serde_json::Value =
         serde_json::from_slice(&fs::read(&metadata_path).unwrap()).unwrap();
 
-    let unchanged = run(home, &["ingredient", "update", "demo"], "304");
+    let unchanged = run(home, &["cache", "refresh", "demo"], "304");
     assert!(unchanged.status.success(), "{}", text(&unchanged));
     assert_eq!(fs::metadata(&yaml_path).unwrap().ino(), inode);
     let after: serde_json::Value =
@@ -417,7 +417,7 @@ fn manual_update_forces_a_check_and_preserves_cached_yaml_on_304_or_failure() {
     );
 
     for failure in ["404", "offline"] {
-        let result = run(home, &["ingredient", "update", "demo"], failure);
+        let result = run(home, &["cache", "refresh", "demo"], failure);
         assert_eq!(result.status.code(), Some(1), "{}", text(&result));
         assert_eq!(fs::read(&yaml_path).unwrap(), original);
     }
@@ -432,41 +432,37 @@ fn ingredient_delete_removes_one_pair_and_clean_removes_the_cockup_cache_root() 
     write(home, "Library/Caches/cockup/keep", "remove me");
     write(home, "Library/Caches/other/keep", "untouched");
     for name in ["demo", "zed"] {
-        let output = run_with_input(home, &["ingredient", "update", name], "200", "y\n");
+        let output = run_with_input(home, &["cache", "refresh", name], "200", "y\n");
         assert!(output.status.success(), "{}", text(&output));
     }
 
-    let deleted = run(home, &["ingredient", "delete", "demo"], "offline");
+    let deleted = run(home, &["cache", "delete", "demo"], "offline");
     assert!(deleted.status.success(), "{}", text(&deleted));
     assert!(!cache.join("demo.yaml").exists());
     assert!(!cache.join("demo.json").exists());
     assert!(cache.join("zed.yaml").is_file());
     assert!(cache.join("zed.json").is_file());
     assert_eq!(
-        run(home, &["ingredient", "delete", "demo"], "offline")
+        run(home, &["cache", "delete", "demo"], "offline")
             .status
             .code(),
         Some(1)
     );
     assert_eq!(
-        run(home, &["ingredient", "delete", "../zed"], "offline")
+        run(home, &["cache", "delete", "../zed"], "offline")
             .status
             .code(),
         Some(1)
     );
 
-    let cleaned = run(home, &["ingredient", "clean"], "offline");
+    let cleaned = run(home, &["cache", "clean"], "offline");
     assert!(cleaned.status.success(), "{}", text(&cleaned));
     assert!(!home.join("Library/Caches/cockup").exists());
     assert_eq!(
         fs::read_to_string(home.join("Library/Caches/other/keep")).unwrap(),
         "untouched"
     );
-    assert!(
-        run(home, &["ingredient", "clean"], "offline")
-            .status
-            .success()
-    );
+    assert!(run(home, &["cache", "clean"], "offline").status.success());
 }
 
 #[test]
@@ -479,9 +475,9 @@ fn ingredient_clean_unlinks_nested_cache_symlinks_without_following_them() {
     fs::create_dir_all(cache.parent().unwrap()).unwrap();
     std::os::unix::fs::symlink(home.join("external"), &cache).unwrap();
 
-    let deleted = run(home, &["ingredient", "delete", "demo"], "offline");
+    let deleted = run(home, &["cache", "delete", "demo"], "offline");
     assert_eq!(deleted.status.code(), Some(1), "{}", text(&deleted));
-    let cleaned = run(home, &["ingredient", "clean"], "offline");
+    let cleaned = run(home, &["cache", "clean"], "offline");
     assert!(cleaned.status.success(), "{}", text(&cleaned));
     assert!(!cache.exists());
     assert_eq!(
@@ -499,7 +495,7 @@ fn ingredient_clean_refuses_a_symlinked_cockup_cache_root() {
     let root = home.join("Library/Caches/cockup");
     fs::create_dir_all(root.parent().unwrap()).unwrap();
     std::os::unix::fs::symlink(home.join("external"), &root).unwrap();
-    let result = run(home, &["ingredient", "clean"], "offline");
+    let result = run(home, &["cache", "clean"], "offline");
     assert_eq!(result.status.code(), Some(1), "{}", text(&result));
     assert!(text(&result).contains("not a directory"));
     assert!(fs::symlink_metadata(root).unwrap().file_type().is_symlink());
@@ -517,13 +513,13 @@ fn ingredient_delete_accepts_multiple_names_and_continues_after_a_missing_entry(
     let cache = home.join("Library/Caches/cockup/ingredients/v1");
     for name in ["demo", "zed"] {
         assert!(
-            run_with_input(home, &["ingredient", "update", name], "200", "y\n")
+            run_with_input(home, &["cache", "refresh", name], "200", "y\n")
                 .status
                 .success()
         );
     }
 
-    let both = run(home, &["ingredient", "delete", "demo", "zed"], "offline");
+    let both = run(home, &["cache", "delete", "demo", "zed"], "offline");
     assert!(both.status.success(), "{}", text(&both));
     for name in ["demo", "zed"] {
         assert!(!cache.join(format!("{name}.yaml")).exists());
@@ -531,19 +527,15 @@ fn ingredient_delete_accepts_multiple_names_and_continues_after_a_missing_entry(
     }
 
     assert!(
-        run_with_input(home, &["ingredient", "update", "demo"], "200", "y\n")
+        run_with_input(home, &["cache", "refresh", "demo"], "200", "y\n")
             .status
             .success()
     );
-    let invalid = run(home, &["ingredient", "delete", "demo", "../zed"], "offline");
+    let invalid = run(home, &["cache", "delete", "demo", "../zed"], "offline");
     assert_eq!(invalid.status.code(), Some(1));
     assert!(cache.join("demo.yaml").exists());
 
-    let partial = run(
-        home,
-        &["ingredient", "delete", "missing", "demo"],
-        "offline",
-    );
+    let partial = run(home, &["cache", "delete", "missing", "demo"], "offline");
     assert_eq!(partial.status.code(), Some(1), "{}", text(&partial));
     assert!(!cache.join("demo.yaml").exists());
 }

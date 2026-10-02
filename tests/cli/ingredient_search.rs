@@ -123,12 +123,7 @@ fn ingredient_search_reuses_cache_refreshes_with_etag_and_falls_back_offline() {
     assert!(fresh.status.success(), "{}", text(&fresh));
     assert!(!text(&fresh).contains("using cached list"));
 
-    let (refreshed, sent) = request(
-        root,
-        &["ingredient", "search", "ghost", "--refresh"],
-        304,
-        b"",
-    );
+    let (refreshed, sent) = request(root, &["cache", "refresh", "--catalog"], 304, b"");
     assert!(refreshed.status.success(), "{}", text(&refreshed));
     assert!(
         sent.to_ascii_lowercase()
@@ -160,4 +155,19 @@ fn ingredient_search_fails_when_github_is_unavailable_without_catalog_cache() {
         .unwrap();
     assert_eq!(result.status.code(), Some(1), "{}", text(&result));
     assert!(text(&result).contains("Cannot fetch ingredient catalog"));
+}
+
+#[test]
+fn manual_catalog_refresh_reports_failure_and_keeps_cached_list() {
+    let dir = TempDir::new().unwrap();
+    let root = dir.path();
+    let body =
+        br#"[{"name":"ghostty.yaml","path":"ingredients/library/ghostty.yaml","type":"file"}]"#;
+    let (first, _) = request(root, &["ingredient", "search", "ghost"], 200, body);
+    assert!(first.status.success(), "{}", text(&first));
+    let cache = root.join("Library/Caches/cockup/ingredients/v1/.catalog.json");
+    let before = fs::read(&cache).unwrap();
+    let (failed, _) = request(root, &["cache", "refresh", "--catalog"], 500, b"");
+    assert_eq!(failed.status.code(), Some(1), "{}", text(&failed));
+    assert_eq!(fs::read(cache).unwrap(), before);
 }

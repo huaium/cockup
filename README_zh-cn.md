@@ -59,25 +59,40 @@ cockup detect cask-name-1 [cask-name-n...]
 
 ### `cockup ingredient`
 
-无需运行备份即可管理已下载的配料：
+在 GitHub 配料库中查找配料：
 
 ```sh
 cockup ingredient search ghost      # 按名称查找可用配料
-cockup ingredient search "visual studio" --refresh  # 立即检查 GitHub
-cockup ingredient update ghostty  # 即使缓存未过期，也立即检查 GitHub
-cockup ingredient status           # 显示所有缓存的配料
-cockup ingredient status ghostty   # 显示指定配料的来源和日期
-cockup ingredient delete ghostty   # 删除指定配料的 YAML 和元数据缓存
-cockup ingredient delete ghostty zed  # 一次删除多个配料缓存
-cockup ingredient clean            # 删除整个 Cockup 缓存目录
+cockup ingredient search "visual studio"
 ```
 
 `search` 从 GitHub 配料库列出匹配名称，不下载 YAML。匹配不区分大小写，空格按连字符处理；
-已缓存的配料标为 `[cached]`。目录列表缓存 24 小时，`--refresh` 可立即检查 GitHub。
+已缓存的配料标为 `[cached]`。目录列表缓存 24 小时；用 `cockup cache refresh --catalog` 可立即检查 GitHub。
 临时网络故障时使用已有的目录缓存；没有缓存则报错。
 
-`status` 离线且只读。`update` 遇到未缓存的配料时会先询问是否下载；拒绝后不会修改缓存。请求失败时保留原有缓存并报告错误。收到 304 响应时仅更新上次检查日期。`delete` 只删除 `~/Library/Caches/cockup/ingredients/v1/` 中指定的缓存；`clean` 删除 `~/Library/Caches/cockup/` 及其全部内容。
-`delete` 会先验证所有名称；如果其中一个配料未缓存，仍会删除其他配料，并返回错误。
+### `cockup cache`
+
+查看和管理已下载的配料及配料库列表缓存：
+
+```sh
+cockup cache status                  # 缓存路径、数量和目录列表新鲜度
+cockup cache list                    # 列出已下载配料
+cockup cache show ghostty            # 显示单个配料的来源和日期
+cockup cache refresh                 # 刷新所有已下载配料和目录列表
+cockup cache refresh --ingredients   # 仅刷新已下载配料
+cockup cache refresh --catalog       # 仅刷新目录列表
+cockup cache refresh ghostty         # 刷新单个配料
+cockup cache delete ghostty zed      # 删除指定配料缓存
+cockup cache delete --ingredients    # 删除所有配料缓存，保留目录列表
+cockup cache delete --catalog        # 仅删除目录列表缓存
+cockup cache clean                   # 删除整个 Cockup 缓存目录
+```
+
+`status`、`list` 和 `show` 均离线运行。刷新尚未缓存的指定配料时会先询问是否下载；
+手动刷新失败会保留原有文件并返回错误。内容未变化时仅更新上次检查日期。
+目录列表缓存有效期为 24 小时；备份时会在配料缓存超过 30 天后检查更新。
+`delete` 会先验证全部名称；若有名称未缓存，仍会删除其他配料并返回错误。
+`clean` 删除 `~/Library/Caches/cockup/` 及其中所有内容。
 
 ### `cockup backup & restore`
 

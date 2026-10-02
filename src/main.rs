@@ -7,7 +7,7 @@ mod ingredients;
 mod manifest;
 mod report;
 use clap::{CommandFactory, Parser};
-use cli::{Commands, ConfigArgs, IngredientCommand};
+use cli::{CacheCommand, Commands, ConfigArgs, IngredientCommand};
 use ingredients::Mode;
 fn backup_initialized(path: &std::path::Path) -> Result<bool, String> {
     let destination = config::destination(path)?;
@@ -109,11 +109,33 @@ fn run() -> Result<(), String> {
         }
         Commands::Detect { casks } => brew::detect(casks)?,
         Commands::Ingredient { command } => match command {
-            IngredientCommand::Search { query, refresh } => ingredients::search(&query, refresh)?,
-            IngredientCommand::Update { name } => ingredients::update(&name)?,
-            IngredientCommand::Status { name } => ingredients::status(name.as_deref())?,
-            IngredientCommand::Delete { names } => ingredients::delete(&names)?,
-            IngredientCommand::Clean => ingredients::clean()?,
+            IngredientCommand::Search { query } => ingredients::search(&query)?,
+        },
+        Commands::Cache { command } => match command {
+            CacheCommand::Status => ingredients::cache_status()?,
+            CacheCommand::List => ingredients::cache_list()?,
+            CacheCommand::Show { name } => ingredients::status(&name)?,
+            CacheCommand::Refresh {
+                name,
+                ingredients: all_ingredients,
+                catalog,
+            } => {
+                ingredients::refresh(name.as_deref(), all_ingredients, catalog)?;
+            }
+            CacheCommand::Delete {
+                names,
+                catalog,
+                ingredients: all_ingredients,
+            } => {
+                if catalog {
+                    ingredients::delete_catalog()?;
+                } else if all_ingredients {
+                    ingredients::delete_all()?;
+                } else {
+                    ingredients::delete(&names)?;
+                }
+            }
+            CacheCommand::Clean => ingredients::clean()?,
         },
         Commands::Template => print!("{}", include_str!("template.yaml")),
         Commands::Completions { shell } => {

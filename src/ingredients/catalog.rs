@@ -1,4 +1,4 @@
-use super::{atomic_write, cache_dir, now, read_cache, validate_name};
+use super::{atomic_write, cache_dir, now, read_cache, utc_time, validate_name};
 use crate::report;
 use serde::{Deserialize, Serialize};
 use std::{fs, io::Read, os::unix::fs::PermissionsExt, path::Path, time::Duration};
@@ -126,7 +126,7 @@ fn names(body: &[u8]) -> Result<Vec<String>, String> {
     Ok(names)
 }
 
-fn catalog(dir: &Path, refresh: bool) -> Result<Catalog, String> {
+fn catalog(dir: &Path, refresh: bool, allow_stale: bool) -> Result<Catalog, String> {
     let previous = cached(dir);
     let current_time = now();
     if !refresh
@@ -161,8 +161,14 @@ fn catalog(dir: &Path, refresh: bool) -> Result<Catalog, String> {
             Ok(catalog)
         }
         Ok((404, _, _)) => Err("GitHub ingredient library was not found".into()),
-        Ok((status, _, _)) => fallback(previous, &format!("GitHub returned HTTP {status}")),
-        Err(error) => fallback(previous, &error),
+        Ok((status, _, _)) if allow_stale => {
+            fallback(previous, &format!("GitHub returned HTTP {status}"))
+        }
+        Ok((status, _, _)) => Err(format!(
+            "Cannot refresh ingredient catalog: GitHub returned HTTP {status}"
+        )),
+        Err(error) if allow_stale => fallback(previous, &error),
+        Err(error) => Err(format!("Cannot refresh ingredient catalog: {error}")),
     }
 }
 
@@ -177,7 +183,7 @@ fn fallback(previous: Option<Catalog>, reason: &str) -> Result<Catalog, String> 
     }
 }
 
-pub(crate) fn search(query: &str, refresh: bool) -> Result<(), String> {
+pub(crate) fn search(query: &str) -> Result<(), String> {
     let query = query.trim();
     if query.is_empty() {
         return Err("Search query must not be empty".into());
@@ -188,7 +194,7 @@ pub(crate) fn search(query: &str, refresh: bool) -> Result<(), String> {
         .join("-")
         .to_ascii_lowercase();
     let dir = cache_dir()?;
-    let catalog = catalog(&dir, refresh)?;
+    let catalog = catalog(&dir, false, true)?;
     let matches: Vec<_> = catalog
         .names
         .iter()
@@ -204,6 +210,46 @@ pub(crate) fn search(query: &str, refresh: bool) -> Result<(), String> {
                 println!("{name}");
             }
         }
+    }
+    Ok(())
+}
+
+pub(crate) fn status(dir: &Path) -> Result<(), String> {
+    if let Some(catalog) = cached(dir) {
+        let age = now().saturating_sub(catalog.checked_at_unix);
+        let freshness = if catalog.checked_at_unix <= now() && age < REFRESH_AFTER {
+            "fresh"
+        } else {
+            "stale"
+        };
+        println!("Catalog: {} entries ({freshness})", catalog.names.len());
+        println!("  Source: {}", catalog.source);
+        println!("  Downloaded: {}", utc_time(catalog.downloaded_at_unix));
+        println!("  Checked: {}", utc_time(catalog.checked_at_unix));
+        println!("  ETag: {}", catalog.etag.as_deref().unwrap_or("none"));
+    } else {
+        println!("Catalog: not cached");
+    }
+    Ok(())
+}
+
+pub(crate) fn refresh(dir: &Path) -> Result<(), String> {
+    let catalog = catalog(dir, true, false)?;
+    println!(
+        "Ingredient catalog checked against GitHub ({} entries).",
+        catalog.names.len()
+    );
+    Ok(())
+}
+
+pub(crate) fn delete(dir: &Path) -> Result<(), String> {
+    let path = dir.join(FILE);
+    match fs::remove_file(&path) {
+        Ok(()) => println!("Deleted cached ingredient catalog."),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            println!("Ingredient catalog is not cached.");
+        }
+        Err(error) => return Err(format!("{}: {error}", path.display())),
     }
     Ok(())
 }

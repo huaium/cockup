@@ -19,7 +19,7 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
 
 ## Architecture
 
-- CLI: clap subcommands `backup`, `restore`, `verify`, `diff`, `hook`, `detect`, `ingredient`, `template`, and `completions`.
+- CLI: clap subcommands `backup`, `restore`, `verify`, `diff`, `hook`, `detect`, `ingredient`, `cache`, `template`, and `completions`.
   `template` prints a commented, valid YAML starter to stdout.
   `completions` prints generated Bash, Zsh, Fish, PowerShell, or Elvish scripts.
   Backup and restore accept `--dry-run` to preview changes without writes or hooks.
@@ -38,11 +38,13 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
   and invalid configuration before operations. Named remote ingredients come
   from the GitHub library, use a 30-day cache in ~/Library/Caches/cockup/ingredients/v1/,
   and are snapshotted in the backup manifest for offline restore/verify.
-  `ingredient update NAME` forces a GitHub check; `ingredient status [NAME]` is offline.
-  `ingredient search QUERY` lists GitHub library names using a 24-hour catalog cache;
-  `--refresh` forces a conditional check without downloading ingredient YAML.
-  `ingredient delete NAME [NAME...]` removes cache pairs; `ingredient clean` removes
-  the entire ~/Library/Caches/cockup/ directory.
+  `ingredient search QUERY` lists GitHub library names using a 24-hour catalog cache.
+  `cache status/list/show` inspect caches offline. `cache refresh NAME` checks one
+  ingredient; `--ingredients` checks all downloaded ingredients; `--catalog`
+  checks only the library list; no option checks both. `cache delete NAME...`
+  removes cache pairs; `cache delete --ingredients` removes all ingredient caches
+  while retaining the catalog; `cache delete --catalog` removes only the catalog;
+  `cache clean` removes the entire ~/Library/Caches/cockup/ directory.
   Prompt once for hook execution.
 - File operations: explicit source/destination paths, glob layout preservation,
   clean/update modes, special files skipped. Required `symlinks` policy: reference

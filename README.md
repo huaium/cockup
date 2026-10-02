@@ -64,33 +64,44 @@ cockup detect cask-name-1 [cask-name-n...]
 
 ### `cockup ingredient`
 
-Manage downloaded ingredients without running a backup:
+Find ingredients in the GitHub library:
 
 ```sh
 cockup ingredient search ghost      # Find available ingredients by name
-cockup ingredient search "visual studio" --refresh  # Check GitHub now
-cockup ingredient update ghostty  # Check GitHub now, even if the cache is fresh
-cockup ingredient status           # Show all cached ingredients
-cockup ingredient status ghostty   # Show one ingredient's source and dates
-cockup ingredient delete ghostty   # Remove one cached YAML and its metadata
-cockup ingredient delete ghostty zed  # Remove several cached ingredients
-cockup ingredient clean            # Remove the entire Cockup cache directory
+cockup ingredient search "visual studio"
 ```
 
 `search` lists matching names from the GitHub library without downloading their
 YAML. It matches names case-insensitively and treats spaces like hyphens; cached
-ingredients are marked `[cached]`. The catalog is cached for 24 hours, and
-`--refresh` checks GitHub immediately. On a temporary network failure, search
-uses a previously cached catalog; without one, it reports an error.
+ingredients are marked `[cached]`. The catalog is cached for 24 hours. On a
+temporary network failure, search uses a previously cached catalog; without
+one, it reports an error.
 
-`status` is offline and read-only. `update` asks before downloading an ingredient
-that is not cached; declining leaves the cache unchanged. It preserves an existing
-cache on a failed request and reports the failure. A 304 response updates only
-the last-checked date.
-`delete` affects only named files in `~/Library/Caches/cockup/ingredients/v1/`.
-`clean` removes `~/Library/Caches/cockup/` and everything inside it.
-`delete` checks all names before removing files; if one is not cached, it still
-deletes the others and returns an error.
+### `cockup cache`
+
+Inspect and manage downloaded ingredients and the cached library list:
+
+```sh
+cockup cache status                  # Cache path, counts, and catalog freshness
+cockup cache list                    # Downloaded ingredient names
+cockup cache show ghostty            # Source and dates for one ingredient
+cockup cache refresh                 # Refresh all downloaded ingredients and catalog
+cockup cache refresh --ingredients   # Refresh downloaded ingredients only
+cockup cache refresh --catalog       # Refresh catalog only
+cockup cache refresh ghostty         # Refresh one ingredient
+cockup cache delete ghostty zed      # Delete named ingredient caches
+cockup cache delete --ingredients    # Delete all ingredient caches, keeping the catalog
+cockup cache delete --catalog        # Delete only the catalog cache
+cockup cache clean                   # Remove the entire Cockup cache directory
+```
+
+`status`, `list`, and `show` are offline. Refreshing a named ingredient that is
+not cached asks before downloading it. A failed manual refresh preserves existing
+files and returns an error. An unchanged response updates only the check date.
+The catalog refresh interval is 24 hours; downloaded ingredients are checked
+after 30 days during backup. `delete` checks all names before removing files; if
+one is missing, it still deletes the others and returns an error. `clean` removes
+`~/Library/Caches/cockup/` and everything inside it.
 
 ### `cockup backup & restore`
 

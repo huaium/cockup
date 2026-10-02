@@ -54,11 +54,15 @@ macOS preference caching may require logging out before a restored plist is
 read. Custom settings locations need a local edit. Named ingredients are cached
 under `~/Library/Caches/cockup/ingredients/v1/` and checked for updates after
 30 days. Backup stores the exact YAML it used in its manifest for offline
-restore and verify. Run `cockup ingredient update NAME` to check GitHub immediately;
+restore and verify. Run `cockup cache refresh NAME` to check GitHub immediately;
 if the ingredient is not cached, Cockup asks before downloading it. Run
-`cockup ingredient status [NAME]` to inspect cached sources and dates offline.
-`cockup ingredient delete NAME [NAME...]` removes one or more YAML/metadata pairs;
-`cockup ingredient clean` removes all of `~/Library/Caches/cockup/`.
+`cockup cache show NAME` to inspect its source and dates offline, or
+`cockup cache list` to list downloaded ingredients. `cockup cache refresh`
+checks all downloaded ingredients and the library catalog; `--ingredients` and
+`--catalog` limit the scope. `cockup cache delete NAME [NAME...]` removes YAML
+and metadata pairs; `cockup cache delete --ingredients` removes all ingredient
+caches while retaining the catalog; `cockup cache delete --catalog` removes only the library
+list. `cockup cache clean` removes all of `~/Library/Caches/cockup/`.
 
 The original nine ingredients were checked against app documentation and
 `brew cat --cask NAME`. The additional 56 were cross-checked against each

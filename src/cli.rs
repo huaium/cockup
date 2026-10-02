@@ -35,10 +35,15 @@ pub enum Commands {
     },
     /// Detect configuration paths from Homebrew casks
     Detect { casks: Vec<String> },
-    /// Manage downloaded ingredients
+    /// Find ingredients in the GitHub library
     Ingredient {
         #[command(subcommand)]
         command: IngredientCommand,
+    },
+    /// Manage the ingredient and library-list caches
+    Cache {
+        #[command(subcommand)]
+        command: CacheCommand,
     },
     /// Print a commented YAML configuration template
     Template,
@@ -52,22 +57,39 @@ pub enum Commands {
 #[derive(Subcommand)]
 pub enum IngredientCommand {
     /// Search available ingredients in the GitHub library
-    Search {
-        query: String,
-        /// Check GitHub even when the catalog cache is fresh
-        #[arg(long)]
-        refresh: bool,
+    Search { query: String },
+}
+
+#[derive(Subcommand)]
+pub enum CacheCommand {
+    /// Show cache location, contents, and freshness without network access
+    Status,
+    /// List downloaded ingredients without network access
+    List,
+    /// Show one downloaded ingredient's cache metadata
+    Show { name: String },
+    /// Refresh one ingredient, all downloaded ingredients, the catalog, or both
+    Refresh {
+        /// Refresh this ingredient (ask before downloading when absent)
+        name: Option<String>,
+        /// Refresh all downloaded ingredients only
+        #[arg(long, conflicts_with_all = ["name", "catalog"])]
+        ingredients: bool,
+        /// Refresh the cached GitHub library list only
+        #[arg(long, conflicts_with = "name")]
+        catalog: bool,
     },
-    /// Check GitHub now; ask before downloading an uncached ingredient
-    Update { name: String },
-    /// Show cached ingredient dates and sources without network access
-    Status { name: Option<String> },
-    /// Delete cached YAML and metadata for one or more ingredients
+    /// Delete cached ingredients or the library list
     Delete {
-        #[arg(required = true, num_args = 1..)]
         names: Vec<String>,
+        /// Delete only the cached library list
+        #[arg(long, conflicts_with_all = ["names", "ingredients"], required_unless_present_any = ["names", "ingredients"])]
+        catalog: bool,
+        /// Delete all downloaded ingredient YAML and metadata caches
+        #[arg(long, conflicts_with = "names")]
+        ingredients: bool,
     },
-    /// Remove the entire ingredient cache directory
+    /// Remove the entire Cockup cache directory
     Clean,
 }
 #[derive(Args)]
