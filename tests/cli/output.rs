@@ -1,6 +1,79 @@
 use super::*;
 
 #[test]
+fn usage_help_explains_defaults_and_exclusive_choices() {
+    let dir = TempDir::new().unwrap();
+    let refresh = cli(dir.path(), &["cache", "refresh", "--help"], "");
+    assert!(refresh.status.success());
+    let refresh_usage = "Usage: cockup cache refresh [NAME|--ingredients|--catalog]";
+    assert!(text(&refresh).contains(refresh_usage), "{}", text(&refresh));
+    assert!(
+        text(&refresh)
+            .contains("With no choice, refresh all downloaded ingredients and the catalog.")
+    );
+    let conflict = cli(
+        dir.path(),
+        &["cache", "refresh", "--ingredients", "--catalog"],
+        "",
+    );
+    assert_eq!(conflict.status.code(), Some(2));
+    assert!(
+        text(&conflict).contains(refresh_usage),
+        "{}",
+        text(&conflict)
+    );
+    let restore = cli(dir.path(), &["restore", "--help"], "");
+    assert!(restore.status.success());
+    let restore_usage =
+        "Usage: cockup restore [OPTIONS] [--override|--skip-existing] <CONFIG_FILE>";
+    assert!(text(&restore).contains(restore_usage), "{}", text(&restore));
+    let conflict = cli(
+        dir.path(),
+        &["restore", "config.yaml", "--override", "--skip-existing"],
+        "",
+    );
+    assert_eq!(conflict.status.code(), Some(2));
+    assert!(
+        text(&conflict).contains(restore_usage),
+        "{}",
+        text(&conflict)
+    );
+    assert!(
+        text(&restore)
+            .contains("By default, ask before replacing conflicting local files and symlinks.")
+    );
+    for (args, description) in [
+        (&["backup", "--help"][..], "Path to the YAML configuration"),
+        (&["verify", "--help"][..], "Path to the YAML configuration"),
+        (&["diff", "--help"][..], "Path to the YAML configuration"),
+        (
+            &["hook", "--help"][..],
+            "Select hooks interactively when omitted",
+        ),
+        (
+            &["detect", "--help"][..],
+            "Detect all installed casks when omitted",
+        ),
+        (
+            &["ingredient", "search", "--help"][..],
+            "Case-insensitive ingredient name search",
+        ),
+        (
+            &["cache", "show", "--help"][..],
+            "Name of the cached ingredient",
+        ),
+        (
+            &["cache", "delete", "--help"][..],
+            "One or more cached ingredient names",
+        ),
+    ] {
+        let out = cli(dir.path(), args, "");
+        assert!(out.status.success());
+        assert!(text(&out).contains(description), "{}", text(&out));
+    }
+}
+
+#[test]
 fn cli_exposes_commands_and_version() {
     let dir = TempDir::new().unwrap();
     let out = cli(dir.path(), &["--help"], "");

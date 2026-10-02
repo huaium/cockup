@@ -18,9 +18,13 @@ pub enum Commands {
     /// Restore files from a backup
     Restore(RestoreArgs),
     /// Check backup manifest and configured backup paths
-    Verify { config_file: PathBuf },
+    Verify {
+        /// Path to the YAML configuration
+        config_file: PathBuf,
+    },
     /// Compare a backup with the files it would restore
     Diff {
+        /// Path to the YAML configuration
         config_file: PathBuf,
         /// Show changed paths without content differences
         #[arg(long)]
@@ -30,11 +34,15 @@ pub enum Commands {
     Hook {
         #[command(flatten)]
         config: ConfigArgs,
+        /// Run a named hook. Select hooks interactively when omitted
         #[arg(short, long)]
         name: Option<String>,
     },
     /// Detect configuration paths from Homebrew casks
-    Detect { casks: Vec<String> },
+    Detect {
+        /// Homebrew cask names. Detect all installed casks when omitted
+        casks: Vec<String>,
+    },
     /// Find ingredients in the GitHub library
     Ingredient {
         #[command(subcommand)]
@@ -57,7 +65,10 @@ pub enum Commands {
 #[derive(Subcommand)]
 pub enum IngredientCommand {
     /// Search available ingredients in the GitHub library
-    Search { query: String },
+    Search {
+        /// Case-insensitive ingredient name search (quote queries containing spaces)
+        query: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -67,26 +78,39 @@ pub enum CacheCommand {
     /// List downloaded ingredients without network access
     List,
     /// Show one downloaded ingredient's cache metadata
-    Show { name: String },
+    Show {
+        /// Name of the cached ingredient
+        name: String,
+    },
     /// Refresh one ingredient, all downloaded ingredients, the catalog, or both
+    #[command(
+        override_usage = "cockup cache refresh [NAME|--ingredients|--catalog]",
+        after_help = "With no choice, refresh all downloaded ingredients and the catalog.",
+        group(clap::ArgGroup::new("scope").multiple(false).args(["name", "ingredients", "catalog"]))
+    )]
     Refresh {
         /// Refresh this ingredient (ask before downloading when absent)
         name: Option<String>,
         /// Refresh all downloaded ingredients only
-        #[arg(long, conflicts_with_all = ["name", "catalog"])]
+        #[arg(long)]
         ingredients: bool,
         /// Refresh the cached GitHub library list only
-        #[arg(long, conflicts_with = "name")]
+        #[arg(long)]
         catalog: bool,
     },
     /// Delete cached ingredients or the library list
+    #[command(group(clap::ArgGroup::new("target")
+        .required(true)
+        .multiple(false)
+        .args(["names", "ingredients", "catalog"])))]
     Delete {
+        /// One or more cached ingredient names
         names: Vec<String>,
         /// Delete only the cached library list
-        #[arg(long, conflicts_with_all = ["names", "ingredients"], required_unless_present_any = ["names", "ingredients"])]
+        #[arg(long)]
         catalog: bool,
         /// Delete all downloaded ingredient YAML and metadata caches
-        #[arg(long, conflicts_with = "names")]
+        #[arg(long)]
         ingredients: bool,
     },
     /// Remove the entire Cockup cache directory
@@ -94,6 +118,7 @@ pub enum CacheCommand {
 }
 #[derive(Args)]
 pub struct ConfigArgs {
+    /// Path to the YAML configuration
     pub config_file: PathBuf,
     /// Run configured hooks without asking for confirmation
     #[arg(short = 'a', long)]
@@ -109,11 +134,16 @@ pub struct FileArgs {
 }
 
 #[derive(Args)]
+#[command(
+    override_usage = "cockup restore [OPTIONS] [--override|--skip-existing] <CONFIG_FILE>",
+    after_help = "By default, ask before replacing conflicting local files and symlinks.",
+    group(clap::ArgGroup::new("existing_files").multiple(false).args(["override", "skip_existing"]))
+)]
 pub struct RestoreArgs {
     #[command(flatten)]
     pub file: FileArgs,
     /// Replace existing local files without asking
-    #[arg(short = 'o', long, conflicts_with = "skip_existing")]
+    #[arg(short = 'o', long)]
     pub r#override: bool,
     /// Keep existing local files and restore only missing paths
     #[arg(short = 's', long)]

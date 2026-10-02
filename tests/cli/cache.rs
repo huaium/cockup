@@ -93,6 +93,23 @@ fn cache_delete_all_ingredients_keeps_catalog_and_unlinks_cache_files() {
 }
 
 #[test]
+fn cache_delete_usage_lists_all_required_choices() {
+    let dir = TempDir::new().unwrap();
+    for (args, code) in [
+        (&["cache", "delete"][..], 2),
+        (&["cache", "delete", "--help"][..], 0),
+    ] {
+        let output = run(dir.path(), args);
+        assert_eq!(output.status.code(), Some(code));
+        assert!(
+            text(&output).contains("Usage: cockup cache delete <NAMES|--ingredients|--catalog>"),
+            "{}",
+            text(&output)
+        );
+    }
+}
+
+#[test]
 fn ingredient_commands_expose_search_only() {
     let dir = TempDir::new().unwrap();
     for command in ["update", "status", "delete", "clean"] {
