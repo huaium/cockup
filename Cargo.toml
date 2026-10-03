@@ -21,7 +21,6 @@ include = [
     "/README*.md",
     "/sample/*.yaml",
     "/sample/*.md",
-    "/docs/**",
 ]
 
 [package.metadata.docs.rs]

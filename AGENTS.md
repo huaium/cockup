@@ -4,7 +4,7 @@
 
 Cockup is a macOS configuration backup/restore CLI written in Rust 2024.
 The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
-`x86_64-apple-darwin`. There is no public library API or Python runtime requirement.
+`x86_64-apple-darwin`. There is no public library API.
 
 ## Development
 
@@ -15,7 +15,6 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
 - `just` lists recipes; `just run`, `just test`, and `just build` wrap Cargo.
 - Keep Cargo.lock committed. Do not install or fetch dependencies on the user's
   behalf: explain additions, provide the exact command, and wait for the user.
-- No Python installation or virtual environment activation is required.
 
 ## Architecture
 
@@ -90,4 +89,4 @@ failures are isolated in sample/hooks.yaml.
 
 CI tests both macOS architectures. Version tags build archives and checksums;
 the protected `crates-io` environment supplies `CARGO_REGISTRY_TOKEN` for publishing.
-Do not publish or create tags unless explicitly requested. See docs/migration.md.
+Do not publish or create tags unless explicitly requested.

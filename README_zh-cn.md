@@ -8,7 +8,7 @@
 
 ## 安装
 
-Cockup 0.2.0 改用 Rust，支持 Apple Silicon 和 Intel macOS，无需 Python。
+Cockup 使用 Rust 编写，支持 Apple Silicon 和 Intel macOS。
 
 发布后可从 [GitHub Releases](https://github.com/huaium/cockup/releases) 下载对应架构的
 压缩包，校验 SHA256 后解压，将 `cockup` 放入 `PATH` 中的目录。
@@ -24,8 +24,6 @@ cargo install cockup --locked
 cargo build --release --locked
 ./target/release/cockup --help
 ```
-
-旧版 PyPI 包仍然可用，但不会安装 Rust 版本。现有 Homebrew tap 需要单独更新。
 
 ## 使用
 
@@ -338,13 +336,13 @@ include:
 
 Cockup 首次使用时从本仓库下载具名配料，缓存在 `~/Library/Caches/cockup/ingredients/v1/`，30 天后检查更新。更新失败时使用缓存；远端不存在的配料会报错。备份清单保存实际使用的配料 YAML，恢复和验证无需连接 GitHub。试运行可能下载配料，但不会写入缓存。
 
-`wrap` 必须是非空相对路径，且不能包含 `..`。不再接受字符串形式的导入项。单条规则也可以设置 `symlinks` 或 `metadata`。
+`wrap` 必须是非空相对路径，且不能包含 `..`。单条规则也可以设置 `symlinks` 或 `metadata`。
 
 请访问 [sample](sample) 查看配置用例。
 
 ## 开发
 
-使用原生 macOS 和支持 Rust 2024 的 Rust 工具链，无需虚拟环境。
+使用原生 macOS 和支持 Rust 2024 的 Rust 工具链。
 
 ```sh
 cargo run --locked -- detect
@@ -358,16 +356,13 @@ cargo build --release --locked
 测试通过 CLI 和临时文件验证行为，使用可执行脚本模拟 Homebrew 和 Hooks。
 真实的 Homebrew 验证可运行 `cargo run --locked -- detect iterm2`。
 
-## 从 Python 迁移
+端到端工作流程参见[样例](sample/README.md)。
 
-现有配置必须添加 `symlinks: reference` 才能保留原有链接复制行为。命令和其他 YAML 字段保持兼容，但 `include` 现在必须使用带 `file` 字段的对象。相对路径以各自配置文件所在目录为准，循环导入和无效配置会在执行前报错。
-Hooks 只确认一次，`--approve-hooks` 或 `-a` 同时作用于导入的 Hooks。
+## 退出状态与文件元数据
 
 成功或拒绝确认返回 0；配置、复制、Hook 或 Homebrew 错误返回 1；命令行用法错误返回 2。
 可恢复的错误不会阻止后续操作，但最终摘要显示失败。特殊文件和不存在的普通目标仍会跳过并提示。
 元数据模式保留文件权限、时间戳和受支持的 macOS 文件标志，不保证 ACL、所有者或扩展属性。
-
-参见 [迁移验证记录](docs/migration.md) 和 [样例](sample/README.md)。
 
 ## 许可证
 

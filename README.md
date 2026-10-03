@@ -8,8 +8,7 @@ Yet another backup tool for various configurations.
 
 ## Installation
 
-Cockup 0.2.0 is written in Rust and supports Apple Silicon and Intel macOS.
-Python is no longer required.
+Cockup is written in Rust and supports Apple Silicon and Intel macOS.
 
 Once released, download the matching archive from
 [GitHub Releases](https://github.com/huaium/cockup/releases), verify its SHA256,
@@ -26,9 +25,6 @@ To build from source:
 cargo build --release --locked
 ./target/release/cockup --help
 ```
-
-Existing PyPI releases remain available but do not install the Rust version.
-The existing Homebrew tap requires a separate formula update.
 
 ## Usage
 
@@ -373,13 +369,13 @@ include:
     wrap: ghostty
 ```
 
-`wrap` must be a non-empty relative path without `..`. String include entries are no longer accepted. Rules can also set `symlinks` or `metadata` directly. Cockup downloads named ingredients from this repository on first use and caches them under `~/Library/Caches/cockup/ingredients/v1/`. It checks for updates after 30 days, using the cached copy if a refresh fails; a missing ingredient is an error. Backup records the exact ingredient YAML in its manifest, so restore and verify use the backed-up rules without contacting GitHub. Dry-run can fetch an ingredient but does not write to the cache.
+`wrap` must be a non-empty relative path without `..`. Rules can also set `symlinks` or `metadata` directly. Cockup downloads named ingredients from this repository on first use and caches them under `~/Library/Caches/cockup/ingredients/v1/`. It checks for updates after 30 days, using the cached copy if a refresh fails; a missing ingredient is an error. Backup records the exact ingredient YAML in its manifest, so restore and verify use the backed-up rules without contacting GitHub. Dry-run can fetch an ingredient but does not write to the cache.
 
 Refer to [sample](sample) to view a configuration demo.
 
 ## Development
 
-Use native macOS and a Rust toolchain supporting Rust 2024. No virtual environment is needed.
+Use native macOS and a Rust toolchain supporting Rust 2024.
 
 ```sh
 cargo run --locked -- detect
@@ -393,21 +389,15 @@ cargo build --release --locked
 Tests exercise the CLI using temporary files and executable Homebrew/hook fixtures.
 For a real Homebrew smoke test, run `cargo run --locked -- detect iterm2`.
 
-## Migrating from Python
+See the [samples](sample/README.md) for end-to-end workflows.
 
-Existing configurations must add `symlinks: reference` to retain link-copying behavior.
-Commands and other YAML fields remain compatible except for `include`, which now
-requires objects with a `file` field. Relative paths resolve against each
-configuration file's directory. Invalid configuration and include cycles fail before
-execution. Hook confirmation happens once; `--approve-hooks` or `-a` covers included hooks.
+## Exit status and file metadata
 
 Exit codes are 0 for success or declined confirmation, 1 for configuration/copy/hook/
 Homebrew failures, and 2 for CLI usage errors. Recoverable failures do not stop later
 work, but the final summary reports failure. Special files and missing literal targets
-are still skipped with a warning. Metadata mode preserves file permissions, timestamps,
+are skipped with a warning. Metadata mode preserves file permissions, timestamps,
 and supported macOS file flags; ACLs, ownership, and extended attributes are not guaranteed.
-
-See the [migration validation notes](docs/migration.md) and [samples](sample/README.md).
 
 ## License
 
