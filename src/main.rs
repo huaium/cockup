@@ -109,6 +109,7 @@ fn run() -> Result<(), String> {
         }
         Commands::Detect { casks } => brew::detect(casks)?,
         Commands::Ingredient { command } => match command {
+            IngredientCommand::Show { name } => ingredients::show(&name)?,
             IngredientCommand::Search { query } => ingredients::search(&query)?,
         },
         Commands::Cache { command } => match command {

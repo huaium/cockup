@@ -106,6 +106,52 @@ fn run_with_input(home: &Path, action: &[&str], status: &str, input: &str) -> Ou
 }
 
 #[test]
+fn ingredient_show_prints_exact_yaml_and_caches_missing_ingredients() {
+    let dir = TempDir::new().unwrap();
+    let home = dir.path();
+    setup(home);
+    let yaml =
+        "# Demo ingredient\nrules:\n  - from: ~/source\n    targets: [file]\n    to: files\n";
+    write(home, "remote.yaml", yaml);
+    let action = &["ingredient", "show", "demo"];
+    let first = run(home, action, "200");
+    assert!(first.status.success(), "{}", text(&first));
+    assert_eq!(first.stdout, yaml.as_bytes());
+    assert!(first.stderr.is_empty());
+    let cache = home.join("Library/Caches/cockup/ingredients/v1");
+    assert_eq!(fs::read(cache.join("demo.yaml")).unwrap(), yaml.as_bytes());
+    assert!(cache.join("demo.json").exists());
+    let cached = run(home, action, "offline");
+    assert!(cached.status.success(), "{}", text(&cached));
+    assert_eq!(cached.stdout, yaml.as_bytes());
+    assert_eq!(
+        fs::read_to_string(home.join("curl.calls"))
+            .unwrap()
+            .lines()
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn ingredient_show_rejects_missing_and_invalid_remote_yaml() {
+    for (status, yaml) in [("404", "rules: []\n"), ("200", "rules: []\nhooks: {}\n")] {
+        let dir = TempDir::new().unwrap();
+        let home = dir.path();
+        setup(home);
+        write(home, "remote.yaml", yaml);
+        let output = run(home, &["ingredient", "show", "demo"], status);
+        assert_eq!(output.status.code(), Some(1), "{}", text(&output));
+        assert!(output.stdout.is_empty());
+        assert!(
+            !home
+                .join("Library/Caches/cockup/ingredients/v1/demo.yaml")
+                .exists()
+        );
+    }
+}
+
+#[test]
 fn uncached_manual_update_asks_before_downloading() {
     let dir = TempDir::new().unwrap();
     let home = dir.path();

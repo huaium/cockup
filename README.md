@@ -69,6 +69,7 @@ Find ingredients in the GitHub library:
 ```sh
 cockup ingredient search ghost      # Find available ingredients by name
 cockup ingredient search "visual studio"
+cockup ingredient show ghostty      # Print the full ingredient YAML
 ```
 
 `search` lists matching names from the GitHub library without downloading their
@@ -76,6 +77,10 @@ YAML. It matches names case-insensitively and treats spaces like hyphens; cached
 ingredients are marked `[cached]`. The catalog is cached for 24 hours. On a
 temporary network failure, search uses a previously cached catalog; without
 one, it reports an error.
+
+`show NAME` prints the original YAML, including comments, to stdout. It downloads
+and caches missing ingredients automatically and uses the same 30-day refresh
+policy as backup. Fresh cached ingredients can be shown offline.
 
 ### `cockup cache`
 

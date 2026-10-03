@@ -64,6 +64,11 @@ pub enum Commands {
 }
 #[derive(Subcommand)]
 pub enum IngredientCommand {
+    /// Print an ingredient's YAML, downloading and caching it when needed
+    Show {
+        /// Ingredient name from the GitHub library
+        name: String,
+    },
     /// Search available ingredients in the GitHub library
     Search {
         /// Case-insensitive ingredient name search (quote queries containing spaces)

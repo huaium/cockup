@@ -39,6 +39,8 @@ The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
   from the GitHub library, use a 30-day cache in ~/Library/Caches/cockup/ingredients/v1/,
   and are snapshotted in the backup manifest for offline restore/verify.
   `ingredient search QUERY` lists GitHub library names using a 24-hour catalog cache.
+  `ingredient show NAME` prints original YAML, fetching and caching missing or
+  stale ingredients with the same 30-day refresh policy as backup.
   `cache status/list/show` inspect caches offline. `cache refresh NAME` checks one
   ingredient; `--ingredients` checks all downloaded ingredients; `--catalog`
   checks only the library list; no option checks both. `cache delete NAME...`

@@ -64,11 +64,15 @@ cockup detect cask-name-1 [cask-name-n...]
 ```sh
 cockup ingredient search ghost      # 按名称查找可用配料
 cockup ingredient search "visual studio"
+cockup ingredient show ghostty      # 显示完整的配料 YAML
 ```
 
 `search` 从 GitHub 配料库列出匹配名称，不下载 YAML。匹配不区分大小写，空格按连字符处理；
 已缓存的配料标为 `[cached]`。目录列表缓存 24 小时；用 `cockup cache refresh --catalog` 可立即检查 GitHub。
 临时网络故障时使用已有的目录缓存；没有缓存则报错。
+
+`show NAME` 将原始 YAML（包括注释）输出到标准输出。未缓存时自动下载并缓存，
+刷新策略与备份相同，为 30 天。有效期内的缓存可离线查看。
 
 ### `cockup cache`
 

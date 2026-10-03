@@ -346,6 +346,14 @@ impl Resolver {
     }
 }
 
+pub fn show(name: &str) -> Result<(), String> {
+    let (_, yaml) = Resolver::new(Mode::Update).resolve(name)?;
+    std::io::stdout()
+        .lock()
+        .write_all(yaml.as_bytes())
+        .map_err(|error| error.to_string())
+}
+
 pub fn update(name: &str) -> Result<(), String> {
     validate_name(name)?;
     if read_cache(name, &cache_dir()?).is_none() {

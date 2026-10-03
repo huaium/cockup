@@ -110,7 +110,7 @@ fn cache_delete_usage_lists_all_required_choices() {
 }
 
 #[test]
-fn ingredient_commands_expose_search_only() {
+fn ingredient_commands_do_not_expose_cache_management() {
     let dir = TempDir::new().unwrap();
     for command in ["update", "status", "delete", "clean"] {
         let output = run(dir.path(), &["ingredient", command]);
