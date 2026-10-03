@@ -5,6 +5,8 @@
 Cockup is a macOS configuration backup/restore CLI written in Rust 2024.
 The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
 `x86_64-apple-darwin`. There is no public library API.
+The READMEs provide a quick start; detailed command, configuration, and development
+guides live under `docs/`, with translations in language folders such as `docs/zh-cn/`.
 
 ## Development
 

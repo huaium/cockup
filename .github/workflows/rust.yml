@@ -41,6 +41,7 @@ jobs:
           archive="cockup-$RELEASE_TAG-$RELEASE_TARGET"
           mkdir -p "dist/$archive"
           cp "target/$RELEASE_TARGET/release/cockup" LICENSE README.md README_zh-cn.md "dist/$archive/"
+          cp -R docs "dist/$archive/"
           tar -C dist -czf "dist/$archive.tar.gz" "$archive"
           cd dist
           shasum -a 256 "$archive.tar.gz" > "$archive.tar.gz.sha256"
