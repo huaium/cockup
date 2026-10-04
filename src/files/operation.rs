@@ -23,7 +23,22 @@ pub(crate) fn execute(
     if restore && fs::symlink_metadata(&incomplete).is_ok() {
         return Err("Backup is incomplete; run a successful backup before restoring".into());
     }
-    let stored = Manifest::load(&cfg.destination)?;
+    // Every backup rebuilds records from current sources and configuration.
+    let stored = if restore {
+        Manifest::load(&cfg.destination)?
+    } else {
+        if let Err(error) = Manifest::load(&cfg.destination) {
+            report::warning(&error);
+            report::warning(
+                "The existing manifest must be rebuilt from current sources and configuration.",
+            );
+            if !dry_run && !report::confirm_with_prompt("Rebuild symlink manifest? [y/N]: ")? {
+                report::warning("Backup cancelled; the existing backup was not modified.");
+                return Ok(());
+            }
+        }
+        None
+    };
     if restore
         && stored.is_none()
         && cfg
@@ -37,11 +52,7 @@ pub(crate) fn execute(
     }
     let mut state = CopyState {
         root: cfg.destination.clone(),
-        manifest: if !restore && cfg.clean {
-            Manifest::new()?
-        } else {
-            stored.unwrap_or(Manifest::new()?)
-        },
+        manifest: stored.unwrap_or(Manifest::new()?),
         restore,
         restore_policy,
         planning: false,

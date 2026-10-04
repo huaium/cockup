@@ -1,6 +1,58 @@
 use super::*;
 
 #[test]
+fn backup_rebuilds_an_obsolete_manifest_from_current_config() {
+    use std::os::unix::fs::symlink;
+    for clean in [true, false] {
+        let dir = TempDir::new().unwrap();
+        let root = dir.path();
+        write(root, "source/target", "saved content\n");
+        symlink("target", root.join("source/link")).unwrap();
+        write(
+            root,
+            "config.yaml",
+            &format!(
+                "destination: backup\nclean: {clean}\nmetadata: false\nsymlinks: reference\nrules:\n  - from: source\n    targets: [link]\n    to: files\n"
+            ),
+        );
+        assert!(
+            cli(root, &["backup", "config.yaml", "-a"], "")
+                .status
+                .success()
+        );
+        let path = root.join("backup/.cockup-symlinks.json");
+        let old = fs::read_to_string(&path)
+            .unwrap()
+            .replace("\"reference\"", "\"referece\"");
+        fs::write(&path, &old).unwrap();
+        write(root, "backup/retained", "keep on update\n");
+
+        let preview = cli(root, &["backup", "config.yaml", "--dry-run"], "");
+        assert!(preview.status.success(), "{}", text(&preview));
+        assert_eq!(fs::read_to_string(&path).unwrap(), old);
+        let declined = cli(root, &["backup", "config.yaml", "-a"], "n\n");
+        assert!(declined.status.success(), "{}", text(&declined));
+        assert!(text(&declined).contains("Rebuild symlink manifest?"));
+        assert_eq!(fs::read_to_string(&path).unwrap(), old);
+        assert!(root.join("backup/retained").exists());
+        assert!(!root.join("backup/.cockup-incomplete").exists());
+        let backup = cli(root, &["backup", "config.yaml", "-a"], "invalid\ny\n");
+        assert!(backup.status.success(), "{}", text(&backup));
+        let manifest: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(manifest["links"][0]["mode"], "reference");
+        assert_eq!(root.join("backup/retained").exists(), !clean);
+        fs::remove_file(root.join("source/link")).unwrap();
+        let restore = cli(root, &["restore", "config.yaml", "-a"], "");
+        assert!(restore.status.success(), "{}", text(&restore));
+        assert_eq!(
+            fs::read_link(root.join("source/link")).unwrap(),
+            Path::new("target")
+        );
+    }
+}
+
+#[test]
 fn preserve_symlinks_to_ancestors_and_reject_copying_onto_itself() {
     use std::os::unix::fs::symlink;
     let d = TempDir::new().unwrap();

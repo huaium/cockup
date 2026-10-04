@@ -63,6 +63,12 @@ including relative links that explicitly name the old user. It matches home-path
 prefixes, not arbitrary username text. `--approve-hooks` does not skip this question.
 Invalid or missing input aborts before restoration writes.
 
+Every backup rebuilds the manifest from current sources and configuration, including
+when `clean: false`. An invalid or obsolete existing manifest requires confirmation
+before hooks or backup file changes; declining cancels the backup. Valid manifests
+require no confirmation. Dry-run previews rebuilding without prompting or writing.
+`--approve-hooks` does not approve rebuilding the manifest.
+
 The manifest is replaced atomically after a successful backup. A failed or
 interrupted copy leaves `.cockup-incomplete`; restore refuses that backup until a
 successful backup clears the marker. This detects incomplete backups, but does
