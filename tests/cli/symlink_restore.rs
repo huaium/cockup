@@ -1,6 +1,135 @@
 use super::*;
 
 #[test]
+fn restore_rejects_removed_rules_and_symlinked_backup_parents() {
+    use std::os::unix::fs::symlink;
+    let dir = TempDir::new().unwrap();
+    let root = dir.path();
+    write(root, "source/target", "saved\n");
+    symlink("target", root.join("source/link")).unwrap();
+    write(
+        root,
+        "config.yaml",
+        "destination: backup\nsymlinks: reference\nrules:\n  - from: source\n    targets: [link]\n    to: files\n",
+    );
+    assert!(cli(root, &["backup", "config.yaml"], "").status.success());
+    fs::remove_file(root.join("source/link")).unwrap();
+    write(
+        root,
+        "config.yaml",
+        "destination: backup\nsymlinks: reference\nrules: []\nhooks:\n  pre-restore:\n    - name: marker\n      command: [touch, hook-ran]\n",
+    );
+    let removed = cli(root, &["restore", "config.yaml", "-a"], "y\n");
+    assert_eq!(removed.status.code(), Some(1), "{}", text(&removed));
+    assert!(!root.join("hook-ran").exists());
+
+    // A backup directory symlink must never supply live target files for restore.
+    write(
+        root,
+        "config.yaml",
+        "destination: another-backup\nsymlinks: reference\nrules:\n  - from: source\n    targets: [target]\n    to: files\n",
+    );
+    assert!(cli(root, &["backup", "config.yaml"], "").status.success());
+    fs::remove_dir_all(root.join("another-backup/files")).unwrap();
+    symlink(root.join("source"), root.join("another-backup/files")).unwrap();
+    let escaped = cli(root, &["restore", "config.yaml"], "");
+    assert_eq!(escaped.status.code(), Some(1), "{}", text(&escaped));
+    assert!(
+        text(&escaped).contains("symlink parent"),
+        "{}",
+        text(&escaped)
+    );
+    fs::remove_file(root.join("another-backup/files")).unwrap();
+    fs::create_dir(root.join("another-backup/files")).unwrap();
+    let missing = cli(root, &["restore", "config.yaml"], "");
+    assert_eq!(missing.status.code(), Some(1), "{}", text(&missing));
+    assert!(text(&missing).contains("selected by YAML is missing"));
+}
+
+#[test]
+fn restore_requires_consistency_and_completeness_before_hooks_or_writes() {
+    use std::os::unix::fs::symlink;
+    let dir = TempDir::new().unwrap();
+    let root = dir.path();
+    write(root, "source/target", "saved\n");
+    symlink("target", root.join("source/link")).unwrap();
+    write(
+        root,
+        "config.yaml",
+        "destination: backup\nsymlinks: dereference\nrules:\n  - from: source\n    targets: [link]\n    to: files\n",
+    );
+    assert!(
+        cli(root, &["backup", "config.yaml", "-a"], "")
+            .status
+            .success()
+    );
+    write(
+        root,
+        "config.yaml",
+        "destination: backup\nsymlinks: reference\nrules:\n  - from: source\n    targets: [link]\n    to: files\nhooks:\n  pre-restore:\n    - name: marker\n      command: [touch, hook-ran]\n",
+    );
+    fs::remove_file(root.join("source/link")).unwrap();
+    fs::remove_file(root.join("source/target")).unwrap();
+    let declined = cli(root, &["restore", "config.yaml", "-a"], "n\n");
+    assert_eq!(declined.status.code(), Some(1), "{}", text(&declined));
+    assert!(text(&declined).contains("differs from YAML"));
+    assert!(!root.join("hook-ran").exists());
+    assert!(!root.join("source/link").exists());
+    let preview = cli(root, &["restore", "config.yaml", "--dry-run"], "");
+    assert_eq!(preview.status.code(), Some(1), "{}", text(&preview));
+    assert!(text(&preview).contains("differs from YAML"));
+    assert!(!text(&preview).contains("Continue using the symlink manifest?"));
+    assert!(!root.join("hook-ran").exists());
+    let config = fs::read_to_string(root.join("config.yaml")).unwrap();
+    fs::write(
+        root.join("config.yaml"),
+        config.replace("symlinks: reference", "symlinks: dereference"),
+    )
+    .unwrap();
+    let restored = cli(root, &["restore", "config.yaml", "-a"], "");
+    assert!(restored.status.success(), "{}", text(&restored));
+    assert_eq!(
+        fs::read_to_string(root.join("source/target")).unwrap(),
+        "saved\n"
+    );
+    fs::remove_file(root.join("hook-ran")).unwrap();
+    let manifest = root.join("backup/.cockup-symlinks.json");
+    let original = fs::read_to_string(&manifest).unwrap();
+    fs::write(&manifest, "invalid JSON").unwrap();
+    let failed = cli(root, &["restore", "config.yaml", "-a"], "");
+    assert_eq!(failed.status.code(), Some(1), "{}", text(&failed));
+    assert!(!root.join("hook-ran").exists());
+    assert!(
+        text(&failed).contains("Invalid symlink manifest"),
+        "{}",
+        text(&failed)
+    );
+
+    fs::write(&manifest, original).unwrap();
+    fs::remove_file(root.join("backup/files/link")).unwrap();
+    symlink("../../source/target", root.join("backup/files/link")).unwrap();
+    let fallback = cli(root, &["restore", "config.yaml", "-a"], "");
+    assert_eq!(fallback.status.code(), Some(1), "{}", text(&fallback));
+    assert!(!text(&fallback).contains("Continue using the symlink manifest?"));
+    assert!(
+        text(&fallback).contains("wrong type"),
+        "{}",
+        text(&fallback)
+    );
+    assert_eq!(
+        fs::read_to_string(root.join("source/link")).unwrap(),
+        "saved\n"
+    );
+    assert!(!root.join("hook-ran").exists());
+    fs::remove_file(root.join("backup/files/link")).unwrap();
+    let before = fs::read_to_string(&manifest).unwrap();
+    let missing = cli(root, &["restore", "config.yaml", "-a"], "");
+    assert_eq!(missing.status.code(), Some(1), "{}", text(&missing));
+    assert!(!root.join("hook-ran").exists());
+    assert_eq!(fs::read_to_string(&manifest).unwrap(), before);
+}
+
+#[test]
 fn restore_policies_apply_to_dereferenced_target_and_link() {
     use std::os::unix::fs::symlink;
     let dir = TempDir::new().unwrap();

@@ -3,6 +3,7 @@ mod diff;
 mod operation;
 mod paths;
 mod preview;
+mod restore_plan;
 mod rules;
 mod state;
 mod symlinks;

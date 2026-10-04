@@ -59,7 +59,7 @@ fn review_link(dst: &Path, target: &Path, state: &CopyState) -> Result<bool, Str
 
 pub(super) fn restore_link(
     src: &Path,
-    dst: &Path,
+    _dst: &Path,
     metadata: bool,
     ancestors: &[PathBuf],
     state: &mut CopyState,
@@ -72,6 +72,8 @@ pub(super) fn restore_link(
         .position(|l| l.backup_path == key)
     {
         let link = state.manifest.links.remove(index);
+        let location = state.mapped(&link.location);
+        let dst = location.as_path();
         let updating = fs::symlink_metadata(dst).is_ok();
         let mut restored = false;
         let result = (|| -> Result<(), String> {

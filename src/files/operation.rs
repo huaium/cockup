@@ -25,7 +25,7 @@ pub(crate) fn execute(
     }
     // Every backup rebuilds records from current sources and configuration.
     let stored = if restore {
-        Manifest::load(&cfg.destination)?
+        Some(super::restore_plan::manifest(cfg)?)
     } else {
         if let Err(error) = Manifest::load(&cfg.destination) {
             report::warning(&error);

@@ -9,7 +9,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-fn check_entry(path: &Path) -> Result<usize, String> {
+pub(super) fn check_entry(path: &Path) -> Result<usize, String> {
     let metadata = fs::symlink_metadata(path).map_err(|e| format!("{}: {e}", path.display()))?;
     if metadata.is_dir() {
         let mut count = 1;
@@ -29,7 +29,7 @@ fn check_entry(path: &Path) -> Result<usize, String> {
     }
 }
 
-fn check_link(root: &Path, link: &crate::manifest::Link) -> Result<(), String> {
+pub(super) fn check_link(root: &Path, link: &crate::manifest::Link) -> Result<(), String> {
     let path = root.join(&link.backup_path);
     let mut parent = PathBuf::from(root);
     if let Some(components) = link.backup_path.parent() {

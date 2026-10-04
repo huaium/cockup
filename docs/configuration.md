@@ -72,9 +72,19 @@ require no confirmation. Dry-run previews rebuilding without prompting or writin
 The manifest is replaced atomically after a successful backup. A failed or
 interrupted copy leaves `.cockup-incomplete`; restore refuses that backup until a
 successful backup clears the marker. This detects incomplete backups, but does
-not roll back copies already made. Missing manifests are accepted only for legacy
-`reference` restores (without user remapping); malformed manifests fail before
-restoration. The manifest and incomplete-marker paths are reserved.
+not roll back copies already made. Restore requires all three checks to pass before
+hooks or writes: YAML-selected backup paths are present and readable, manifest
+symlink entries are complete and of the correct type, and recorded symlink modes,
+locations, and rule selection agree with YAML. Missing or invalid manifests,
+inconsistencies, and incomplete backups cause an error, including in dry-run.
+There is no mismatch confirmation or YAML fallback. Backup paths cannot traverse
+symlinked parent directories, and selected backup symlinks must have manifest records.
+YAML selects ordinary files and configures metadata and hooks; original symlink
+locations, modes, targets, and chains come from the manifest. YAML has no
+original-target or chain fields to compare. `prompt` accepts either recorded mode.
+These checks do not detect missing
+directory children without a saved inventory. The manifest and incomplete-marker
+paths are reserved.
 
 ## Optional Fields
 

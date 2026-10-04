@@ -128,6 +128,15 @@ fn dereference_copies_file_and_directory_contents_and_continues_after_bad_links(
             .success()
     );
     let out = cli(p, &["restore", "config.yaml", "-a"], "");
+    assert_eq!(out.status.code(), Some(1), "{}", text(&out));
+    assert!(text(&out).contains("selected by YAML is missing"));
+    let config = fs::read_to_string(p.join("config.yaml")).unwrap();
+    fs::write(
+        p.join("config.yaml"),
+        config.replace("[broken, folder, file]", "[folder, file]"),
+    )
+    .unwrap();
+    let out = cli(p, &["restore", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));
     assert!(
         fs::symlink_metadata(p.join("source/file"))

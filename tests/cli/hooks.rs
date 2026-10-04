@@ -181,6 +181,12 @@ fn restore_lifecycle_and_hook_output_settings_are_preserved() {
     write(p, "backup/files/file", "restored");
     write(
         p,
+        "seed.yaml",
+        "destination: backup\nsymlinks: reference\nrules: []\n",
+    );
+    assert!(cli(p, &["backup", "seed.yaml"], "").status.success());
+    write(
+        p,
         "config.yaml",
         r#"symlinks: reference
 destination: backup
@@ -257,6 +263,13 @@ fn failing_pre_hooks_stop_backup_and_restore_before_file_changes() {
         write(p, "backup/stale", "keep");
         write(
             p,
+            "seed.yaml",
+            "destination: backup\nsymlinks: reference\nrules: []\n",
+        );
+        assert!(cli(p, &["backup", "seed.yaml"], "").status.success());
+        let manifest_before = fs::read(p.join("backup/.cockup-symlinks.json")).unwrap();
+        write(
+            p,
             "config.yaml",
             "symlinks: reference\nclean: true\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\n    on-start:\n      - name: rule\n        command: [sh, -c, 'touch ../rule-ran']\nhooks:\n  pre-backup:\n    - name: fail\n      command: [sh, -c, 'exit 1']\n    - name: later\n      command: [sh, -c, 'touch later-pre-ran']\n  pre-restore:\n    - name: fail\n      command: [sh, -c, 'exit 1']\n    - name: later\n      command: [sh, -c, 'touch later-pre-ran']\n  post-backup:\n    - name: post\n      command: [sh, -c, 'touch ../post-ran']\n  post-restore:\n    - name: post\n      command: [sh, -c, 'touch ../post-ran']\n",
         );
@@ -280,6 +293,9 @@ fn failing_pre_hooks_stop_backup_and_restore_before_file_changes() {
         );
         assert_eq!(fs::read_to_string(p.join("backup/stale")).unwrap(), "keep");
         assert!(!p.join("backup/.cockup-incomplete").exists());
-        assert!(!p.join("backup/.cockup-symlinks.json").exists());
+        assert_eq!(
+            fs::read(p.join("backup/.cockup-symlinks.json")).unwrap(),
+            manifest_before
+        );
     }
 }

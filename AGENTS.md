@@ -57,6 +57,9 @@ guides live under `docs/`, with translations in language folders such as `docs/z
   without following them; destination contents remain subject to normal cleanup. `.cockup-symlinks.json` records
   modes, locations, targets/chains and user/home identity. Restore uses recorded
   modes: reference recreates only links; dereference restores contents then links.
+  Restore requires YAML-selected backup paths, manifest link completeness, and
+  YAML/manifest consistency to pass before hooks or writes; no mismatch override
+  or YAML fallback. Reject symlinked backup parents and unrecorded selected links.
   Cross-user restore asks once for current/original home mapping. Restore prompts
   for conflicting local files and links; `--override` replaces without prompting,
   while `--skip-existing` keeps all existing entries. Existing directories merge
