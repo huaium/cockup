@@ -4,21 +4,25 @@
 
 English | [中文](README_zh-cn.md)
 
-Yet another backup tool for various configurations. Written in Rust for Apple
-Silicon and Intel macOS.
+Yet another backup tool for various configurations.
 
 ## Installation
 
-Once published to crates.io:
+Install with [Homebrew](https://github.com/huaium/homebrew-tap):
+
+```sh
+brew install huaium/tap/cockup
+```
+
+Or install from [crates.io](https://crates.io/crates/cockup) with Cargo:
 
 ```sh
 cargo install cockup --locked
 ```
 
-You can also download a matching binary from
-[GitHub Releases](https://github.com/huaium/cockup/releases), verify its SHA256,
-and place `cockup` on your `PATH`. See [development](docs/development.md) to build
-from source.
+Prebuilt binaries are also available on
+[GitHub Releases](https://github.com/huaium/cockup/releases).
+For source builds, see the [development guide](docs/development.md).
 
 ## Typical example
 
@@ -44,12 +48,29 @@ cockup restore config.yaml
 
 Restore shows differences and asks before replacing conflicting local files.
 
-## Documentation
+## Commands
 
-- [Command reference](docs/commands.md): backup, restore, diff, verify, hooks, discovery, ingredients, and cache management.
-- [Configuration reference](docs/configuration.md): rules, symlinks, metadata, hooks, and includes.
-- [Development](docs/development.md): builds, checks, and sample workflows.
-- [Ingredient library](https://github.com/huaium/cockup/blob/main/ingredients/README.md): predefined application configurations.
+Preview changes with `--dry-run`, compare local files with `diff`, and check backup
+integrity with `verify`. Cockup also supports hooks and Homebrew configuration
+discovery. See the [command reference](docs/commands.md) for details.
+
+## Configuration
+
+YAML rules select files and their backup paths. Configure symlink handling,
+metadata preservation, hooks, and reusable includes as needed.
+See the [configuration reference](docs/configuration.md) for all fields.
+
+## Ingredients
+
+Include predefined application rules to avoid writing them from scratch.
+Use `ingredient search` to find them and `ingredient show` to inspect their YAML.
+Browse the [ingredient library](https://github.com/huaium/cockup/blob/main/ingredients/README.md)
+for available applications and examples.
+
+## Development
+
+Build and test with Cargo, or use the Just recipes for sample backup and restore
+workflows. See the [development guide](docs/development.md) to get started.
 
 ## License
 

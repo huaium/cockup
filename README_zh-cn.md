@@ -4,18 +4,24 @@
 
 [English](README.md) | 中文
 
-又一个用于备份各种配置文件的工具。使用 Rust 编写，支持 Apple Silicon 和 Intel macOS。
+又一个用于备份各种配置文件的工具。
 
 ## 安装
 
-发布到 crates.io 后可运行：
+通过 [Homebrew](https://github.com/huaium/homebrew-tap) 安装：
+
+```sh
+brew install huaium/tap/cockup
+```
+
+或使用 Cargo 从 [crates.io](https://crates.io/crates/cockup) 安装：
 
 ```sh
 cargo install cockup --locked
 ```
 
-也可从 [GitHub Releases](https://github.com/huaium/cockup/releases) 下载对应架构的二进制文件，
-校验 SHA256 后将 `cockup` 放入 `PATH`。源码构建参见[开发指南](docs/zh-cn/development.md)。
+预编译二进制文件也可从 [GitHub Releases](https://github.com/huaium/cockup/releases) 下载。
+源码构建参见[开发指南](docs/zh-cn/development.md)。
 
 ## 典型用例
 
@@ -40,12 +46,26 @@ cockup restore config.yaml
 
 恢复时会显示差异，并在覆盖冲突的本地文件前询问。
 
-## 文档
+## 命令
 
-- [命令参考](docs/zh-cn/commands.md)：备份、恢复、差异、验证、Hooks、发现配置、配料及缓存管理。
-- [配置参考](docs/zh-cn/configuration.md)：规则、符号链接、元数据、Hooks 和配置导入。
-- [开发指南](docs/zh-cn/development.md)：构建、检查及样例工作流程。
-- [配料库](https://github.com/huaium/cockup/blob/main/ingredients/README.md)：预定义的应用配置。
+使用 `--dry-run` 预览变更，使用 `diff` 比较本地文件，使用 `verify` 检查备份完整性。
+Cockup 还支持 Hooks 和 Homebrew 配置发现。详情参见[命令参考](docs/zh-cn/commands.md)。
+
+## 配置
+
+通过 YAML 规则选择文件及其备份路径，并按需配置符号链接处理、元数据保留、Hooks 和可复用的导入。
+所有字段参见[配置参考](docs/zh-cn/configuration.md)。
+
+## 配料
+
+导入预定义的应用规则，无需从头编写。使用 `ingredient search` 查找配料，
+使用 `ingredient show` 查看其 YAML。支持的应用和示例参见
+[配料库](https://github.com/huaium/cockup/blob/main/ingredients/README.md)。
+
+## 开发
+
+使用 Cargo 构建和测试，或通过 Just 配方运行样例备份与恢复流程。
+入门步骤参见[开发指南](docs/zh-cn/development.md)。
 
 ## 许可证
 
