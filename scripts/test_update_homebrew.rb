@@ -10,7 +10,7 @@ Dir.mktmpdir do |dir|
   formula = File.join(dir, "cockup.rb")
   original = "class Cockup < Formula\n" + targets.map do |target|
     "  url \"https://github.com/huaium/cockup/releases/download/v0.2.1/cockup-v0.2.1-#{target}.tar.gz\"\n  sha256 \"#{'a' * 64}\"\n"
-  end.join + "  # Retain customizations\nend\n"
+  end.join + "  license \"MIT\"\n  # Retain customizations\nend\n"
   File.write(formula, original)
   targets.each do |target|
     archive = "cockup-v0.2.2-#{target}.tar.gz"
@@ -28,6 +28,7 @@ Dir.mktmpdir do |dir|
   _, stderr, status = run.call("v0.2.2")
   raise stderr unless status.success?
   updated = File.read(formula)
+  raise "Missing explicit version" unless updated.scan(/^  version "0\.2\.2"$/).length == 1
   raise "Incomplete update" unless updated.scan("download/v0.2.2/").length == 2 && updated.include?("Retain customizations")
   targets.each { |target| raise "Wrong checksum" unless updated.include?(Digest::SHA256.hexdigest(target)) }
   _, stderr, status = run.call("v0.2.2")
@@ -36,5 +37,8 @@ Dir.mktmpdir do |dir|
     _, _, status = run.call(tag)
     raise "Accepted downgrade/invalid tag" if status.success? || File.read(formula) != updated
   end
+  File.write(formula, original.sub('  license "MIT"', "  version \"0.2.1\"\n  license \"MIT\""))
+  _, stderr, status = run.call("v0.2.2")
+  raise "Existing version not updated: #{stderr}" unless status.success? && File.read(formula) == updated
 end
 puts "Homebrew updater checks passed"

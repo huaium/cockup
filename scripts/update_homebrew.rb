@@ -1,7 +1,7 @@
 require "digest"
 require "tempfile"
 
-# Update only Cockup's architecture-specific URLs/checksums; retain tap customizations.
+# Update Cockup's version and architecture-specific URLs/checksums; retain tap customizations.
 tag, formula_path, asset_dir = ARGV
 abort "Usage: ruby scripts/update_homebrew.rb vX.Y.Z FORMULA ASSET_DIR" unless
   ARGV.length == 3 && tag.match?(/\Av(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\z/)
@@ -24,6 +24,18 @@ end
   pattern = /url "https:\/\/github\.com\/huaium\/cockup\/releases\/download\/v[\d.]+\/cockup-v[\d.]+-#{Regexp.escape(target)}\.tar\.gz"\n(\s*)sha256 "[a-f0-9]{64}"/
   abort "Expected exactly one URL/checksum pair for #{target}" unless formula.scan(pattern).length == 1
   formula = formula.sub(pattern) { "url \"#{url}\"\n#{Regexp.last_match(1)}sha256 \"#{checksum}\"" }
+end
+
+version_pattern = /^([ \t]*)version "[^"]*"[ \t]*$/
+case formula.scan(version_pattern).length
+when 0
+  license_pattern = /^([ \t]*)license /
+  abort "Expected exactly one license field to insert version before" unless formula.scan(license_pattern).length == 1
+  formula = formula.sub(license_pattern) { "#{Regexp.last_match(1)}version \"#{version}\"\n#{Regexp.last_match(1)}license " }
+when 1
+  formula = formula.sub(version_pattern) { "#{Regexp.last_match(1)}version \"#{version}\"" }
+else
+  abort "Expected at most one explicit version field"
 end
 
 if formula == File.read(formula_path)
