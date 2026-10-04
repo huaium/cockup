@@ -12,6 +12,18 @@ sync:
 update:
     cargo update --workspace
 
+# Set the package version (X.Y.Z) and sync Cargo.lock without network access
+version VERSION:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    version={{ quote(VERSION) }}
+    if [[ ! "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+        echo "Version must use X.Y.Z format, without a v prefix" >&2
+        exit 1
+    fi
+    COCKUP_VERSION="$version" perl -0pi -e 's/^(version\s*=\s*)"[^"]+"/$1"$ENV{COCKUP_VERSION}"/m' Cargo.toml
+    cargo update --workspace --offline
+
 test *ARGS:
     cargo test --locked {{ ARGS }}
 
