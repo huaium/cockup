@@ -167,5 +167,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Formula/cockup.rb
-          git commit -m "cockup: update to ${RELEASE_TAG#v}"
+          git commit -m "release: cockup ${RELEASE_TAG}"
           git push origin HEAD:main
