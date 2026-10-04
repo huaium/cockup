@@ -89,7 +89,12 @@ fn cli_exposes_commands_and_version() {
     ] {
         assert!(text(&out).contains(word), "{}", text(&out));
     }
-    assert!(text(&cli(dir.path(), &["--version"], "")).contains("0.2.0"));
+    let version = cli(dir.path(), &["--version"], "");
+    assert!(version.status.success(), "{}", text(&version));
+    assert_eq!(
+        String::from_utf8_lossy(&version.stdout).trim(),
+        concat!("cockup ", env!("CARGO_PKG_VERSION"))
+    );
     assert_eq!(cli(dir.path(), &["list"], "").status.code(), Some(2));
     assert_eq!(cli(dir.path(), &["unknown"], "").status.code(), Some(2));
 }
