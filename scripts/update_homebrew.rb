@@ -7,12 +7,15 @@ abort "Usage: ruby scripts/update_homebrew.rb vX.Y.Z FORMULA ASSET_DIR" unless
   ARGV.length == 3 && tag.match?(/\Av(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\z/)
 
 formula = File.read(formula_path)
-versions = formula.scan(%r{releases/download/v(\d+\.\d+\.\d+)/}).flatten.uniq
-abort "Expected one Cockup version in formula" unless versions.length == 1
+version_pattern = /^([ \t]*)version = "((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))"[ \t]*$/
+versions = formula.scan(version_pattern)
+abort "Expected exactly one Cockup version variable in formula" unless versions.length == 1
+previous_version = versions.first[1]
 version = tag.delete_prefix("v")
-if (versions.first.split(".").map(&:to_i) <=> version.split(".").map(&:to_i)) == 1
-  abort "Refusing to downgrade formula from #{versions.first} to #{version}"
+if (previous_version.split(".").map(&:to_i) <=> version.split(".").map(&:to_i)) == 1
+  abort "Refusing to downgrade formula from #{previous_version} to #{version}"
 end
+formula = formula.sub(version_pattern) { "#{Regexp.last_match(1)}version = \"#{version}\"" }
 
 %w[aarch64-apple-darwin x86_64-apple-darwin].each do |target|
   archive = "cockup-#{tag}-#{target}.tar.gz"
@@ -20,22 +23,10 @@ end
   checksum = Digest::SHA256.file(path).hexdigest
   expected = File.read("#{path}.sha256").strip
   abort "Checksum mismatch for #{archive}" unless expected.match?(/\A#{checksum}\s+\*?#{Regexp.escape(archive)}\z/)
-  url = "https://github.com/huaium/cockup/releases/download/#{tag}/#{archive}"
-  pattern = /url "https:\/\/github\.com\/huaium\/cockup\/releases\/download\/v[\d.]+\/cockup-v[\d.]+-#{Regexp.escape(target)}\.tar\.gz"\n(\s*)sha256 "[a-f0-9]{64}"/
+  url = "https://github.com/huaium/cockup/releases/download/v\#{version}/cockup-v\#{version}-#{target}.tar.gz"
+  pattern = /(url "#{Regexp.escape(url)}"\n[ \t]*sha256 ")[a-f0-9]{64}"/
   abort "Expected exactly one URL/checksum pair for #{target}" unless formula.scan(pattern).length == 1
-  formula = formula.sub(pattern) { "url \"#{url}\"\n#{Regexp.last_match(1)}sha256 \"#{checksum}\"" }
-end
-
-version_pattern = /^([ \t]*)version "[^"]*"[ \t]*$/
-case formula.scan(version_pattern).length
-when 0
-  license_pattern = /^([ \t]*)license /
-  abort "Expected exactly one license field to insert version before" unless formula.scan(license_pattern).length == 1
-  formula = formula.sub(license_pattern) { "#{Regexp.last_match(1)}version \"#{version}\"\n#{Regexp.last_match(1)}license " }
-when 1
-  formula = formula.sub(version_pattern) { "#{Regexp.last_match(1)}version \"#{version}\"" }
-else
-  abort "Expected at most one explicit version field"
+  formula = formula.sub(pattern) { "#{Regexp.last_match(1)}#{checksum}\"" }
 end
 
 if formula == File.read(formula_path)
