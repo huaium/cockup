@@ -35,8 +35,9 @@ rejected. The tap's existing CI checks the resulting push.
 
 One-time setup: create a fine-grained personal access token with resource owner
 `huaium`, repository access limited to `homebrew-tap`, and **Contents: read and write**.
-In `huaium/cockup` → Settings → Secrets and variables → Actions, add it as the
-repository secret `HOMEBREW_TAP_TOKEN`. The default `GITHUB_TOKEN` cannot write to
+In `huaium/cockup` → Settings → Environments → `homebrew-tap`, add the environment
+secret `HOMEBREW_TAP_TOKEN`. Allow tags matching `v*`; leave required reviewers
+unset for automatic updates, or enable them to require approval. The default `GITHUB_TOKEN` cannot write to
 another repository. Keep the token out of source files and renew it before expiry.
 If tap branch protection requires pull requests, use a PR-based update workflow
 instead of granting a bypass.

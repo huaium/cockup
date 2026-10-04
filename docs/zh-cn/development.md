@@ -34,8 +34,9 @@ cargo build --release --locked
 
 首次配置：创建细粒度个人访问令牌，资源所有者为 `huaium`，仅授权 `homebrew-tap`
 仓库，并赋予 **Contents: read and write** 权限。在 `huaium/cockup` 的
-Settings → Secrets and variables → Actions 中，将令牌保存为仓库 Secret
-`HOMEBREW_TAP_TOKEN`。默认 `GITHUB_TOKEN` 不能写入其他仓库。
+Settings → Environments → `homebrew-tap` 中，将令牌保存为环境 Secret
+`HOMEBREW_TAP_TOKEN`，允许匹配 `v*` 的标签。自动更新时不设置必需审核者；如需审批则启用。
+默认 `GITHUB_TOKEN` 不能写入其他仓库。
 不要将令牌放入源码，并在过期前更新。若 Tap 分支保护要求 PR，改用 PR 更新流程。
 
 无需安装软件即可运行更新器检查：
