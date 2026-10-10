@@ -186,6 +186,9 @@ value is invalid; a missing or non-directory path fails the hook before its
 command executes. `--dry-run` displays explicit working directories without
 running hooks. This changes only the subprocess directory, not Cockup's own
 directory, and does not expand variables in command arguments or sandbox hooks.
+For `cockup hook`, a missing working directory can be created after confirmation;
+declining cancels the selected run. During backup/restore, a missing explicit
+`cwd` still fails the hook.
 
 For example, you may want to use it to dump Homebrew bundle into a file and place it under the folder defined by `destination`:
 

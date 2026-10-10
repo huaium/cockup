@@ -1,6 +1,133 @@
 use super::*;
 
 #[test]
+fn standalone_hooks_use_lifecycle_directories_for_every_stage() {
+    let d = TempDir::new().unwrap();
+    let p = d.path();
+    fs::create_dir(p.join("backup")).unwrap();
+    write(
+        p,
+        "config.yaml",
+        r#"destination: backup
+symlinks: reference
+rules:
+  - from: source
+    to: files
+    targets: []
+    on-start:
+      - name: start
+        command: [sh, -c, 'pwd > start']
+        check: [test, -s, start]
+    on-end:
+      - name: end
+        command: [sh, -c, 'pwd > end']
+hooks:
+  pre-backup:
+    - name: pre-backup
+      command: [sh, -c, 'pwd > pre-backup']
+  pre-restore:
+    - name: pre-restore
+      command: [sh, -c, 'pwd > pre-restore']
+  post-backup:
+    - name: post-backup
+      command: [sh, -c, 'pwd > post-backup']
+  post-restore:
+    - name: post-restore
+      command: [sh, -c, 'pwd > post-restore']
+"#,
+    );
+    for (name, base) in [
+        ("pre-backup", p),
+        ("pre-restore", p),
+        ("post-backup", p.join("backup").as_path()),
+        ("post-restore", p.join("backup").as_path()),
+        ("start", p.join("backup").as_path()),
+        ("end", p.join("backup").as_path()),
+    ] {
+        let out = cli(p, &["hook", "config.yaml", "-a", "-n", name], "");
+        assert!(out.status.success(), "{}", text(&out));
+        assert_eq!(
+            fs::read_to_string(base.join(name)).unwrap().trim(),
+            fs::canonicalize(base).unwrap().to_str().unwrap()
+        );
+    }
+}
+
+#[test]
+fn standalone_hooks_prompt_before_creating_missing_directories() {
+    let d = TempDir::new().unwrap();
+    let p = d.path();
+    write(
+        p,
+        "config.yaml",
+        r#"destination: nested/backup
+symlinks: reference
+rules: []
+hooks:
+  pre-backup:
+    - name: pre
+      command: [sh, -c, 'touch pre-marker']
+  post-backup:
+    - name: post
+      command: [sh, -c, 'touch post-marker']
+      check: [test, -f, post-marker]
+    - name: second
+      command: [sh, -c, 'touch second-marker']
+    - name: custom
+      cwd: custom/work
+      command: [sh, -c, 'touch custom-marker']
+"#,
+    );
+    let pre = cli(p, &["hook", "config.yaml", "-a", "-n", "pre"], "");
+    assert!(pre.status.success(), "{}", text(&pre));
+    assert!(!text(&pre).contains("Create working directory?"));
+    assert!(!p.join("nested").exists());
+    let declined = cli(p, &["hook", "config.yaml", "-a", "-n", "post"], "n\n");
+    assert!(declined.status.success(), "{}", text(&declined));
+    assert!(text(&declined).contains("cancelled"));
+    assert!(!p.join("nested").exists());
+    let accepted = cli(p, &["hook", "config.yaml", "-a"], "2,3\ninvalid\ny\n");
+    assert!(accepted.status.success(), "{}", text(&accepted));
+    assert_eq!(
+        text(&accepted).matches("Create working directory?").count(),
+        2
+    );
+    assert!(p.join("nested/backup/post-marker").is_file());
+    assert!(p.join("nested/backup/second-marker").is_file());
+    assert!(!p.join("post-marker").exists());
+    let custom = cli(p, &["hook", "config.yaml", "-a", "-n", "custom"], "y\n");
+    assert!(custom.status.success(), "{}", text(&custom));
+    assert!(p.join("custom/work/custom-marker").is_file());
+    assert!(!p.join("nested/backup/custom-marker").exists());
+}
+
+#[test]
+fn standalone_hooks_reject_files_and_do_not_run_any_hook_on_declined_creation() {
+    let d = TempDir::new().unwrap();
+    let p = d.path();
+    write(p, "backup", "keep");
+    write(
+        p,
+        "config.yaml",
+        "destination: backup\nsymlinks: reference\nrules: []\nhooks:\n  pre-backup:\n    - name: pre\n      command: [sh, -c, 'touch must-not-run']\n  post-backup:\n    - name: post\n      command: [sh, -c, 'touch post-marker']\n",
+    );
+    let out = cli(p, &["hook", "config.yaml", "-a"], "1,2\n");
+    assert_eq!(out.status.code(), Some(1), "{}", text(&out));
+    assert!(text(&out).contains("not a directory"));
+    assert!(!p.join("must-not-run").exists());
+    assert_eq!(fs::read_to_string(p.join("backup")).unwrap(), "keep");
+    write(
+        p,
+        "config.yaml",
+        "destination: missing\nsymlinks: reference\nrules: []\nhooks:\n  pre-backup:\n    - name: pre\n      command: [sh, -c, 'touch must-not-run']\n  post-backup:\n    - name: post\n      command: [true]\n",
+    );
+    let out = cli(p, &["hook", "config.yaml", "-a"], "1,2\nn\n");
+    assert!(out.status.success(), "{}", text(&out));
+    assert!(!p.join("must-not-run").exists());
+    assert!(!p.join("missing").exists());
+}
+
+#[test]
 fn hook_cwd_resolves_against_its_own_yaml_and_applies_to_checks() {
     let d = TempDir::new().unwrap();
     let p = d.path();

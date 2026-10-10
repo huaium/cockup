@@ -87,11 +87,23 @@ pub fn run(hooks: &[Hook], directory: &Path) -> usize {
 pub fn select(cfg: &crate::config::Config, name: Option<&str>) -> Result<(), String> {
     // Preserve first-seen display order, with the last definition winning duplicate names.
     let mut available: Vec<Hook> = Vec::new();
-    for hook in cfg.all_hooks() {
+    let rule_hooks = cfg
+        .rules
+        .iter()
+        .flat_map(|r| r.on_start.iter().chain(&r.on_end));
+    let defaults = rule_hooks
+        .map(|h| (h, &cfg.destination))
+        .chain(cfg.hooks.pre_backup.iter().map(|h| (h, &cfg.directory)))
+        .chain(cfg.hooks.post_backup.iter().map(|h| (h, &cfg.destination)))
+        .chain(cfg.hooks.pre_restore.iter().map(|h| (h, &cfg.directory)))
+        .chain(cfg.hooks.post_restore.iter().map(|h| (h, &cfg.destination)));
+    for (hook, directory) in defaults {
+        let mut hook = hook.clone();
+        hook.cwd.get_or_insert_with(|| directory.clone());
         if let Some(existing) = available.iter_mut().find(|h| h.name == hook.name) {
-            *existing = hook.clone();
+            *existing = hook;
         } else {
-            available.push(hook.clone());
+            available.push(hook);
         }
     }
     let selected = if let Some(name) = name {
@@ -129,6 +141,44 @@ pub fn select(cfg: &crate::config::Config, name: Option<&str>) -> Result<(), Str
             report::warning("Invalid hook selection; enter hook numbers separated by commas.");
         }
     };
+    // Resolve missing directories before executing any selected commands.
+    for hook in &selected {
+        let directory = hook.cwd.as_deref().unwrap();
+        if !directory.is_dir() {
+            match std::fs::symlink_metadata(directory) {
+                Ok(_) => {
+                    return Err(format!(
+                        "Hook `{}` cwd is not a directory: {}",
+                        hook.name,
+                        directory.display()
+                    ));
+                }
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                    report::warning(&format!(
+                        "Hook `{}` working directory does not exist: {}",
+                        hook.name,
+                        directory.display()
+                    ));
+                    if !report::confirm_with_prompt("Create working directory? [y/N]: ")? {
+                        report::warning("Hook execution cancelled; no hooks were run.");
+                        return Ok(());
+                    }
+                    std::fs::create_dir_all(directory).map_err(|error| {
+                        format!(
+                            "Cannot create hook working directory {}: {error}",
+                            directory.display()
+                        )
+                    })?;
+                }
+                Err(error) => {
+                    return Err(format!(
+                        "Cannot access hook working directory {}: {error}",
+                        directory.display()
+                    ));
+                }
+            }
+        }
+    }
     if run(&selected, &cfg.directory) > 0 {
         Err("Hook execution failed.".into())
     } else {

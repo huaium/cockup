@@ -148,6 +148,17 @@ cockup hook /path/to/config.yaml
 cockup hook /path/to/config.yaml --name hook_name
 ```
 
+Standalone hooks use the same default working directories as backup and restore:
+`pre-backup` and `pre-restore` use the top-level YAML's directory; `post-backup`,
+`post-restore`, and rule `on-start`/`on-end` use the backup `destination`.
+An explicit `cwd` overrides the default for both command and check.
+
+If a selected hook's working directory is missing, Cockup asks before creating
+it, including parent directories. `--approve-hooks` does not skip this prompt.
+Declining cancels the selected run with exit 0; no selected hooks execute.
+An existing file or inaccessible path is an error. Creating a directory for a
+standalone hook does not initialize a backup or create its manifest.
+
 ## Exit status and file metadata
 
 Exit codes are 0 for success or declined confirmation, 1 for configuration/copy/hook/

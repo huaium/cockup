@@ -131,6 +131,15 @@ cockup hook /path/to/config.yaml
 cockup hook /path/to/config.yaml --name hook_name
 ```
 
+独立运行 Hooks 时，默认工作目录与备份和恢复一致：`pre-backup` 和 `pre-restore`
+使用顶层 YAML 所在目录；`post-backup`、`post-restore` 和规则的 `on-start`、
+`on-end` 使用备份 `destination`。显式指定的 `cwd` 对命令和检查均优先于默认目录。
+
+所选 Hook 的工作目录不存在时，Cockup 会在创建目录（包括父目录）前请求确认。
+`--approve-hooks` 不跳过该确认。拒绝时取消本次所选 Hooks，退出码为 0，且不会执行
+任何所选 Hook。已有文件或无法访问的路径会导致错误。为独立 Hook 创建目录不会
+初始化备份或创建清单。
+
 ## 退出状态与文件元数据
 
 成功或拒绝确认返回 0；配置、复制、Hook 或 Homebrew 错误返回 1；命令行用法错误返回 2。

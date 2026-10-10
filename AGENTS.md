@@ -71,8 +71,10 @@ guides live under `docs/`, with translations in language folders such as `docs/z
   environment plus overrides, per-command timeout, configurable output.
   Optional `cwd` resolves relative to the declaring YAML, expands `~`, and applies
   to command and check; omitted values retain lifecycle working directories.
-  Checks
-  run only after successful commands. Timeouts kill and reap the direct child.
+  Standalone `hook` uses the same defaults: pre-hooks use the root YAML directory,
+  post-hooks and rule hooks use destination. Prompt before creating missing working
+  directories for standalone hooks; declining cancels before commands run.
+  Checks run only after successful commands. Timeouts kill and reap the direct child.
   Complete the pre-hook stage, then abort backup or restore before file changes
   if any pre-hook failed.
 - Discovery: bounded parallel `brew` subprocesses with auto-update disabled;
