@@ -65,6 +65,10 @@ rules: []
 #       command: [echo, ready]
 #       # Optional: check runs only if command succeeds (default: omitted).
 #       check: [test, -d, .]
+#       # Optional: cwd overrides the working directory for command and check.
+#       # '~' uses your home; relative paths use this YAML's directory.
+#       # Default: the hook's existing lifecycle working directory.
+#       cwd: .
 #       # Optional: output prints command/check output (default: false).
 #       output: true
 #       # Optional: timeout is seconds per command and per check (default: none).

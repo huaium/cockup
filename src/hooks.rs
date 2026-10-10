@@ -37,6 +37,16 @@ fn command(args: &[String], hook: &Hook, directory: &Path) -> Result<(), String>
         Err(format!("exited with {status}"))
     }
 }
+pub(crate) fn directory<'a>(hook: &'a Hook, fallback: &'a Path) -> Result<&'a Path, String> {
+    let directory = hook.cwd.as_deref().unwrap_or(fallback);
+    if hook.cwd.is_some() && !directory.is_dir() {
+        return Err(format!(
+            "cwd is not an accessible directory: {}",
+            directory.display()
+        ));
+    }
+    Ok(directory)
+}
 pub fn run(hooks: &[Hook], directory: &Path) -> usize {
     let mut failed = 0;
     for (i, hook) in hooks.iter().enumerate() {
@@ -46,12 +56,16 @@ pub fn run(hooks: &[Hook], directory: &Path) -> usize {
             hooks.len(),
             hook.name
         ));
-        let result = command(&hook.command, hook, directory)
-            .map_err(|e| format!("command: {e}"))
-            .and_then(|()| match &hook.check {
-                Some(check) => command(check, hook, directory).map_err(|e| format!("check: {e}")),
-                None => Ok(()),
-            });
+        let result = self::directory(hook, directory).and_then(|directory| {
+            command(&hook.command, hook, directory)
+                .map_err(|e| format!("command: {e}"))
+                .and_then(|()| match &hook.check {
+                    Some(check) => {
+                        command(check, hook, directory).map_err(|e| format!("check: {e}"))
+                    }
+                    None => Ok(()),
+                })
+        });
         if let Err(e) = result {
             report::error(&format!("Hook `{}` {e}", hook.name));
             failed += 1;

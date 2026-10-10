@@ -168,6 +168,7 @@ If you want to run them within a specified shell, use commands like `bash -c` af
 ```yaml
 - name: "Hook Name" # Required: Hook identifier
   command: ["cmd", "arg1"] # Required: Command args list
+  cwd: "~" # Optional: Working directory for command and check
   output: false # Optional: Print output (default: false)
   timeout: 10 # Optional: Timeout in seconds
   env: # Optional: environment variables used for the command
@@ -176,6 +177,15 @@ If you want to run them within a specified shell, use commands like `bash -c` af
 ```
 
 Please note that you cannot pass environment variables directly using syntax like `$ENV_1`, but the subprocess you launch can access those variables.
+
+`cwd` overrides the working directory for both `command` and `check`. `~` and
+`~/...` expand to the current user's home; relative paths resolve against the
+YAML file declaring the hook, including included files. Absolute paths are used
+directly. Omit `cwd` to keep the existing lifecycle working directory. An empty
+value is invalid; a missing or non-directory path fails the hook before its
+command executes. `--dry-run` displays explicit working directories without
+running hooks. This changes only the subprocess directory, not Cockup's own
+directory, and does not expand variables in command arguments or sandbox hooks.
 
 For example, you may want to use it to dump Homebrew bundle into a file and place it under the folder defined by `destination`:
 

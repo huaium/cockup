@@ -5,6 +5,7 @@ hooks:
   pre-backup:
     - name: Check created file
       command: [sh, -c, 'printf ready > .hook-check-result.txt']
+      cwd: .
       check: [sh, -c, 'value=$(cat .hook-check-result.txt) && rm .hook-check-result.txt && test "$value" = ready && echo "Check passed"']
       output: true
       timeout: 5

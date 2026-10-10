@@ -46,6 +46,8 @@ pub struct Hook {
     #[serde(default)]
     pub check: Option<Vec<String>>,
     #[serde(default)]
+    pub cwd: Option<PathBuf>,
+    #[serde(default)]
     pub output: bool,
     #[serde(default)]
     pub timeout: Option<u64>,
@@ -95,6 +97,13 @@ pub struct Hooks {
     pub post_restore: Vec<Hook>,
 }
 impl Hooks {
+    fn all_mut(&mut self) -> impl Iterator<Item = &mut Hook> {
+        self.pre_backup
+            .iter_mut()
+            .chain(&mut self.post_backup)
+            .chain(&mut self.pre_restore)
+            .chain(&mut self.post_restore)
+    }
     fn append(&mut self, other: Self) {
         self.pre_backup.extend(other.pre_backup);
         self.post_backup.extend(other.post_backup);
@@ -239,7 +248,18 @@ pub fn load(path: &Path, mode: Mode) -> Result<Config> {
             rule.symlinks = Some(rule.symlinks.unwrap_or(symlinks));
             rule.metadata = Some(rule.metadata.unwrap_or(metadata));
         }
-        for h in cfg.all_hooks() {
+        for h in cfg
+            .rules
+            .iter_mut()
+            .flat_map(|r| r.on_start.iter_mut().chain(&mut r.on_end))
+            .chain(cfg.hooks.all_mut())
+        {
+            if let Some(cwd) = &h.cwd {
+                if cwd.as_os_str().is_empty() {
+                    return Err(format!("Hook `{}` cwd must not be empty", h.name));
+                }
+                h.cwd = Some(absolute(cwd, &cfg.directory)?);
+            }
             if h.name.is_empty()
                 || h.command.is_empty()
                 || h.command[0].is_empty()

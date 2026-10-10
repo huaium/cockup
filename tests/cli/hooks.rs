@@ -1,6 +1,126 @@
 use super::*;
 
 #[test]
+fn hook_cwd_resolves_against_its_own_yaml_and_applies_to_checks() {
+    let d = TempDir::new().unwrap();
+    let p = d.path();
+    fs::create_dir_all(p.join("included/work space")).unwrap();
+    write(
+        p,
+        "config.yaml",
+        "destination: backup\nsymlinks: reference\nrules: []\ninclude: [{file: included/hooks.yaml}]\n",
+    );
+    write(
+        p,
+        "included/hooks.yaml",
+        r#"rules: []
+hooks:
+  pre-backup:
+    - name: custom
+      cwd: work space
+      command: [sh, -c, 'printf custom > marker']
+      check: [sh, -c, 'test "$(cat marker)" = custom']
+    - name: default
+      command: [sh, -c, 'printf default > default-marker']
+"#,
+    );
+    let out = cli(p, &["hook", "config.yaml", "-a"], "1,2\n");
+    assert!(out.status.success(), "{}", text(&out));
+    assert_eq!(
+        fs::read_to_string(p.join("included/work space/marker")).unwrap(),
+        "custom"
+    );
+    assert!(p.join("default-marker").is_file());
+    assert!(!p.join("marker").exists());
+}
+
+#[test]
+fn hook_cwd_expands_home_for_rule_and_lifecycle_hooks_and_dry_run() {
+    let d = TempDir::new().unwrap();
+    let p = d.path();
+    write(p, "home/work/file", "content");
+    write(
+        p,
+        "config.yaml",
+        r#"destination: backup
+symlinks: reference
+rules:
+  - from: home/work
+    to: files
+    targets: [file]
+    on-end:
+      - name: rule
+        cwd: ~/work
+        command: [sh, -c, 'printf rule > rule-marker']
+        check: [test, -f, rule-marker]
+hooks:
+  post-backup:
+    - name: home
+      cwd: '~'
+      command: [sh, -c, 'printf home > home-marker']
+      check: [test, -f, home-marker]
+    - name: absolute
+      cwd: ABSOLUTE
+      command: [test, -f, file]
+"#
+        .replace(
+            "ABSOLUTE",
+            &serde_json::to_string(&p.join("home/work")).unwrap(),
+        )
+        .as_str(),
+    );
+    let run = |dry: bool| {
+        let mut cmd = Command::new(env!("CARGO_BIN_EXE_cockup"));
+        cmd.current_dir(p)
+            .env("HOME", p.join("home"))
+            .env("NO_COLOR", "1")
+            .args(["backup", "config.yaml", "-a"]);
+        if dry {
+            cmd.arg("--dry-run");
+        }
+        cmd.output().unwrap()
+    };
+    let preview = run(true);
+    assert!(preview.status.success(), "{}", text(&preview));
+    assert!(text(&preview).contains(&format!(
+        "Would run hook `rule` in: {}",
+        p.join("home/work").display()
+    )));
+    assert!(!p.join("home/home-marker").exists());
+    assert!(!p.join("backup").exists());
+    let out = run(false);
+    assert!(out.status.success(), "{}", text(&out));
+    assert!(p.join("home/work/rule-marker").is_file());
+    assert!(p.join("home/home-marker").is_file());
+    assert!(!p.join("backup/home-marker").exists());
+}
+
+#[test]
+fn invalid_hook_cwd_fails_before_execution_and_independent_hooks_continue() {
+    let d = TempDir::new().unwrap();
+    let p = d.path();
+    write(p, "not-directory", "file");
+    for cwd in ["missing", "not-directory", "''"] {
+        write(
+            p,
+            "config.yaml",
+            &format!(
+                "destination: backup\nsymlinks: reference\nrules: []\nhooks:\n  pre-backup:\n    - name: invalid\n      cwd: {cwd}\n      command: [sh, -c, 'touch must-not-run']\n      check: [sh, -c, 'touch check-must-not-run']\n    - name: independent\n      command: [sh, -c, 'touch continued']\n"
+            ),
+        );
+        let out = cli(p, &["backup", "config.yaml", "-a"], "");
+        assert_eq!(out.status.code(), Some(1), "{}", text(&out));
+        assert!(text(&out).contains("cwd"));
+        assert!(!p.join("must-not-run").exists());
+        assert!(!p.join("check-must-not-run").exists());
+        assert!(!p.join("backup").exists());
+        if cwd != "''" {
+            assert!(p.join("continued").exists());
+        }
+    }
+}
+
+#[test]
 fn hooks_run_in_order_with_checks_environment_and_working_directories() {
     let d = TempDir::new().unwrap();
     let p = d.path();

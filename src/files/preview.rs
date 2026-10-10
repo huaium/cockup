@@ -17,6 +17,15 @@ pub(super) fn run(cfg: &Config, state: &mut CopyState) -> Result<(), String> {
         "Dry run: {} (no files changed; hooks skipped)",
         if state.restore { "restore" } else { "backup" }
     );
+    for hook in cfg.all_hooks().filter(|hook| hook.cwd.is_some()) {
+        let directory = crate::hooks::directory(hook, &cfg.directory)
+            .map_err(|error| format!("Hook `{}` {error}", hook.name))?;
+        println!(
+            "Would run hook `{}` in: {} (skipped)",
+            hook.name,
+            directory.display()
+        );
+    }
     if !state.restore && cfg.clean && cfg.destination.is_dir() {
         for entry in fs::read_dir(&cfg.destination).map_err(|e| e.to_string())? {
             let entry = entry.map_err(|e| e.to_string())?;

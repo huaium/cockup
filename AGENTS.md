@@ -68,7 +68,10 @@ guides live under `docs/`, with translations in language folders such as `docs/z
   block restore until a successful rerun. Preserve
   permissions; metadata mode also preserves file/link timestamps and macOS flags.
 - Hooks: sequential command/check argument vectors (no implicit shell), inherited
-  environment plus overrides, per-command timeout, configurable output. Checks
+  environment plus overrides, per-command timeout, configurable output.
+  Optional `cwd` resolves relative to the declaring YAML, expands `~`, and applies
+  to command and check; omitted values retain lifecycle working directories.
+  Checks
   run only after successful commands. Timeouts kill and reap the direct child.
   Complete the pre-hook stage, then abort backup or restore before file changes
   if any pre-hook failed.
