@@ -1,0 +1,11 @@
+# Checked against: brew cat --formula nano.
+# Configuration reference: https://www.nano-editor.org/dist/latest/nanorc.5.html
+# Editor configuration, keybindings, and custom syntax definitions.
+# Include-only; custom config locations need local rules.
+rules:
+  - from: "~"
+    targets: [".nanorc"]
+    to: "."
+  - from: "~/.config/nano"
+    targets: ["nanorc"]
+    to: ".config/nano"

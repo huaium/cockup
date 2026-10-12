@@ -1,0 +1,11 @@
+# Checked against: brew cat --formula curl.
+# Configuration reference: https://curl.se/docs/manpage.html
+# HTTP-client preferences; may contain headers, tokens, or credentials.
+# Include-only; custom config locations need local rules.
+rules:
+  - from: "~"
+    targets: [".curlrc"]
+    to: "."
+  - from: "~/.config"
+    targets: ["curlrc"]
+    to: ".config"

@@ -1,0 +1,10 @@
+# Checked against: brew cat --cask transmission (zap section).
+# Transmission preferences and local torrent/resume state; downloaded files excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["Transmission"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["org.m0k.transmission.plist"]
+    to: "Library/Preferences"

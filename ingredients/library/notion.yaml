@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask notion (zap section).
+# Notion preferences only; offline workspace data and account sessions excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["notion.id.plist"]
+    to: "Library/Preferences"

@@ -1,0 +1,11 @@
+# Checked against: brew cat --formula nushell.
+# Configuration reference: https://www.nushell.sh/book/configuration.html
+# Shell scripts, custom commands, and autoload files; history excluded.
+# Include-only; custom config locations need local rules.
+rules:
+  - from: "~/Library/Application Support/nushell"
+    targets: ["config.nu", "env.nu", "login.nu", "autoload", "scripts"]
+    to: "Library/Application Support/nushell"
+  - from: "~/.config/nushell"
+    targets: ["config.nu", "env.nu", "login.nu", "autoload", "scripts"]
+    to: ".config/nushell"

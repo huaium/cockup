@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask spotify (zap section).
+# Spotify preference plists only; downloaded music and account data excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["com.spotify.client.plist", "com.spotify.client.helper.plist"]
+    to: "Library/Preferences"

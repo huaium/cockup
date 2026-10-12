@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask zoom (zap section).
+# Zoom preference plists only; recordings and account data excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["us.zoom.xos.plist", "ZoomChat.plist"]
+    to: "Library/Preferences"

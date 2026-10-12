@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask coteditor (zap section).
+# Editor preference plist only; container data excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["com.coteditor.CotEditor.plist"]
+    to: "Library/Preferences"

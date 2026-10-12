@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask anki (zap section).
+# Anki profiles, decks, media, and preferences.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["Anki2"]
+    to: "Library/Application Support"

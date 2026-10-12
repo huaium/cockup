@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula yazi.
+# Configuration reference: https://yazi-rs.github.io/docs/configuration/overview/
+# File manager settings, keybindings, themes, and plugins.
+# Include-only; custom XDG_CONFIG_HOME or config overrides need local rules.
+rules:
+  - from: "~/.config"
+    targets: ["yazi"]
+    to: ".config"

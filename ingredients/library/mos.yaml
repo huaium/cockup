@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask mos (zap section).
+# Mouse scrolling preference plist.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["com.caldis.Mos.plist"]
+    to: "Library/Preferences"

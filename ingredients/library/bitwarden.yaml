@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask bitwarden (zap section).
+# Preference plists only; vault and account data excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["com.bitwarden.desktop.plist", "com.bitwarden.desktop.helper.plist"]
+    to: "Library/Preferences"

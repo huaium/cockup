@@ -1,0 +1,11 @@
+# Checked against: brew cat --formula tmux.
+# Configuration reference: https://github.com/tmux/tmux/wiki/Getting-Started
+# Terminal multiplexer configuration; external sourced files need local rules.
+# Include-only; custom XDG_CONFIG_HOME or config overrides need local rules.
+rules:
+  - from: "~"
+    targets: [".tmux.conf"]
+    to: "."
+  - from: "~/.config/tmux"
+    targets: ["tmux.conf"]
+    to: ".config/tmux"

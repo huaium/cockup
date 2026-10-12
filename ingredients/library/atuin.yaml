@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula atuin.
+# Configuration reference: https://docs.atuin.sh/main/configuration/config/
+# Shell-history tool configuration and themes; history, sync keys, and sessions excluded.
+# Include-only; custom config locations need local rules.
+rules:
+  - from: "~/.config/atuin"
+    targets: ["config.toml", "themes"]
+    to: ".config/atuin"

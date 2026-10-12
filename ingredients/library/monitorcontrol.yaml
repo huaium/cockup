@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask monitorcontrol (zap section).
+# Display brightness and volume preference plist.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["me.guillaumeb.MonitorControl.plist"]
+    to: "Library/Preferences"

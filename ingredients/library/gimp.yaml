@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask gimp (zap section).
+# GIMP user configuration, brushes, presets, and application support.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["Gimp"]
+    to: "Library/Application Support"

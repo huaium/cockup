@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask android-studio (zap section).
+# IDE and emulator preference plists; SDKs and project files excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["com.google.android.studio.plist", "com.android.Emulator.plist"]
+    to: "Library/Preferences"

@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula bat.
+# Configuration reference: https://github.com/sharkdp/bat#configuration-file
+# Viewer configuration, custom themes, and syntax definitions.
+# Include-only; custom XDG_CONFIG_HOME or config overrides need local rules.
+rules:
+  - from: "~/.config"
+    targets: ["bat"]
+    to: ".config"

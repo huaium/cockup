@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask slack (zap section).
+# Slack preferences only; workspace sessions and local app data excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["com.tinyspeck.slackmacgap.plist"]
+    to: "Library/Preferences"

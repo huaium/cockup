@@ -1,0 +1,10 @@
+# Checked against: brew cat --cask keka (zap section).
+# Archive utility preferences and application support.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["Keka"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["com.aone.keka.plist"]
+    to: "Library/Preferences"

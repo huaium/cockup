@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula starship.
+# Configuration reference: https://starship.rs/config/
+# Shell prompt configuration; custom STARSHIP_CONFIG needs a local rule.
+# Include-only; custom XDG_CONFIG_HOME or config overrides need local rules.
+rules:
+  - from: "~/.config"
+    targets: ["starship.toml"]
+    to: ".config"

@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask signal (zap section).
+# Signal preferences only; messages, encryption keys, and account data excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["org.whispersystems.signal-desktop.plist", "org.whispersystems.signal-desktop.helper.plist"]
+    to: "Library/Preferences"

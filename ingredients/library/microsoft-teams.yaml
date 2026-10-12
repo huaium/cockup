@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask microsoft-teams (zap section).
+# Preference plist only; account sessions and chat data excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["com.microsoft.teams.plist"]
+    to: "Library/Preferences"

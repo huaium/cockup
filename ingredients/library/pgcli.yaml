@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula pgcli.
+# Configuration reference: https://github.com/dbcli/pgcli#config
+# PostgreSQL CLI settings; history excluded; config may contain connection credentials.
+# Include-only; custom config locations need local rules.
+rules:
+  - from: "~/.config/pgcli"
+    targets: ["config"]
+    to: ".config/pgcli"

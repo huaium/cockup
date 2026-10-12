@@ -1,0 +1,13 @@
+# Checked against: brew cat --cask inkscape (zap section).
+# Inkscape settings, extensions, and application support.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/.config"
+    targets: ["inkscape"]
+    to: ".config"
+  - from: "~/Library/Application Support"
+    targets: ["Inkscape", "org.inkscape.Inkscape"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["org.inkscape.Inkscape.plist"]
+    to: "Library/Preferences"

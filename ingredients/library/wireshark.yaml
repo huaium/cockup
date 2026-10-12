@@ -1,0 +1,10 @@
+# Checked against: brew cat --cask wireshark (zap section).
+# Capture profiles, display filters, and preference plist.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/.config"
+    targets: ["wireshark"]
+    to: ".config"
+  - from: "~/Library/Preferences"
+    targets: ["org.wireshark.Wireshark.plist"]
+    to: "Library/Preferences"

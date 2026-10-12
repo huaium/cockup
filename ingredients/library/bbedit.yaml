@@ -1,0 +1,13 @@
+# Checked against: brew cat --cask bbedit (zap section).
+# Editor settings, scripts, and application support.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["BBEdit"]
+    to: "Library/Application Support"
+  - from: "~/Library"
+    targets: ["BBEdit"]
+    to: "Library"
+  - from: "~/Library/Preferences"
+    targets: ["com.barebones.bbedit.plist"]
+    to: "Library/Preferences"

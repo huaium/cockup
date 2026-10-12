@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula htop.
+# Configuration reference: https://github.com/htop-dev/htop/blob/main/htop.1.in
+# Process monitor configuration.
+# Include-only; custom config locations need local rules.
+rules:
+  - from: "~/.config/htop"
+    targets: ["htoprc"]
+    to: ".config/htop"

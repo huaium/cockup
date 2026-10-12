@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask discord (zap section).
+# Discord preferences only; account sessions and local app data excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["com.hnc.Discord.plist", "com.hnc.Discord.helper.plist"]
+    to: "Library/Preferences"

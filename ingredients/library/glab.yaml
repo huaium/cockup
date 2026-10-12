@@ -1,0 +1,11 @@
+# Checked against: brew cat --formula glab.
+# Configuration reference: https://docs.gitlab.com/cli/configuration/
+# GitLab CLI global configuration; may contain authentication tokens.
+# Include-only; custom config locations need local rules.
+rules:
+  - from: "~/.config/glab-cli"
+    targets: ["config.yml"]
+    to: ".config/glab-cli"
+  - from: "~/Library/Application Support/glab-cli"
+    targets: ["config.yml"]
+    to: "Library/Application Support/glab-cli"

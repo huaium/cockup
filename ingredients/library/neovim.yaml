@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula neovim.
+# Configuration reference: https://neovim.io/doc/user/starting/
+# Editor configuration and local plugins; installed runtime data excluded.
+# Include-only; custom XDG_CONFIG_HOME or config overrides need local rules.
+rules:
+  - from: "~/.config"
+    targets: ["nvim"]
+    to: ".config"

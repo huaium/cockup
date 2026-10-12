@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula direnv.
+# Configuration reference: https://direnv.net/man/direnv.toml.1.html
+# Global environment-loader configuration and extensions; project env files excluded.
+# Include-only; custom XDG_CONFIG_HOME or config overrides need local rules.
+rules:
+  - from: "~/.config"
+    targets: ["direnv"]
+    to: ".config"

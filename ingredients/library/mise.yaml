@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula mise.
+# Configuration reference: https://mise.jdx.dev/directories.html
+# Global tool versions, configuration, and fragments; installed tools and caches excluded.
+# Include-only; custom config locations need local rules.
+rules:
+  - from: "~/.config/mise"
+    targets: ["config.toml", "miserc.toml", "conf.d"]
+    to: ".config/mise"

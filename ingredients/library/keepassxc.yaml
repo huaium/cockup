@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask keepassxc (zap section).
+# Preference plists only; password databases excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["keepassxc.keepassxc.plist", "org.keepassx.keepassxc.plist"]
+    to: "Library/Preferences"

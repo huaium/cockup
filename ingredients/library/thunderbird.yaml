@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask thunderbird (zap section).
+# Preference plist only; mail profiles and messages excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["org.mozilla.thunderbird.plist"]
+    to: "Library/Preferences"

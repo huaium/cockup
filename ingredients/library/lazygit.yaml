@@ -1,0 +1,14 @@
+# Checked against: brew cat --formula lazygit.
+# Configuration reference: https://github.com/jesseduffield/lazygit/blob/master/docs/Config.md
+# Git UI configuration in macOS and XDG locations.
+# Include-only; custom XDG_CONFIG_HOME or config overrides need local rules.
+rules:
+  - from: "~/Library/Application Support/lazygit"
+    targets: ["config.yml"]
+    to: "Library/Application Support/lazygit"
+  - from: "~/Library/Application Support/jesseduffield/lazygit"
+    targets: ["config.yml"]
+    to: "Library/Application Support/jesseduffield/lazygit"
+  - from: "~/.config/lazygit"
+    targets: ["config.yml"]
+    to: ".config/lazygit"

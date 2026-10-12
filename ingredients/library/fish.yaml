@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula fish.
+# Configuration reference: https://fishshell.com/docs/current/language.html#configuration
+# Shell configuration, functions, completions, and universal variables; history excluded.
+# Include-only; custom XDG_CONFIG_HOME or config overrides need local rules.
+rules:
+  - from: "~/.config/fish"
+    targets: ["config.fish", "conf.d", "functions", "completions", "fish_variables"]
+    to: ".config/fish"

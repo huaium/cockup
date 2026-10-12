@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask the-unarchiver (zap section).
+# Archive extraction preference plist.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["cx.c3.theunarchiver.plist"]
+    to: "Library/Preferences"

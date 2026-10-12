@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask nova (zap section).
+# Editor preference plist only.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["com.panic.Nova.plist"]
+    to: "Library/Preferences"

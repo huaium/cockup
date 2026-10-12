@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask telegram (zap section).
+# Telegram preferences only; chat databases and account sessions excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["ru.keepcoder.Telegram.plist"]
+    to: "Library/Preferences"

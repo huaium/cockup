@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula mycli.
+# Configuration reference: https://github.com/dbcli/mycli
+# MySQL CLI preferences; history excluded; config may contain connection credentials.
+# Include-only; custom config locations need local rules.
+rules:
+  - from: "~"
+    targets: [".myclirc"]
+    to: "."

@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask localsend (zap section).
+# File-sharing preference plist only; received files excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["org.localsend.localsendApp.plist"]
+    to: "Library/Preferences"

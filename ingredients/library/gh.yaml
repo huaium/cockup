@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula gh.
+# Configuration reference: https://cli.github.com/manual/gh_help_environment
+# GitHub CLI preferences and aliases; hosts.yml credentials excluded.
+# Include-only; custom config locations need local rules.
+rules:
+  - from: "~/.config/gh"
+    targets: ["config.yml"]
+    to: ".config/gh"

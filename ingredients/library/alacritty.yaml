@@ -1,0 +1,11 @@
+# Checked against: brew cat --cask alacritty.
+# Configuration reference: https://alacritty.org/config-alacritty.html
+# Terminal configuration and macOS preference plist.
+# Include-only; custom XDG_CONFIG_HOME or config overrides need local rules.
+rules:
+  - from: "~/.config"
+    targets: ["alacritty"]
+    to: ".config"
+  - from: "~/Library/Preferences"
+    targets: ["org.alacritty.plist"]
+    to: "Library/Preferences"

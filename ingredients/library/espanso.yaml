@@ -1,0 +1,10 @@
+# Checked against: brew cat --cask espanso.
+# Text-expander configuration, matches, and preferences.
+# Include-only; custom XDG_CONFIG_HOME or config overrides need local rules.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["espanso"]
+    to: "Library/Application Support"
+  - from: "~/Library/Preferences"
+    targets: ["espanso", "espanso.plist", "com.federicoterzi.espanso.plist"]
+    to: "Library/Preferences"

@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula btop.
+# Configuration reference: https://github.com/aristocratos/btop#configurability
+# Resource monitor configuration and themes; logs excluded.
+# Include-only; custom XDG_CONFIG_HOME or config overrides need local rules.
+rules:
+  - from: "~/.config/btop"
+    targets: ["btop.conf", "themes"]
+    to: ".config/btop"

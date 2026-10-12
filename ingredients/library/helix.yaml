@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula helix.
+# Configuration reference: https://docs.helix-editor.com/configuration.html
+# Editor configuration, language settings, and themes.
+# Include-only; custom XDG_CONFIG_HOME or config overrides need local rules.
+rules:
+  - from: "~/.config"
+    targets: ["helix"]
+    to: ".config"

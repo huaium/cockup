@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask blender (zap section).
+# Versioned user settings, scripts, presets, and add-ons.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Application Support"
+    targets: ["Blender"]
+    to: "Library/Application Support"

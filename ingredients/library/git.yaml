@@ -1,0 +1,11 @@
+# Checked against: brew cat --formula git.
+# Configuration reference: https://git-scm.com/docs/git-config
+# Global Git configuration, ignore rules, and attributes; credentials excluded.
+# Include-only; custom XDG_CONFIG_HOME or config overrides need local rules.
+rules:
+  - from: "~"
+    targets: [".gitconfig", ".gitignore_global", ".gitattributes"]
+    to: "."
+  - from: "~/.config/git"
+    targets: ["config", "ignore", "attributes"]
+    to: ".config/git"

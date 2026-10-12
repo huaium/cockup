@@ -1,0 +1,8 @@
+# Checked against: brew cat --formula vim.
+# Configuration reference: https://github.com/vim/vim/blob/master/runtime/doc/starting.txt
+# Editor configuration, plugins, colors, and runtime files; .viminfo history excluded.
+# Include-only; custom config locations need local rules.
+rules:
+  - from: "~"
+    targets: [".vimrc", ".gvimrc", ".vim"]
+    to: "."

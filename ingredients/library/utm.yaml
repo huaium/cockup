@@ -1,0 +1,7 @@
+# Checked against: brew cat --cask utm (zap section).
+# Preference plist only; virtual machines excluded.
+# Include-only; review contents before backing up or restoring.
+rules:
+  - from: "~/Library/Preferences"
+    targets: ["com.utmapp.UTM.plist"]
+    to: "Library/Preferences"
