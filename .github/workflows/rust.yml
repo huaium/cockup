@@ -17,8 +17,6 @@ jobs:
         include:
           - runner: macos-latest
             target: aarch64-apple-darwin
-          - runner: macos-26-intel
-            target: x86_64-apple-darwin
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
@@ -141,7 +139,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir assets
-          for target in aarch64-apple-darwin x86_64-apple-darwin; do
+          for target in aarch64-apple-darwin; do
             archive="cockup-$RELEASE_TAG-$target.tar.gz"
             gh release download "$RELEASE_TAG" --repo huaium/cockup \
               --pattern "$archive" --pattern "$archive.sha256" --dir assets

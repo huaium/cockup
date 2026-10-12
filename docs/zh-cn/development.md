@@ -28,7 +28,8 @@ cargo build --release --locked
 ## Homebrew 发布
 
 标签对应的 GitHub Release 成功发布后，`update-tap` 会更新 `huaium/homebrew-tap`
-中 `Formula/cockup.rb` 的两种架构下载地址和 SHA256。它先验证发布的压缩包，
+中 `Formula/cockup.rb` 的版本及 Apple Silicon SHA256，移除 Intel 下载分支并添加 ARM 要求。
+CI 和 GitHub 发布二进制仅针对 Apple Silicon（`aarch64-apple-darwin`）。它先验证发布的压缩包，
 在运行器上安装并测试公式，再提交并推送到 Tap 的 `main` 分支。
 重复执行不会产生无效提交，版本降级会被拒绝。Tap 现有的 CI 会检查此次推送。
 

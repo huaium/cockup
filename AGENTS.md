@@ -3,8 +3,8 @@
 ## Project
 
 Cockup is a macOS configuration backup/restore CLI written in Rust 2024.
-The binary is `cockup`; supported targets are `aarch64-apple-darwin` and
-`x86_64-apple-darwin`. There is no public library API.
+The binary is `cockup`; CI, GitHub release binaries, and the Homebrew formula
+target `aarch64-apple-darwin` (Apple Silicon). There is no public library API.
 The READMEs provide a quick start; detailed command, configuration, and development
 guides live under `docs/`, with translations in language folders such as `docs/zh-cn/`.
 
@@ -101,6 +101,6 @@ failures are isolated in sample/hooks.yaml.
 
 ## Releases
 
-CI tests both macOS architectures. Version tags build archives and checksums;
+CI tests Apple Silicon macOS. Version tags build its archive and checksum;
 the protected `crates-io` environment supplies `CARGO_REGISTRY_TOKEN` for publishing.
 Do not publish or create tags unless explicitly requested.

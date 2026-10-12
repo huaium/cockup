@@ -27,9 +27,11 @@ See the [samples](https://github.com/huaium/cockup/blob/main/sample/README.md) f
 
 ## Homebrew releases
 
-After a tagged GitHub release succeeds, `update-tap` updates both architecture URLs
-and SHA256 checksums in `huaium/homebrew-tap`'s `Formula/cockup.rb`. It verifies the
-published archives, installs and tests the formula on the runner, then commits and
+CI and GitHub release binaries target Apple Silicon (`aarch64-apple-darwin`) only.
+After a tagged GitHub release succeeds, `update-tap` updates the version and Apple
+Silicon SHA256 checksum in `huaium/homebrew-tap`'s `Formula/cockup.rb`. It removes
+the former Intel URL branch and adds an ARM requirement. It verifies the
+published archive, installs and tests the formula on the runner, then commits and
 pushes to the tap's `main` branch. Repeating the job is safe; version downgrades are
 rejected. The tap's existing CI checks the resulting push.
 

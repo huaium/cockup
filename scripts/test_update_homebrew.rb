@@ -5,7 +5,7 @@ require "rbconfig"
 require "tmpdir"
 
 updater = File.expand_path("update_homebrew.rb", __dir__)
-targets = %w[aarch64-apple-darwin x86_64-apple-darwin]
+targets = %w[aarch64-apple-darwin]
 Dir.mktmpdir do |dir|
   formula = File.join(dir, "cockup.rb")
   original = "class Cockup < Formula\n  version = \"0.2.1\"\n" + targets.map do |target|
@@ -18,8 +18,8 @@ Dir.mktmpdir do |dir|
     File.write(File.join(dir, "#{archive}.sha256"), "#{Digest::SHA256.hexdigest(target)}  #{archive}\n")
   end
   run = ->(tag) { Open3.capture3(RbConfig.ruby, updater, tag, formula, dir) }
-  # A bad second asset must not partially update the first architecture.
-  checksum = File.join(dir, "cockup-v0.2.2-x86_64-apple-darwin.tar.gz.sha256")
+  # A bad asset must not modify the formula.
+  checksum = File.join(dir, "cockup-v0.2.2-aarch64-apple-darwin.tar.gz.sha256")
   correct = File.read(checksum)
   File.write(checksum, "invalid")
   _, _, status = run.call("v0.2.2")
@@ -32,7 +32,15 @@ Dir.mktmpdir do |dir|
   raise "Changed URL templates" unless updated.lines.grep(/url /) == original.lines.grep(/url /)
   raise "Lost customizations" unless updated.include?("Retain customizations")
   raise "Added redundant version directive" if updated.match?(/^\s*version "/)
+  raise "Missing ARM requirement" unless updated.include?('depends_on arch: :arm')
   targets.each { |target| raise "Wrong checksum" unless updated.include?(Digest::SHA256.hexdigest(target)) }
+  # Existing taps must migrate without requiring an Intel release asset.
+  arm_pair = original.lines.grep(/url |sha256 /).join
+  intel_pair = arm_pair.sub("aarch64-apple-darwin", "x86_64-apple-darwin")
+  dual = original.sub(arm_pair, "  if Hardware::CPU.arm?\n#{arm_pair.gsub(/^  /, '    ')}  else\n#{intel_pair.gsub(/^  /, '    ')}  end\n")
+  File.write(formula, dual)
+  _, stderr, status = run.call("v0.2.2")
+  raise "Dual-architecture migration failed: #{stderr}" unless status.success? && File.read(formula) == updated
   _, stderr, status = run.call("v0.2.2")
   raise "Not idempotent: #{stderr}" unless status.success? && File.read(formula) == updated
   ["v0.2.1", "invalid"].each do |tag|
@@ -41,7 +49,8 @@ Dir.mktmpdir do |dir|
   end
   [original.sub(/^  version = .*\n/, ""),
    original.sub('  version = "0.2.1"', "  version = \"0.2.1\"\n  version = \"0.2.1\""),
-   original.sub('cockup-v#{version}-x86_64', 'other-v#{version}-x86_64')].each do |invalid|
+   original.sub('cockup-v#{version}-aarch64', 'other-v#{version}-aarch64'),
+   dual.sub("  else\n", "  else\n    # Custom Intel behavior\n")].each do |invalid|
     File.write(formula, invalid)
     _, _, status = run.call("v0.2.2")
     raise "Accepted malformed formula or changed it" if status.success? || File.read(formula) != invalid
