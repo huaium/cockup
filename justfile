@@ -44,19 +44,44 @@ clean:
 # Create and push a specific tag
 tag VERSION:
     #!/usr/bin/env bash
-    if [[ ! "{{ VERSION }}" =~ ^v.+ ]]; then
-        echo "Version must start with v"
+    set -euo pipefail
+    tag={{ quote(VERSION) }}
+    if [[ ! "$tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+        echo "Version must use vX.Y.Z format" >&2
         exit 1
     fi
 
-    read -p "Are you sure to create and push tag {{ VERSION }}? [y/N] " REPLY
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Operation cancelled"
-        exit 0
+    package_version=$(awk '
+        /^\[/ { in_package = ($0 == "[package]") }
+        in_package && /^version[[:space:]]*=/ {
+            split($0, parts, "\"")
+            print parts[2]
+            exit
+        }
+    ' Cargo.toml)
+    if [[ -z "$package_version" ]]; then
+        echo "Cannot read package version from Cargo.toml" >&2
+        exit 1
+    fi
+    if [[ "${tag#v}" != "$package_version" ]]; then
+        echo "Warning: requested tag $tag differs from Cargo.toml version $package_version." >&2
+        echo "The released binary and crate will still use version $package_version." >&2
     fi
 
-    git tag {{ VERSION }}
-    git push origin {{ VERSION }}
+    while true; do
+        if ! read -r -p "Create and push tag $tag? [y/N]: " REPLY; then
+            echo "Operation cancelled"
+            exit 0
+        fi
+        case "$REPLY" in
+            y|Y|yes|YES) break ;;
+            ""|n|N|no|NO) echo "Operation cancelled"; exit 0 ;;
+            *) echo "Please enter y or n." >&2 ;;
+        esac
+    done
+
+    git tag "$tag"
+    git push origin "refs/tags/$tag"
 
 # Delete a specific tag
 dtag VERSION:
