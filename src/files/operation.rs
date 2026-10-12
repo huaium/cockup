@@ -132,6 +132,7 @@ pub(crate) fn execute(
         });
     }
     let mut failures = hooks::run(pre_hooks, &cfg.directory);
+    hooks::check_interrupted()?;
     if failures > 0 {
         return Err(format!(
             "{} stopped: {failures} pre-{} {} failed.",
@@ -188,6 +189,7 @@ pub(crate) fn execute(
             report::success(&format!("Running pre-rule hooks for Rule {}...", index + 1));
         }
         failures += hooks::run(&r.on_start, &cfg.destination);
+        hooks::check_interrupted()?;
         failures += rule(
             r,
             &cfg.destination,
@@ -207,6 +209,7 @@ pub(crate) fn execute(
             ));
         }
         failures += hooks::run(&r.on_end, &cfg.destination);
+        hooks::check_interrupted()?;
     }
     let post_hooks = if restore {
         &cfg.hooks.post_restore
@@ -221,6 +224,7 @@ pub(crate) fn execute(
         });
     }
     failures += hooks::run(post_hooks, &cfg.destination);
+    hooks::check_interrupted()?;
     if failures > 0 {
         return Err(format!("Operation completed with {failures} failures."));
     }

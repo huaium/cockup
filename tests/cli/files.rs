@@ -212,7 +212,7 @@ fn dry_run_clean_backup_lists_changes_without_writing_or_running_hooks() {
     write(
         p,
         "config.yaml",
-        "symlinks: reference\ndestination: backup\nclean: true\nrules:\n  - from: source\n    targets: [file]\n    to: files\nhooks:\n  pre-backup:\n    - name: marker\n      command: [sh, -c, 'touch hook-ran']\n",
+        "symlinks: reference\ndestination: backup\nclean: true\nrules:\n  - from: source\n    targets: [file]\n    to: files\nhooks:\n  pre-backup:\n    - name: marker\n      command: 'touch hook-ran'\n",
     );
     let out = cli(p, &["backup", "config.yaml", "--dry-run"], "");
     assert!(out.status.success(), "{}", text(&out));
@@ -235,7 +235,7 @@ fn dry_run_restore_lists_changes_without_writing_or_running_hooks() {
     write(
         p,
         "config.yaml",
-        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\nhooks:\n  pre-restore:\n    - name: marker\n      command: [sh, -c, 'touch hook-ran']\n",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\nhooks:\n  pre-restore:\n    - name: marker\n      command: 'touch hook-ran'\n",
     );
     let backup = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(backup.status.success(), "{}", text(&backup));

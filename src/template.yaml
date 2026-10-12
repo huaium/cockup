@@ -48,23 +48,24 @@ rules: []
 #     # Optional: on-start hooks run before this rule (default: []).
 #     on-start:
 #       - name: Before preferences
-#         command: [echo, 'Starting preferences']
+#         command: 'echo ''Starting preferences'''
 #     # Optional: on-end hooks run after this rule (default: []).
 #     on-end:
 #       - name: After preferences
-#         command: [echo, 'Finished preferences']
+#         command: 'echo ''Finished preferences'''
 
 # Optional: hooks contains lifecycle hook lists (default: empty lists).
-# Hooks run sequentially; command and check are argument arrays, not shell text.
+# Hooks run sequentially; command and check are shell strings run by /bin/sh -cu.
+# Arrays are not supported. Quote expanded paths and variables; -u rejects unset variables.
 # hooks:
 #   # Optional: pre-backup hooks run before backup file changes (default: []).
 #   pre-backup:
 #     # Required within a hook: name labels the hook.
 #     - name: Example check
-#       # Required within a hook: command is an executable and its arguments.
-#       command: [echo, ready]
+#       # Required within a hook: command is a nonempty shell string (or YAML | block).
+#       command: 'echo ready'
 #       # Optional: check runs only if command succeeds (default: omitted).
-#       check: [test, -d, .]
+#       check: 'test -d .'
 #       # Optional: cwd overrides the working directory for command and check.
 #       # '~' uses your home; relative paths use this YAML's directory.
 #       # Default: the hook's existing lifecycle working directory.
@@ -72,6 +73,7 @@ rules: []
 #       # Optional: output prints command/check output (default: false).
 #       output: true
 #       # Optional: timeout is seconds per command and per check (default: none).
+#       # Input time counts; a timeout kills only the shell, not its descendants.
 #       timeout: 5
 #       # Optional: env adds or overrides environment variables (default: {}).
 #       env:

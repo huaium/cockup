@@ -106,16 +106,16 @@ metadata: true
 hooks:
   pre-backup:
     - name: "Setup"
-      command: ["echo", "Starting backup"]
+      command: 'echo ''Starting backup'''
   post-backup:
     - name: "Cleanup"
-      command: ["echo", "Backup complete"]
+      command: 'echo ''Backup complete'''
   pre-restore:
     - name: "Prepare"
-      command: ["echo", "Starting restore"]
+      command: 'echo ''Starting restore'''
   post-restore:
     - name: "Finish"
-      command: ["echo", "Restore complete"]
+      command: 'echo ''Restore complete'''
 ```
 
 ## Rule Structure
@@ -131,10 +131,10 @@ Each rule defines what to backup:
   to: "backup/subdirectory" # A folder under `destination`
   on-start: # Optional rule-level hooks
     - name: "Before Rule"
-      command: ["echo", "Processing rule"]
+      command: 'echo ''Processing rule'''
   on-end:
     - name: "After Rule"
-      command: ["echo", "Rule complete"]
+      command: 'echo ''Rule complete'''
 ```
 
 Please be aware that when using wildcards in `from`, to prevent duplicate files caused by matching multiple directories, cockup will locate the first safe directory without wildcards and set it as `from`. The paths containing wildcards encountered during the search process will be prepended to each `target`.
@@ -163,11 +163,13 @@ Hooks support custom commands.
 
 By default, you will be prompted to confirm if your configuration file contains any hooks. Use the flag `--approve-hooks` or `-a` to suppress it.
 
-If you want to run them within a specified shell, use commands like `bash -c` after ensuring your commands are safe.
+`command` and `check` are shell strings executed by `/bin/sh -cu`. Argument arrays
+are no longer accepted; remove the executable/argument list and write a shell
+command instead. To use another shell, invoke it explicitly in the command string.
 
 ```yaml
 - name: "Hook Name" # Required: Hook identifier
-  command: ["cmd", "arg1"] # Required: Command args list
+  command: 'cmd arg1' # Required: Nonempty shell command string
   cwd: "~" # Optional: Working directory for command and check
   output: false # Optional: Print output (default: false)
   timeout: 10 # Optional: Timeout in seconds
@@ -176,7 +178,17 @@ If you want to run them within a specified shell, use commands like `bash -c` af
     ENV_2: 2
 ```
 
-Please note that you cannot pass environment variables directly using syntax like `$ENV_1`, but the subprocess you launch can access those variables.
+Shell commands support variables, quoting, pipes, redirects, and `&&`. `-u` fails
+on unset variables; use `${VAR:-default}` for optional values. Always quote paths
+and variable expansions, such as `"$HOME/path with spaces"`. Environment values
+are passed separately to the shell; Cockup never substitutes them into command
+text. Do not use `eval` or concatenate untrusted input into shell code. Hooks run
+with your account's permissions and are not sandboxed.
+
+Use YAML `|` for multiline commands. `-cu` does not imply `-e`: an earlier failure
+can be hidden by a later successful command. Use `&&` to require prior success,
+or explicitly use `set -e` if appropriate. Shell startup files and aliases are
+not loaded by Cockup.
 
 `cwd` overrides the working directory for both `command` and `check`. `~` and
 `~/...` expand to the current user's home; relative paths resolve against the
@@ -185,7 +197,7 @@ directly. Omit `cwd` to keep the existing lifecycle working directory. An empty
 value is invalid; a missing or non-directory path fails the hook before its
 command executes. `--dry-run` displays explicit working directories without
 running hooks. This changes only the subprocess directory, not Cockup's own
-directory, and does not expand variables in command arguments or sandbox hooks.
+directory; shell expansion still applies inside command strings.
 For `cockup hook`, a missing working directory can be created after confirmation;
 declining cancels the selected run. During backup/restore, a missing explicit
 `cwd` still fails the hook.
@@ -194,8 +206,8 @@ For example, you may want to use it to dump Homebrew bundle into a file and plac
 
 ```yaml
 - name: "Brewfile Dumping"
-  command: ["brew", "bundle", "dump", "--force", "--file", "Brewfile"]
-  check: ["test", "-s", "Brewfile"]
+  command: 'brew bundle dump --force --file Brewfile'
+  check: 'test -s Brewfile'
   output: true
   timeout: 10
 ```
@@ -206,6 +218,18 @@ directory, `env`, and `output`; `timeout` applies separately to each command.
 A failed or timed-out check is reported, and subsequent hooks in that stage still run.
 If any pre-backup or pre-restore hook fails, the operation stops before cleanup,
 copying, rule hooks, or post-hooks.
+Hooks inherit Cockup's foreground process group, allowing terminal input such
+as `read` and `sudo` password prompts. Ctrl+C reaches both Cockup and the hook;
+Cockup waits for the hook to exit, then stops without running its check or later
+hooks/file operations. A hook that ignores Ctrl+C can keep Cockup waiting until
+its timeout (or indefinitely if no timeout is set).
+
+On timeout, Cockup kills and reaps only the direct shell process. Descendant
+processes may continue running; Cockup never kills the shared foreground group.
+`timeout` is seconds, including time spent waiting for input, and applies
+separately to command and check. A successful command gives its check a fresh
+limit; a command timeout fails the hook and skips its check. Omit `timeout` for
+no limit.
 
 ## Include
 

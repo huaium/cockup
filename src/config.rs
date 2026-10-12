@@ -42,9 +42,10 @@ fn environment<'de, D: Deserializer<'de>>(
 #[derive(Clone, Deserialize)]
 pub struct Hook {
     pub name: String,
-    pub command: Vec<String>,
-    #[serde(default)]
-    pub check: Option<Vec<String>>,
+    #[serde(deserialize_with = "shell_command")]
+    pub command: String,
+    #[serde(default, deserialize_with = "shell_check")]
+    pub check: Option<String>,
     #[serde(default)]
     pub cwd: Option<PathBuf>,
     #[serde(default)]
@@ -53,6 +54,23 @@ pub struct Hook {
     pub timeout: Option<u64>,
     #[serde(default, deserialize_with = "environment")]
     pub env: BTreeMap<String, String>,
+}
+fn shell_text<E: serde::de::Error>(value: serde_yaml_ng::Value) -> std::result::Result<String, E> {
+    match value {
+        serde_yaml_ng::Value::String(text) if !text.trim().is_empty() => Ok(text),
+        serde_yaml_ng::Value::Sequence(_) => Err(E::custom(
+            "command/check arrays are no longer supported; use a shell string executed by /bin/sh -cu",
+        )),
+        _ => Err(E::custom("command/check must be a nonempty shell string")),
+    }
+}
+fn shell_command<'de, D: Deserializer<'de>>(d: D) -> std::result::Result<String, D::Error> {
+    shell_text(serde_yaml_ng::Value::deserialize(d)?)
+}
+fn shell_check<'de, D: Deserializer<'de>>(d: D) -> std::result::Result<Option<String>, D::Error> {
+    Option::<serde_yaml_ng::Value>::deserialize(d)?
+        .map(shell_text)
+        .transpose()
 }
 #[derive(Deserialize)]
 pub struct Rule {
@@ -260,14 +278,8 @@ pub fn load(path: &Path, mode: Mode) -> Result<Config> {
                 }
                 h.cwd = Some(absolute(cwd, &cfg.directory)?);
             }
-            if h.name.is_empty()
-                || h.command.is_empty()
-                || h.command[0].is_empty()
-                || h.check
-                    .as_ref()
-                    .is_some_and(|c| c.is_empty() || c[0].is_empty())
-            {
-                return Err("Hook name and command/check executable must not be empty".into());
+            if h.name.is_empty() {
+                return Err("Hook name must not be empty".into());
             }
         }
         let mut rules = Vec::new();

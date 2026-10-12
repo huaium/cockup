@@ -260,7 +260,7 @@ fn included_hooks_prompt_once_and_approve_hooks_suppresses_confirmation() {
     write(
         dir.path(),
         "nested/child.yaml",
-        "symlinks: reference\ndestination: ignored\nrules: []\nhooks:\n  pre-backup:\n    - name: child\n      command: [echo, hello]\n",
+        "symlinks: reference\ndestination: ignored\nrules: []\nhooks:\n  pre-backup:\n    - name: child\n      command: 'echo hello'\n",
     );
     write(
         dir.path(),
@@ -346,7 +346,7 @@ fn malformed_globs_fail_before_confirmation_hooks_or_cleanup() {
                     p,
                     "config.yaml",
                     &(config
-                        + "clean: true\nhooks:\n  pre-backup:\n    - name: marker\n      command: [sh, -c, 'touch hook-ran']\n"),
+                        + "clean: true\nhooks:\n  pre-backup:\n    - name: marker\n      command: 'touch hook-ran'\n"),
                 );
                 let mut args = vec!["backup", "config.yaml"];
                 if approve_hooks {

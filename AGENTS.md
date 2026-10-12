@@ -67,14 +67,18 @@ guides live under `docs/`, with translations in language folders such as `docs/z
   Atomically replace manifests on success; incomplete backups
   block restore until a successful rerun. Preserve
   permissions; metadata mode also preserves file/link timestamps and macOS flags.
-- Hooks: sequential command/check argument vectors (no implicit shell), inherited
-  environment plus overrides, per-command timeout, configurable output.
+- Hooks: sequential nonempty command/check shell strings executed by `/bin/sh -cu`;
+  reject argument arrays with a migration error. Pass scripts unchanged and env
+  separately; quote variable expansions and never interpolate untrusted values.
+  Inherited environment plus overrides, per-command timeout, configurable output.
   Optional `cwd` resolves relative to the declaring YAML, expands `~`, and applies
   to command and check; omitted values retain lifecycle working directories.
   Standalone `hook` uses the same defaults: pre-hooks use the root YAML directory,
   post-hooks and rule hooks use destination. Prompt before creating missing working
   directories for standalone hooks; declining cancels before commands run.
-  Checks run only after successful commands. Timeouts kill and reap the direct child.
+  Checks run only after successful commands. Inherit the foreground process group
+  for terminal input. Ctrl+C waits for the hook, then stops checks and later work.
+  Timeouts kill and reap only the direct shell; descendants may keep running.
   Complete the pre-hook stage, then abort backup or restore before file changes
   if any pre-hook failed.
 - Discovery: bounded parallel `brew` subprocesses with auto-update disabled;

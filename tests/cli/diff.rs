@@ -69,7 +69,7 @@ fn diff_reports_changed_missing_and_extra_files_without_writes_or_hooks() {
     write(
         root,
         "config.yaml",
-        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [files]\n    to: files\nhooks:\n  pre-restore:\n    - name: should-not-run\n      command: [sh, -c, 'touch hook-ran']\n",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [files]\n    to: files\nhooks:\n  pre-restore:\n    - name: should-not-run\n      command: 'touch hook-ran'\n",
     );
     assert!(
         cli(root, &["backup", "config.yaml", "-a"], "")

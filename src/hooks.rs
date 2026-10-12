@@ -1,11 +1,57 @@
 use crate::{config::Hook, report};
 use std::{
     path::Path,
-    process::{Command, Stdio},
+    process::{Child, Command, Stdio},
+    sync::atomic::{AtomicBool, Ordering},
 };
-fn command(args: &[String], hook: &Hook, directory: &Path) -> Result<(), String> {
-    let mut cmd = Command::new(&args[0]);
-    cmd.args(&args[1..]).envs(&hook.env).current_dir(directory);
+unsafe extern "C" {
+    fn signal(signal: i32, handler: usize) -> usize;
+}
+static INTERRUPTED: AtomicBool = AtomicBool::new(false);
+extern "C" fn interrupt(_signal: i32) {
+    INTERRUPTED.store(true, Ordering::Relaxed);
+}
+struct InterruptGuard(usize);
+impl InterruptGuard {
+    fn install() -> Result<Self, String> {
+        // SAFETY: SIGINT is 2 on our macOS targets. The handler only sets a
+        // lock-free atomic flag, and is restored when this sequential stage ends.
+        let previous = unsafe { signal(2, interrupt as *const () as usize) };
+        if previous == usize::MAX {
+            Err(std::io::Error::last_os_error().to_string())
+        } else {
+            Ok(Self(previous))
+        }
+    }
+}
+impl Drop for InterruptGuard {
+    fn drop(&mut self) {
+        // SAFETY: restore the handler returned by signal() above.
+        unsafe {
+            signal(2, self.0);
+        }
+    }
+}
+pub(crate) fn check_interrupted() -> Result<(), String> {
+    if INTERRUPTED.load(Ordering::Relaxed) {
+        Err("Hook execution interrupted.".into())
+    } else {
+        Ok(())
+    }
+}
+fn stop(child: &mut Child) -> Result<(), String> {
+    let killed = child.kill();
+    let reaped = child.wait();
+    killed.map_err(|error| error.to_string())?;
+    reaped.map_err(|error| error.to_string())?;
+    Ok(())
+}
+fn command(script: &str, hook: &Hook, directory: &Path) -> Result<(), String> {
+    check_interrupted()?;
+    let mut cmd = Command::new("/bin/sh");
+    cmd.args(["-cu", script])
+        .envs(&hook.env)
+        .current_dir(directory);
     if !hook.output {
         cmd.stdout(Stdio::null()).stderr(Stdio::null());
     }
@@ -14,9 +60,9 @@ fn command(args: &[String], hook: &Hook, directory: &Path) -> Result<(), String>
     let status = loop {
         match child.try_wait() {
             Ok(Some(status)) => break status,
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
             Err(error) => {
-                let _ = child.kill();
-                let _ = child.wait();
+                let _ = stop(&mut child);
                 return Err(error.to_string());
             }
             Ok(None) => {}
@@ -25,12 +71,12 @@ fn command(args: &[String], hook: &Hook, directory: &Path) -> Result<(), String>
             .timeout
             .is_some_and(|seconds| start.elapsed() >= std::time::Duration::from_secs(seconds))
         {
-            let _ = child.kill();
-            child.wait().map_err(|e| e.to_string())?;
+            stop(&mut child)?;
             return Err(format!("timed out after {} seconds", hook.timeout.unwrap()));
         }
         std::thread::sleep(std::time::Duration::from_millis(10));
     };
+    check_interrupted()?;
     if status.success() {
         Ok(())
     } else {
@@ -48,8 +94,21 @@ pub(crate) fn directory<'a>(hook: &'a Hook, fallback: &'a Path) -> Result<&'a Pa
     Ok(directory)
 }
 pub fn run(hooks: &[Hook], directory: &Path) -> usize {
+    if check_interrupted().is_err() {
+        return 1;
+    }
+    let _guard = match InterruptGuard::install() {
+        Ok(guard) => guard,
+        Err(error) => {
+            report::error(&format!("Cannot handle hook interruption: {error}"));
+            return 1;
+        }
+    };
     let mut failed = 0;
     for (i, hook) in hooks.iter().enumerate() {
+        if check_interrupted().is_err() {
+            return failed.max(1);
+        }
         report::success(&format!(
             "Running hook ({}/{}): {}",
             i + 1,
@@ -69,6 +128,10 @@ pub fn run(hooks: &[Hook], directory: &Path) -> usize {
         if let Err(e) = result {
             report::error(&format!("Hook `{}` {e}", hook.name));
             failed += 1;
+        }
+        if check_interrupted().is_err() {
+            report::error("Hook execution interrupted; remaining hooks skipped.");
+            return failed.max(1);
         }
     }
     let noun = if hooks.len() == 1 { "hook" } else { "hooks" };

@@ -17,7 +17,7 @@ fn restore_rejects_removed_rules_and_symlinked_backup_parents() {
     write(
         root,
         "config.yaml",
-        "destination: backup\nsymlinks: reference\nrules: []\nhooks:\n  pre-restore:\n    - name: marker\n      command: [touch, hook-ran]\n",
+        "destination: backup\nsymlinks: reference\nrules: []\nhooks:\n  pre-restore:\n    - name: marker\n      command: 'touch hook-ran'\n",
     );
     let removed = cli(root, &["restore", "config.yaml", "-a"], "y\n");
     assert_eq!(removed.status.code(), Some(1), "{}", text(&removed));
@@ -66,7 +66,7 @@ fn restore_requires_consistency_and_completeness_before_hooks_or_writes() {
     write(
         root,
         "config.yaml",
-        "destination: backup\nsymlinks: reference\nrules:\n  - from: source\n    targets: [link]\n    to: files\nhooks:\n  pre-restore:\n    - name: marker\n      command: [touch, hook-ran]\n",
+        "destination: backup\nsymlinks: reference\nrules:\n  - from: source\n    targets: [link]\n    to: files\nhooks:\n  pre-restore:\n    - name: marker\n      command: 'touch hook-ran'\n",
     );
     fs::remove_file(root.join("source/link")).unwrap();
     fs::remove_file(root.join("source/target")).unwrap();

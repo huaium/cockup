@@ -257,7 +257,7 @@ fn backup_and_restore_report_original_operation_progress() {
     write(
         p,
         "config.yaml",
-        "symlinks: reference\nclean: true\nmetadata: false\ndestination: backup\nrules:\n  - from: source\n    targets: ['*.txt', 'folder*']\n    to: files\nhooks:\n  post-backup:\n    - name: done\n      command: [sh, -c, 'true']\n",
+        "symlinks: reference\nclean: true\nmetadata: false\ndestination: backup\nrules:\n  - from: source\n    targets: ['*.txt', 'folder*']\n    to: files\nhooks:\n  post-backup:\n    - name: done\n      command: 'true'\n",
     );
     let out = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(out.status.success(), "{}", text(&out));

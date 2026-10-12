@@ -87,16 +87,16 @@ metadata: true
 hooks:
   pre-backup:
     - name: "Setup"
-      command: ["echo", "Starting backup"]
+      command: 'echo ''Starting backup'''
   post-backup:
     - name: "Cleanup"
-      command: ["echo", "Backup complete"]
+      command: 'echo ''Backup complete'''
   pre-restore:
     - name: "Prepare"
-      command: ["echo", "Starting restore"]
+      command: 'echo ''Starting restore'''
   post-restore:
     - name: "Finish"
-      command: ["echo", "Restore complete"]
+      command: 'echo ''Restore complete'''
 ```
 
 ## 规则结构
@@ -112,10 +112,10 @@ hooks:
   to: "backup/subdirectory" # 在 `destination` 下的子文件夹
   on-start: # 规则层面的可选 Hooks
     - name: "Before Rule"
-      command: ["echo", "Processing rule"]
+      command: 'echo ''Processing rule'''
   on-end:
     - name: "After Rule"
-      command: ["echo", "Rule complete"]
+      command: 'echo ''Rule complete'''
 ```
 
 请注意，当你在 `from` 中使用通配符时，为避免匹配多个目录导致的文件重复，cockup 会向上寻找第一个不存在通配符的安全目录，并将其设置为 `from`。而寻找过程中经过的包含通配符的路径，会拼接在每个 `target` 前。
@@ -148,7 +148,7 @@ Hooks 允许用户自定义运行命令。
 
 ```yaml
 - name: "Hook Name" # 必要：作为 Hook 的标识符
-  command: ["cmd", "arg1"] # 必要：命令参数列表
+  command: 'cmd arg1' # 必要：非空 shell 命令字符串
   cwd: "~" # 可选：command 和 check 的工作目录
   output: false # 可选：显示命令输出 (default: false)
   timeout: 10 # 可选：允许运行秒数
@@ -157,14 +157,14 @@ Hooks 允许用户自定义运行命令。
     ENV_2: 2
 ```
 
-请注意，你无法直接使用类似 `$ENV_1` 的语法传递环境变量，但所启动的子进程能够访问这些变量。
+可以在命令字符串中使用 `"$ENV_1"` 访问环境变量；变量值不会被重新解释为 shell 命令。
 
 一个典型的场景是备份 Homebrew bundle 列表，生成的文件将放置在 `destination` 指定的文件夹下：
 
 ```yaml
 - name: "Brewfile Dumping"
-  command: ["brew", "bundle", "dump", "--force", "--file", "Brewfile"]
-  check: ["test", "-s", "Brewfile"]
+  command: 'brew bundle dump --force --file Brewfile'
+  check: 'test -s Brewfile'
   output: true
   timeout: 10
 ```
@@ -176,11 +176,27 @@ Hooks 允许用户自定义运行命令。
 当前用户的主目录；相对路径以声明钩子的 YAML 文件所在目录为基准，包括被包含的文件。
 绝对路径直接使用。省略时保留原有生命周期工作目录。空字符串无效；目录不存在或
 不是目录时，钩子在执行命令前失败。`--dry-run` 显示显式指定的工作目录而不执行钩子。
-此字段仅改变子进程目录，不改变 Cockup 自身的目录，也不会展开命令参数中的变量或限制钩子的文件访问。
+此字段仅改变子进程目录，不改变 Cockup 自身的目录；命令字符串仍由 shell 展开。
 使用 `cockup hook` 时，缺失的工作目录可在确认后创建；拒绝则取消本次所选 Hooks。
 备份或恢复期间，显式 `cwd` 不存在时仍然使钩子失败。
 检查失败或超时会报告错误，同一阶段的后续 Hooks 仍会执行。
 但只要任一备份前或恢复前 Hook 失败，操作就会在清理、复制、规则 Hooks 和后置 Hooks 之前停止。
+
+`command` 和 `check` 只接受非空字符串，通过 `/bin/sh -cu` 执行，不再接受参数数组。
+支持变量展开、管道、重定向和 `&&`；`-u` 遇到未设置的变量会失败，可用 `${VAR:-default}`
+提供默认值。路径和变量展开应加双引号，例如 `"$HOME/path with spaces"`。环境变量通过
+进程 API 单独传入，不会被 Cockup 拼接到命令文本中。不要使用 `eval` 或将不可信输入
+拼接成 shell 代码。Hooks 使用当前账户权限，不是沙箱。
+
+可用 YAML `|` 编写多行命令。`-cu` 不包含 `-e`，前面的失败可能被后面的成功掩盖；
+需要依赖前一步成功时使用 `&&`，或按需显式使用 `set -e`。Cockup 不加载 shell 启动文件或别名。
+Hooks 继承 Cockup 的前台进程组，因此支持 `read` 和 `sudo` 密码输入。
+Ctrl+C 同时发送给 Cockup 和 Hook；Cockup 等待 Hook 退出后停止，不执行检查、
+后续 Hooks 或文件操作。忽略 Ctrl+C 的 Hook 可能持续等待到超时；无超时则可能一直等待。
+超时仅终止并回收直接启动的 shell，不终止共享前台进程组；后代进程可能继续运行。
+`timeout` 单位为秒，包含等待输入的时间，分别作用于命令和检查。
+命令成功后，检查获得独立的完整时限；命令超时会使 Hook 失败并跳过检查。
+省略 `timeout` 表示无时间限制。
 
 ## 配置导入
 

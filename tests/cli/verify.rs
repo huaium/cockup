@@ -49,7 +49,7 @@ fn verify_accepts_complete_backup_without_running_hooks() {
     write(
         p,
         "config.yaml",
-        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\nhooks:\n  pre-restore:\n    - name: marker\n      command: [sh, -c, 'touch hook-ran']\n",
+        "symlinks: reference\ndestination: backup\nrules:\n  - from: source\n    targets: [file]\n    to: files\nhooks:\n  pre-restore:\n    - name: marker\n      command: 'touch hook-ran'\n",
     );
     let backup = cli(p, &["backup", "config.yaml", "-a"], "");
     assert!(backup.status.success(), "{}", text(&backup));
